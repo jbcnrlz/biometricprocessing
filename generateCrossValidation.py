@@ -44,8 +44,7 @@ def generateData(pathFiles):
 def generateImageData(paths):
     returningPaths = []
     for p in paths:
-        image = im.open(p)
-        ni = image.resize((224,224), im.ANTIALIAS)
+        ni = im.open(p)
         returningPaths.append(np.array(ni))
     return np.array(returningPaths)
 
@@ -124,29 +123,30 @@ if __name__ == '__main__':
                 metrics=['accuracy'])
 
     checkpoint_path = "training/face_alexnet-{epoch:04d}.ckpt"
-    '''
+
     if os.path.exists('training'):
         shutil.rmtree('training')
-        os.makedirs('training')
-    '''
+
+    os.makedirs('training')
+
     cp_callback = tf.keras.callbacks.ModelCheckpoint(
         checkpoint_path, verbose=1, save_weights_only=True,
         # Save weights, every 5-epochs.
         period=1)
 
-    #y_binary = to_categorical(foldGalleryClasses - 1,num_classes=131)
-    #model.fit(foldGallery,y_binary,epochs=5,batch_size=32,callbacks = [cp_callback])
+    y_binary = to_categorical(foldGalleryClasses - 1,num_classes=131)
+    model.fit(foldGallery,y_binary,epochs=5,batch_size=32,callbacks = [cp_callback])
 
-    y_binary = to_categorical(np.array(foldProbeClasses) -1,num_classes=131)
-    foldProbe = np.array(generateImageData(foldProbe))
-    a, acc = model.evaluate(foldProbe,y_binary)
-    print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
+    #y_binary = to_categorical(np.array(foldProbeClasses) -1,num_classes=131)
+    #foldProbe = np.array(generateImageData(foldProbe))
+    #a, acc = model.evaluate(foldProbe,y_binary)
+    #print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
 
-    print('\n======================\n')
-    for i in range(1,6):
-        model.load_weights('training/face_alexnet-000'+str(i)+'.ckpt')
-        a, acc = model.evaluate(np.array(foldProbe),y_binary)
-        print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+    #print('\n======================\n')
+    #for i in range(1,6):
+    #    model.load_weights('training/face_alexnet-000'+str(i)+'.ckpt')
+    #    a, acc = model.evaluate(np.array(foldProbe),y_binary)
+    #    print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
 
     '''
     with tf.Graph().as_default():

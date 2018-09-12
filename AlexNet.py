@@ -29,7 +29,7 @@ from keras import regularizers
 from KerasLayers.Custom_layers import LRN2D
 
 # global constants
-NB_CLASS = 1000         # number of classes
+NB_CLASS = 131         # number of classes
 LEARNING_RATE = 0.01
 MOMENTUM = 0.9
 ALPHA = 0.0001
@@ -81,14 +81,14 @@ def conv2D_lrn2d(x, nb_filter, nb_row, nb_col,
     return x
 
 
-def create_model():
+def create_model(imShape=(100,100),channels=4):
     # Define image input layer
     if DIM_ORDERING == 'th':
-        INP_SHAPE = (4, 224, 224)  # 3 - Number of RGB Colours
+        INP_SHAPE = (channels, imShape[0], imShape[1])  # 3 - Number of RGB Colours
         img_input = Input(shape=INP_SHAPE)
         CONCAT_AXIS = 1
     elif DIM_ORDERING == 'tf':
-        INP_SHAPE = (224, 224, 4)  # 3 - Number of RGB Colours
+        INP_SHAPE = (imShape[0], imShape[1], channels)  # 3 - Number of RGB Colours
         img_input = Input(shape=INP_SHAPE)
         CONCAT_AXIS = 3
     else:
@@ -132,7 +132,7 @@ def create_model():
     x = Dropout(DROPOUT)(x)
 
     # Final Channel - Cov Net 9
-    x = Dense(131,activation='softmax')(x)
+    x = Dense(NB_CLASS,activation='softmax')(x)
 
     return x, img_input, CONCAT_AXIS, INP_SHAPE, DIM_ORDERING
 

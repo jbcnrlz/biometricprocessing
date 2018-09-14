@@ -36,13 +36,13 @@ class FRGCTemplate(Template):
             
             self.image= np.array(im.open(self.rawRepr[0:-4] + '_newdepth.jpeg'))
 
-    def saveNewDepth(self):
+    def saveNewDepth(self,fileExtension=''):
         if self.rawRepr[-3:] == 'obj':
             scaleData = scaleValues(0,255,self.image.T)
             sImage = im.fromarray(scaleData).convert('RGB')
-            sImage.save(self.rawRepr[0:-4]+'_newdepth.jpeg')
+            sImage.save(self.rawRepr[0:-4]+fileExtension+'_newdepth.jpeg')
             invImage = PIL.ImageOps.invert(sImage)
-            invImage.save(self.rawRepr[0:-4] + '_newdepth_inv.jpeg')
+            invImage.save(self.rawRepr[0:-4]+fileExtension+'_newdepth_inv.jpeg')
         else:
             sImage = im.fromarray(self.image.T).convert('RGB')
             sImage.save(self.rawRepr[0:-4] + '_newdepth.jpeg')

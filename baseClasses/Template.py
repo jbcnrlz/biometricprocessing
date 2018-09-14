@@ -90,4 +90,4 @@ class Template:
         self.rawRepr = pathFile
         self.typeTemplate = typeTemplate
         self.dataset = dataset
-        self.modelDatabase = self.getModel()
+        #self.modelDatabase = self.getModel()

@@ -1,10 +1,9 @@
 from baseClasses.PreProcessingStep import *
 from GenerateNewDepthMapsLFW import *
-import math
-import numpy as np
-import copy
+from GenerateNewDepthMapsRFRGC import *
+from FRGCTemplate import *
 from PIL import Image as im
-import pcl
+import math, numpy as np, copy, pcl
 
 class RotateFaceLFW(PreProcessingStep):
 
@@ -57,7 +56,12 @@ class RotateFaceLFW(PreProcessingStep):
         self.axis = a
 
     def doPreProcessing(self,template):
-        genFaces = GenerateNewDepthMapsLFW()
+        genFaces = None
+        if type(template) is FRGCTemplate:
+            genFaces = GenerateNewDepthMapsRFRGC()
+            genFaces.checkForCloud = True
+        else:
+            genFaces = GenerateNewDepthMapsLFW()
         faceCloud = None
         if (type(template.image) is not list):
             faceCloud = template.image
@@ -70,17 +74,19 @@ class RotateFaceLFW(PreProcessingStep):
             for i in range(-30,40,10):
                 if (i != 0):                
                     if (self.regenFaces) or (not os.path.exists(template.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp')):
-                        print('entrou')
                         rty = self.getRotationMatrix(i,ax)
                         nObj = copy.deepcopy(template)
                         nObj.image = self.multiplyMatrices(faceCloud.tolist(),rty)
                         newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
                         fullPathPCD = nObj.rawRepr[0:-4]+'_rotate_'+str(i)+'_'+ax+'.pcd'
                         newCloud.to_file(fullPathPCD.encode('utf-8'))
+                        if type(nObj) is FRGCTemplate:
+                            genFaces.fileExtension = '_rotate_'+str(i)+'_'+ax
                         nObj = genFaces.doPreProcessing(nObj)
                         nObj.image = im.fromarray(np.array(nObj.image,dtype=np.uint8))
-                        nObj.image = nObj.image.rotate(-180)        
-                        nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp')
+                        if not type(nObj) is FRGCTemplate:
+                            nObj.image = nObj.image.rotate(-180)
+                            nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp')
 
         return template
 

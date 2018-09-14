@@ -5,6 +5,9 @@ from helper.functions import outputObj
 
 class GenerateNewDepthMapsRFRGC(PreProcessingStep):
 
+    checkForCloud = True
+    fileExtension = ''
+
     def saveTXTMatlab(self,path,face):
         f = open(path,'w')
         for p in face:
@@ -29,13 +32,13 @@ class GenerateNewDepthMapsRFRGC(PreProcessingStep):
         fileName = template.rawRepr.split(os.path.sep)[-1][:-4]
         txtFilePath = os.path.join(os.path.sep.join(template3Dobj),fileName+'_processing_matlab.txt')
         newImage = None
-        if (template.rawRepr[-3:] == 'obj'):
+        if (not self.checkForCloud) or (template.rawRepr[-3:] == 'obj'):
             newImage = template.image
         else:
             newImage = self.generateCloud(template)
         self.saveTXTMatlab(txtFilePath,newImage)
         template.image = np.array(self.generateImage(txtFilePath)).T
         #template.image = savgol_filter(template.image,51,3)
-        template.saveNewDepth()
+        template.saveNewDepth(self.fileExtension)
         os.remove(txtFilePath)
         return template

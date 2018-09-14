@@ -4,10 +4,11 @@ from tdlbp import *
 from CenterFace import *
 from SymmetricFilling import *
 from GenerateNewDepthMapsRFRGC import *
+from RotateFaceLFW import *
 
 if __name__ == '__main__':
 
-    gallery = FRGC('/home/joaocardia/Dropbox/pesquisas/frgc_excerpt/small_frgc/','NewDepth')
+    gallery = FRGC('/home/joaocardia/PycharmProjects/dataset_obj','Depth')
     gallery.feedTemplates()
     #gallery.loadNewDepthImage()
 
@@ -18,10 +19,11 @@ if __name__ == '__main__':
     tdlbp = ThreeDLBP(8,14,[gallery])
     tdlbp.preProcessingSteps = CenterFace()
     tdlbp.preProcessingSteps = SymmetricFilling()
+    tdlbp.preProcessingSteps = RotateFaceLFW()
     tdlbp.preProcessingSteps = GenerateNewDepthMapsRFRGC()
 
-    #tdlbp.preProcessing(True,False)
+    tdlbp.preProcessing(True,False)
 
-    tdlbp.featureExtraction()
+    #tdlbp.featureExtraction()
 
-    galeryData = gallery.generateDatabaseFile('/home/joaocardia/Dropbox/pesquisas/classificador/SVMTorch_linux/test_data/3dlbp_frgc_gallery_noninv_original.txt')
+    #galeryData = gallery.generateDatabaseFile('/home/joaocardia/Dropbox/pesquisas/classificador/SVMTorch_linux/test_data/3dlbp_frgc_gallery_noninv_original.txt')

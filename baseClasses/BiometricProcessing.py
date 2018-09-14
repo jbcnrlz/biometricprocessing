@@ -28,13 +28,16 @@ class BiometricProcessing:
         ss.flush()
 
     def getModel(self):
-        dts = ss.query(Metodo).filter(Metodo.nome==self.methodName).first()
-        if (not dts):
-            dts = Metodo(nome=self.methodName)
-            ss.add(dts)
-            ss.commit()
-            
-        return dts
+        if ss is None:
+            return None
+        else:
+            dts = ss.query(Metodo).filter(Metodo.nome==self.methodName).first()
+            if (not dts):
+                dts = Metodo(nome=self.methodName)
+                ss.add(dts)
+                ss.commit()
+
+            return dts
 
     def getPreProcessingSteps(self):
         return self.__preProcessingSteps

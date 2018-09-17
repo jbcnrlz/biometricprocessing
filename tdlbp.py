@@ -1,11 +1,9 @@
-import logging
-import math
-import operator
+import logging, math, operator
 from scipy.special import expit
 from FRGCTemplate import *
 from LFWTemplate import *
 from baseClasses.BiometricProcessing import *
-from helper.functions import generateHistogram, bilinear_interpolation, mergeArraysDiff
+from helper.functions import generateHistogram, bilinear_interpolation, mergeArraysDiff, printProgressBar
 
 
 class ThreeDLBP(BiometricProcessing):
@@ -160,13 +158,16 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-
     def featureExtraction(self,excludeFile=[]):
         print("Iniciando feature extraction")
+        #======= Generate Progress Bar Numbers
+        totalExecution = self.getFullProcessingNumber()
+        doing = 1
+        # ======= End generate progress bar numbers
         for database in self.databases:
             pathNeuralNet = []
             for template in database.templates:
-                imgCroped = np.asarray(template.image)
+                imgCroped = np.asarray(template.image).astype(np.int64)
 
                 if template.layersChar is None:
                     template.layersChar = np.zeros((imgCroped.shape[0],imgCroped.shape[1],4))
@@ -174,15 +175,17 @@ class ThreeDLBP(BiometricProcessing):
                 offsetx = int(math.ceil(imgCroped.shape[0] / float(self.windowSize)))
                 offsety = int(math.ceil(imgCroped.shape[1] / float(self.windowSize)))
                 fullImageDescriptor = []                
-                print('Gerando descritor de: '+str(template.itemClass))
+                #print('Gerando descritor de: '+str(template.itemClass))
                 for i in range(0,imgCroped.shape[0],offsetx):
                     for j in range(0,imgCroped.shape[1],offsety):
                         desc = self.generateImageDescriptor(imgCroped[i:(i+offsetx),j:(j+offsety)],p=16,typeLBP='original')
                         template.layersChar[i+1:(i+offsetx-1),j+1:(j+offsety-1),:] = mergeArraysDiff(template.layersChar[i+1:(i+offsetx-1),j+1:(j+offsety-1),:],desc)
-                        #fullImageDescriptor += generateHistogramUniform(desc[0],8) + generateHistogramUniform(desc[1],8) + generateHistogramUniform(desc[2],8) + generateHistogramUniform(desc[3],8)
                         fullImageDescriptor += generateHistogram(desc[0],self.binsize) + generateHistogram(desc[1],self.binsize) + generateHistogram(desc[2],self.binsize) + generateHistogram(desc[3],self.binsize)                        
                 template.features = fullImageDescriptor
                 #self.saveFeature(template)
                 iPath = template.saveImageTraining(False)
                 pathNeuralNet.append(iPath)
+                print('\rFace %d de %d' % (doing, totalExecution), end='\r')
+                #printProgressBar(doing,totalExecution,'Template','',2,80)
+                doing += 1
         return pathNeuralNet

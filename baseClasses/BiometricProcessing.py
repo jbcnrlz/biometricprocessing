@@ -97,5 +97,12 @@ class BiometricProcessing:
         input()
 
 
+    def getFullProcessingNumber(self):
+        total = len(self.databases)
+        for d in self.databases:
+            total += len(d.templates)
+
+        return total
+
 def unwrap_self_f(arg, **kwarg):
     return BiometricProcessing.applyPreProcessing(*arg, **kwarg)

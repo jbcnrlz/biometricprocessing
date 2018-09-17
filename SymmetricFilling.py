@@ -1,8 +1,6 @@
+import math, numpy as np, pcl, matlab.engine, os, uuid, scipy.ndimage as ndimage
 from baseClasses.PreProcessingStep import *
 from helper.functions import getArbitraryMatrix, outputObj
-import math, numpy as np, pcl, matlab.engine, os
-from helper.functions import outputObj
-import scipy.ndimage as ndimage
 from FRGCTemplate import *
 
 class SymmetricFilling(PreProcessingStep):
@@ -17,14 +15,15 @@ class SymmetricFilling(PreProcessingStep):
         return np.array(mirroredFace,dtype=np.float32)
 
     def applyICP(self,face,mirror,pathCompl=''):
-        outputObj(face,os.path.join(pathCompl,'face_normal.obj'))
-        outputObj(mirror,os.path.join(pathCompl,'face_mirror.obj'))
+        fileNameUnique = str(uuid.uuid4().hex)
+        outputObj(face,os.path.join(pathCompl,fileNameUnique + 'face_normal.obj'))
+        outputObj(mirror,os.path.join(pathCompl,fileNameUnique + 'face_mirror.obj'))
 
         eng = matlab.engine.start_matlab()
-        rotMatrice = eng.doICP(pathCompl+os.path.sep)
+        rotMatrice = eng.doICP(pathCompl+os.path.sep+fileNameUnique + 'face_normal.obj',pathCompl+os.path.sep+fileNameUnique + 'face_mirror.obj')
         rotMatrice = np.array(rotMatrice)
-        os.remove(os.path.join(pathCompl,'face_normal.obj'))
-        os.remove(os.path.join(pathCompl,'face_mirror.obj'))
+        os.remove(os.path.join(pathCompl,fileNameUnique + 'face_normal.obj'))
+        os.remove(os.path.join(pathCompl,fileNameUnique + 'face_mirror.obj'))
 
         mirroredList = []
         for idx in range(mirror.shape[0]):

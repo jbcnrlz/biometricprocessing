@@ -8,7 +8,20 @@ from RotateFaceLFW import *
 
 if __name__ == '__main__':
 
-    gallery = FRGC('/home/joaocardia/PycharmProjects/dataset_obj','Depth')
+    '''
+    How to use:
+    python main_frgc.py pathDatabase typeOfFile [typeOp] [exportTrainingFile]
+    
+    pathDatabase - Path of the Database (FRGC)
+    
+    typeOfFile - Depth, NewDepth, Range
+    
+    typeOp - Pre-Process, Feature Extraction or Both
+    
+    exportTrainingFile - Path for the file for training a classifier (SVMTorch model)
+    '''
+
+    gallery = FRGC(sys.argv[1],sys.argv[2])
     gallery.feedTemplates()
     #gallery.loadNewDepthImage()
 
@@ -22,8 +35,8 @@ if __name__ == '__main__':
     tdlbp.preProcessingSteps = RotateFaceLFW()
     tdlbp.preProcessingSteps = GenerateNewDepthMapsRFRGC()
 
-    tdlbp.preProcessing(True,False)
+    #tdlbp.preProcessing(True,False)
 
-    #tdlbp.featureExtraction()
+    tdlbp.featureExtraction()
 
-    #galeryData = gallery.generateDatabaseFile('/home/joaocardia/Dropbox/pesquisas/classificador/SVMTorch_linux/test_data/3dlbp_frgc_gallery_noninv_original.txt')
+    galeryData = gallery.generateDatabaseFile(sys.argv[3])

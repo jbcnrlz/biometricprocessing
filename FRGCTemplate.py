@@ -99,6 +99,8 @@ class FRGCTemplate(Template):
         f.close()
 
     def saveImageTraining(self,avgImageSave=True,pathImage='generated_images_lbp_frgc'):
+        if (not os.path.exists(pathImage)):
+            os.makedirs(pathImage)
         #imageSaveDLP = np.array(self.layersChar)        
         fullPath = self.rawRepr.split(os.path.sep)
         fullPath = fullPath[-1].split('.')

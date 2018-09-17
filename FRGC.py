@@ -12,6 +12,25 @@ class FRGC(DatabaseProcessingUtility):
         for t in self.templates:
             t.loadImage() 
 
+    def loadRotatedFaces(self,angles,axis):
+        addTemplates = []
+        for t in self.templates:
+            print("Gerando copia de "+t.rawRepr)
+            for ax in axis:
+                for a in angles:
+                    print("Angulo = "+ str(a))
+                    nobj = copy.deepcopy(t)
+                    if os.path.exists(nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+ax+'_newdepth.jpeg'):
+                        pathImages = nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+ax+'_newdepth.jpeg'
+                        with im.open(pathImages) as currImg:
+                            nobj.image = np.asarray(currImg)
+                            nobj.rawRepr = pathImages
+                        addTemplates.append(nobj)
+
+        self.templates = self.templates + addTemplates
+
+
+
     def __init__(self,path,imageType='Range'):
         self.imageType = imageType
         self.extensionFile = {'Range' : 'jpg', 'NewDepth' : 'jpeg', 'Depth' : 'obj'}

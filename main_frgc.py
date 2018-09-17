@@ -21,8 +21,8 @@ if __name__ == '__main__':
     exportTrainingFile - Path for the file for training a classifier (SVMTorch model)
     '''
 
-    typeOp = 'both' if len(sys.argv) < 5 else sys.argv[4]
-    exportTrainingFile = None if len(sys.argv) < 6 else sys.argv[5]
+    typeOp = 'both' if len(sys.argv) < 4 else sys.argv[3]
+    exportTrainingFile = None if len(sys.argv) < 5 else sys.argv[4]
 
     gallery = FRGC(sys.argv[1],sys.argv[2])
     gallery.feedTemplates()

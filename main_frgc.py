@@ -16,10 +16,13 @@ if __name__ == '__main__':
     
     typeOfFile - Depth, NewDepth, Range
     
-    typeOp - Pre-Process, Feature Extraction or Both
+    typeOp - pp, fe or both
     
     exportTrainingFile - Path for the file for training a classifier (SVMTorch model)
     '''
+
+    typeOp = 'both' if len(sys.argv) < 5 else sys.argv[4]
+    exportTrainingFile = None if len(sys.argv) < 6 else sys.argv[5]
 
     gallery = FRGC(sys.argv[1],sys.argv[2])
     gallery.feedTemplates()
@@ -35,8 +38,11 @@ if __name__ == '__main__':
     tdlbp.preProcessingSteps = RotateFaceLFW()
     tdlbp.preProcessingSteps = GenerateNewDepthMapsRFRGC()
 
-    #tdlbp.preProcessing(True,False)
+    if typeOp in ['both','pp']:
+        tdlbp.preProcessing(True,False)
 
-    tdlbp.featureExtraction()
+    if typeOp in ['both', 'fe']:
+        tdlbp.featureExtraction()
 
-    galeryData = gallery.generateDatabaseFile(sys.argv[3])
+    if not exportTrainingFile is None:
+        galeryData = gallery.generateDatabaseFile(exportTrainingFile)

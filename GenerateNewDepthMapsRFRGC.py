@@ -47,5 +47,5 @@ class GenerateNewDepthMapsRFRGC(PreProcessingStep):
             template.saveNewDepth(self.fileExtension)
             os.remove(txtFilePath)
         else:
-            template.image = np.array(im.open(os.path.exists(template.rawRepr[0:-4]+self.fileExtension+'_newdepth.jpeg')))
+            template.image = np.array(im.open(template.rawRepr[0:-4]+self.fileExtension+'_newdepth.jpeg'))
         return template

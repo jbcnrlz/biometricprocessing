@@ -18,5 +18,5 @@ class CenterFace(PreProcessingStep):
         bigger = self.findBiggerValue(template.image)
         template.image = bigger - template.image
         if (os.path.exists(template.rawRepr[0:-4]+'_centered.obj')):
-            os.remove(os.path.exists(template.rawRepr[0:-4]+'_centered.obj'))
+            os.remove(template.rawRepr[0:-4]+'_centered.obj')
         return template

@@ -85,7 +85,7 @@ class ThreeDLBP(BiometricProcessing):
             if type == 'Normal':
                 subraction = int(round(subraction))
                 
-                self.saveDebug('debug_subs',subraction)
+                #self.saveDebug('debug_subs',subraction)
 
                 if subraction < -7:
                     subraction = -7
@@ -158,7 +158,7 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self,excludeFile=[]):
+    def featureExtraction(self,points,radius):
         print("Iniciando feature extraction")
         #======= Generate Progress Bar Numbers
         totalExecution = self.getFullProcessingNumber()
@@ -178,7 +178,11 @@ class ThreeDLBP(BiometricProcessing):
                 #print('Gerando descritor de: '+str(template.itemClass))
                 for i in range(0,imgCroped.shape[0],offsetx):
                     for j in range(0,imgCroped.shape[1],offsety):
-                        desc = self.generateImageDescriptor(imgCroped[i:(i+offsetx),j:(j+offsety)],p=16,typeLBP='original')
+                        desc = None
+                        if (not points is None) and (not radius is None):
+                            desc = self.generateImageDescriptor(imgCroped[i:(i+offsetx),j:(j+offsety)],p=points,r=radius,typeLBP='pr')
+                        else:
+                            desc = self.generateImageDescriptor(imgCroped[i:(i + offsetx), j:(j + offsety)])
                         template.layersChar[i+1:(i+offsetx-1),j+1:(j+offsety-1),:] = mergeArraysDiff(template.layersChar[i+1:(i+offsetx-1),j+1:(j+offsety-1),:],desc)
                         fullImageDescriptor += generateHistogram(desc[0],self.binsize) + generateHistogram(desc[1],self.binsize) + generateHistogram(desc[2],self.binsize) + generateHistogram(desc[3],self.binsize)                        
                 template.features = fullImageDescriptor

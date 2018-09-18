@@ -14,6 +14,8 @@ if __name__ == '__main__':
     parser.add_argument('-op', '--operation',choices=['pp', 'fe', 'both'], default='both', help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
     parser.add_argument('-f', '--pathtrainingfile', default=None,help='Path for the training file', required=False)
     parser.add_argument('-c', '--parcal', default=False,type=bool, help='Should execute in parallell mode?', required=False)
+    parser.add_argument('-ap', '--points',default=None,help='Quantity of points',required=False)
+    parser.add_argument('-r', '--radius', default=None, help='Quantity of points', required=False)
 
     args = parser.parse_args()
 
@@ -22,7 +24,7 @@ if __name__ == '__main__':
 
     tdlbp = ThreeDLBP(8,14,[gallery])
     tdlbp.preProcessingSteps = CenterFace()
-    tdlbp.preProcessingSteps = SymmetricFilling()
+    tdlbp.preProcessingSteps = SymmetricFilling(regenerate=False)
     tdlbp.preProcessingSteps = RotateFaceLFW()
     tdlbp.preProcessingSteps = GenerateNewDepthMapsRFRGC()
 
@@ -30,7 +32,7 @@ if __name__ == '__main__':
         tdlbp.preProcessing(True,args.parcal)
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction()
+        tdlbp.featureExtraction(args.points,args.radius)
 
     if not args.pathtrainingfile is None:
         galeryData = gallery.generateDatabaseFile(args.pathtrainingfile)

@@ -1,11 +1,12 @@
 import math, numpy as np, pcl, matlab.engine, os, uuid, scipy.ndimage as ndimage
 from baseClasses.PreProcessingStep import *
-from helper.functions import getArbitraryMatrix, outputObj
+from helper.functions import getArbitraryMatrix, outputObj, loadOBJ
 from FRGCTemplate import *
 
 class SymmetricFilling(PreProcessingStep):
 
-    def __init__(self,threshold=0.5):
+    def __init__(self,threshold=0.5,regenerate=True):
+        self.regenarate=regenerate
         self.symmThreshold = threshold
 
     def mirrorFace(self,original):
@@ -31,7 +32,7 @@ class SymmetricFilling(PreProcessingStep):
 
         return np.array(mirroredList,dtype=np.float32)
 
-    def symmetricFillingPCL(self,face,mirroredFace,threshold=0.5,pathCompl=''):
+    def symmetricFillingPCL(self,face,mirroredFace,pathCompl=''):
         mirroredFace = self.applyICP(face,mirroredFace,pathCompl)
         facet = pcl.PointCloud()
         facet.from_array(face)
@@ -41,7 +42,7 @@ class SymmetricFilling(PreProcessingStep):
         indices, sqr_distances = kdeTree.nearest_k_search_for_cloud(facet, 2)
         symmetricFilledFace = []
         for x in range(mirror.size):
-            if (sqr_distances[x][1] > threshold):
+            if (sqr_distances[x][1] > self.symmThreshold):
                 symmetricFilledFace.append(mirror[x])
         symfacecon = np.array(symmetricFilledFace,dtype=np.float32)
         return np.concatenate((face,symfacecon))
@@ -61,6 +62,9 @@ class SymmetricFilling(PreProcessingStep):
         outputObj(template.image,os.path.join(os.path.sep.join(template3Dobj),'3DObj','depth_'+subject+'_'+folderType+'_'+template.typeTemplate+'_symmetricfilled.obj'))
 
     def doPreProcessing(self,template):
+        if (not self.regenarate) and (os.path.exists(template.rawRepr[:-4] + '_symfilled.obj')):
+            a, b, template.image, d = loadOBJ(template.rawRepr[:-4] + '_symfilled.obj')
+            return template
         imageFromFace = np.array(template.image,dtype=np.float32)
         mirroredFace = self.mirrorFace(imageFromFace)
         folderPath = template.rawRepr.split(os.path.sep)

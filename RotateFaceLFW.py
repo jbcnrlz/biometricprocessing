@@ -57,9 +57,11 @@ class RotateFaceLFW(PreProcessingStep):
 
     def doPreProcessing(self,template):
         genFaces = None
+        extentionFiles = 'bmp'
         if type(template) is FRGCTemplate:
             genFaces = GenerateNewDepthMapsRFRGC()
             genFaces.checkForCloud = True
+            extentionFiles = 'jpeg'
         else:
             genFaces = GenerateNewDepthMapsLFW()
         faceCloud = None
@@ -73,7 +75,7 @@ class RotateFaceLFW(PreProcessingStep):
         for ax in self.axis:
             for i in range(-30,40,10):
                 if (i != 0):                
-                    if (self.regenFaces) or (not os.path.exists(template.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp')):
+                    if (self.regenFaces) or (not os.path.exists(template.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.'+extentionFiles)):
                         rty = self.getRotationMatrix(i,ax)
                         nObj = copy.deepcopy(template)
                         nObj.image = self.multiplyMatrices(faceCloud.tolist(),rty)

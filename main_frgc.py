@@ -19,6 +19,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    print('Iniciando...')
+    print(args)
+
     gallery = FRGC(args.pathdatabase,args.typeoffile)
     gallery.feedTemplates()
 

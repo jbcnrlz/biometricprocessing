@@ -1,5 +1,6 @@
 from baseClasses.PreProcessingStep import *
 import math, numpy as np,matlab.engine, os
+from PIL import Image as im
 from scipy.signal import savgol_filter
 from helper.functions import outputObj
 
@@ -7,6 +8,9 @@ class GenerateNewDepthMapsRFRGC(PreProcessingStep):
 
     checkForCloud = True
     fileExtension = ''
+
+    def __init__(self, **kwargs):
+        self.regenarate = kwargs.get('regenarate', True)
 
     def saveTXTMatlab(self,path,face):
         f = open(path,'w')
@@ -27,18 +31,21 @@ class GenerateNewDepthMapsRFRGC(PreProcessingStep):
 
         return np.array(imageFace)
 
-    def doPreProcessing(self,template):        
-        template3Dobj = template.rawRepr.split(os.path.sep)[:-1]        
-        fileName = template.rawRepr.split(os.path.sep)[-1][:-4]
-        txtFilePath = os.path.join(os.path.sep.join(template3Dobj),fileName+'_processing_matlab.txt')
-        newImage = None
-        if (not self.checkForCloud) or (template.rawRepr[-3:] == 'obj'):
-            newImage = template.image
+    def doPreProcessing(self,template):
+        if self.regenarate or not os.path.exists(template.rawRepr[0:-4]+self.fileExtension+'_newdepth.jpeg'):
+            template3Dobj = template.rawRepr.split(os.path.sep)[:-1]
+            fileName = template.rawRepr.split(os.path.sep)[-1][:-4]
+            txtFilePath = os.path.join(os.path.sep.join(template3Dobj),fileName+'_processing_matlab.txt')
+            newImage = None
+            if (not self.checkForCloud) or (template.rawRepr[-3:] == 'obj'):
+                newImage = template.image
+            else:
+                newImage = self.generateCloud(template)
+            self.saveTXTMatlab(txtFilePath,newImage)
+            template.image = np.array(self.generateImage(txtFilePath)).T
+            #template.image = savgol_filter(template.image,51,3)
+            template.saveNewDepth(self.fileExtension)
+            os.remove(txtFilePath)
         else:
-            newImage = self.generateCloud(template)
-        self.saveTXTMatlab(txtFilePath,newImage)
-        template.image = np.array(self.generateImage(txtFilePath)).T
-        #template.image = savgol_filter(template.image,51,3)
-        template.saveNewDepth(self.fileExtension)
-        os.remove(txtFilePath)
+            template.image = np.array(im.open(os.path.exists(template.rawRepr[0:-4]+self.fileExtension+'_newdepth.jpeg')))
         return template

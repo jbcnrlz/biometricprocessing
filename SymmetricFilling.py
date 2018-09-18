@@ -5,9 +5,9 @@ from FRGCTemplate import *
 
 class SymmetricFilling(PreProcessingStep):
 
-    def __init__(self,threshold=0.5,regenerate=True):
-        self.regenarate=regenerate
-        self.symmThreshold = threshold
+    def __init__(self,**kwargs):
+        self.regenarate=kwargs.get('regenarate',True)
+        self.symmThreshold = kwargs.get('symmThreshold',0.5)
 
     def mirrorFace(self,original):
         mirroredFace = []
@@ -68,7 +68,7 @@ class SymmetricFilling(PreProcessingStep):
         imageFromFace = np.array(template.image,dtype=np.float32)
         mirroredFace = self.mirrorFace(imageFromFace)
         folderPath = template.rawRepr.split(os.path.sep)
-        faceSimmetricalFused = self.symmetricFillingPCL(imageFromFace,mirroredFace,self.symmThreshold,os.path.sep.join(folderPath[:-1]))
+        faceSimmetricalFused = self.symmetricFillingPCL(imageFromFace,mirroredFace,os.path.sep.join(folderPath[:-1]))
         if not type(template) is FRGCTemplate:
             template.image = faceSimmetricalFused.tolist()
             self.outputSymmFillObj(template)

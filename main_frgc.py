@@ -63,7 +63,8 @@ if __name__ == '__main__':
         tdlbp.preProcessing(True,args.parcal)
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius)
+        #tdlbp.featureExtraction(args.points,args.radius,args.parcal)
+        tdlbp.featureExtraction(args.points, args.radius, True)
 
     if not args.pathtrainingfile is None:
         galeryData = gallery.generateDatabaseFile(args.pathtrainingfile)

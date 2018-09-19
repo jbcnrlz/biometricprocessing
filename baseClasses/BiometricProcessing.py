@@ -1,5 +1,5 @@
 from helper.functions import outputObj
-from multiprocessing import Pool
+from multiprocessing import Pool, Process, Pipe
 import traceback, datetime
 from models.models import *
 from models.engine_creation import *
@@ -69,9 +69,6 @@ class BiometricProcessing:
             poolCalling = Pool()
             for database in self.databases:
                 poolCalling.map(unwrap_self_f,zip([self]*len(database.templates), database.templates))
-                
-                #for template in database.templates:                
-                #    self.applyPreProcessing(template,verbose)
         else:
             for database in self.databases:
                 for template in database.templates:                
@@ -104,5 +101,11 @@ class BiometricProcessing:
 
         return total
 
+    def doFeatureExtraction(self, parameters, verbrose=True):
+        return self.localcall(parameters)
+
 def unwrap_self_f(arg, **kwarg):
     return BiometricProcessing.applyPreProcessing(*arg, **kwarg)
+
+def unwrap_self_f_feature(arg, **kwarg):
+    return BiometricProcessing.doFeatureExtraction(*arg, **kwarg)

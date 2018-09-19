@@ -98,7 +98,7 @@ class FRGC(DatabaseProcessingUtility):
             currFiles.append(f)
             filesPath.append(f.rawRepr)
 
-        pathFaces = path[:-3]
+        pathFaces = path[:-4]
         pathFaces = pathFaces + '_faces.txt'
         f = open(pathFaces,'w')
         for t in filesPath:

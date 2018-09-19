@@ -29,7 +29,7 @@ from keras import regularizers
 from KerasLayers.Custom_layers import LRN2D
 
 # global constants
-NB_CLASS = 131         # number of classes
+NB_CLASS = 466         # number of classes
 LEARNING_RATE = 0.01
 MOMENTUM = 0.9
 ALPHA = 0.0001

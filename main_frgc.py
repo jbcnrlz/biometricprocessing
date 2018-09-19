@@ -14,8 +14,8 @@ if __name__ == '__main__':
     parser.add_argument('-op', '--operation',choices=['pp', 'fe', 'both'], default='both', help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
     parser.add_argument('-f', '--pathtrainingfile', default=None,help='Path for the training file', required=False)
     parser.add_argument('-c', '--parcal', default=False,type=bool, help='Should execute in parallell mode?', required=False)
-    parser.add_argument('-ap', '--points',default=None,help='Quantity of points',required=False)
-    parser.add_argument('-r', '--radius', default=None, help='Quantity of points', required=False)
+    parser.add_argument('-ap', '--points',type=int,default=None,help='Quantity of points',required=False)
+    parser.add_argument('-r', '--radius',type=int,default=None, help='Quantity of points', required=False)
     parser.add_argument('-s', '--steps', default=None, help='Pre-Processing steps, class names separated with _ parameters starts wth : and separated with ,', required=False)
 
     args = parser.parse_args()

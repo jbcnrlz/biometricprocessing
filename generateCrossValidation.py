@@ -134,19 +134,27 @@ if __name__ == '__main__':
         # Save weights, every 5-epochs.
         period=1)
 
-    y_binary = to_categorical(foldGalleryClasses - 1,num_classes=131)
-    model.fit(foldGallery,y_binary,epochs=5,batch_size=32,callbacks = [cp_callback])
+    #y_binary = to_categorical(foldGalleryClasses - 1,num_classes=466)
+    #model.fit(foldGallery,y_binary,epochs=10,batch_size=32,callbacks = [cp_callback])
 
-    #y_binary = to_categorical(np.array(foldProbeClasses) -1,num_classes=131)
-    #foldProbe = np.array(generateImageData(foldProbe))
-    #a, acc = model.evaluate(foldProbe,y_binary)
-    #print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
+    y_binary = to_categorical(np.array(foldProbeClasses) -1,num_classes=466)
+    foldProbe = np.array(generateImageData(foldProbe))
+    model.fit(foldProbe,y_binary,epochs=10,batch_size=32,callbacks = [cp_callback])
 
-    #print('\n======================\n')
-    #for i in range(1,6):
-    #    model.load_weights('training/face_alexnet-000'+str(i)+'.ckpt')
-    #    a, acc = model.evaluate(np.array(foldProbe),y_binary)
-    #    print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+    '''
+
+    y_binary = to_categorical(np.array(foldProbeClasses) -1,num_classes=224)
+    foldProbe = np.array(generateImageData(foldProbe))
+    a, acc = model.evaluate(foldProbe,y_binary)
+    print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
+
+    print('\n======================\n')
+    for i in range(1,6):
+        model.load_weights('training/face_alexnet-000'+str(i)+'.ckpt')
+        a, acc = model.evaluate(np.array(foldProbe),y_binary)
+        print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+
+    '''
 
     '''
     with tf.Graph().as_default():

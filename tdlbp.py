@@ -196,4 +196,5 @@ class ThreeDLBP(BiometricProcessing):
                 template.layersChar[i + 1:(i + offsetx - 1), j + 1:(j + offsety - 1), :] = mergeArraysDiff(template.layersChar[i + 1:(i + offsetx - 1), j + 1:(j + offsety - 1), :], desc)
                 fullImageDescriptor += generateHistogram(desc[0], self.binsize) + generateHistogram(desc[1],self.binsize) + generateHistogram(desc[2], self.binsize) + generateHistogram(desc[3], self.binsize)
         template.features = fullImageDescriptor
-        return template.saveImageTraining(False), fullImageDescriptor
+        saving = template.saveImageTraining(False,self.fullPathGallFile)
+        return saving , fullImageDescriptor

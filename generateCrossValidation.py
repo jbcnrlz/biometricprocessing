@@ -74,7 +74,14 @@ def separateBetweenValandTrain(data,classes,percVal=0.2):
     returnValidationData = []
     returnValidationClasses = []
     for i in range(data.shape[0]):
-        pass
+        if i in indexesVal:
+            returnValidationClasses.append(classes[i])
+            returnValidationData.append(data[i])
+        else:
+            returnTrainData.append(classes[i])
+            returnTrainClasses.append(classes[i])
+
+    return np.array(returnTrainData), np.array(returnTrainClasses), np.array(returnValidationData), np.array(returnValidationClasses)
 
 if __name__ == '__main__':
     imageData, classesData = generateData('generated_images_lbp_frgc')
@@ -119,13 +126,14 @@ if __name__ == '__main__':
         # Save weights, every 5-epochs.
         period=1)
 
-
+    foldGallery, foldGalleryClasses, valData, valCasses = separateBetweenValandTrain(foldGallery,foldGalleryClasses)
 
     model.fit_generator(
         generateDataFromArray(foldGallery,foldGalleryClasses,500),
         steps_per_epoch=foldGallery.shape[0],
         verbose=1,
         epochs=10,
+        validation_data=(valData,to_categorical(valCasses - 1, num_classes=466)),
         callbacks=[cp_callback]
 
     )

@@ -1,8 +1,7 @@
-import os, shutil, random, numpy as np, tensorflow as tf, math
+import os, shutil, random, numpy as np, tensorflow as tf, math, argparse
 from helper.functions import getFilesInPath
 from PIL import Image as im
 from networks.alexnet import *
-from AlexNet import *
 from keras.models import Model
 from keras.utils import to_categorical
 
@@ -84,7 +83,12 @@ def separateBetweenValandTrain(data,classes,percVal=0.2):
     return np.array(returnTrainData), np.array(returnTrainClasses), np.array(returnValidationData), np.array(returnValidationClasses)
 
 if __name__ == '__main__':
-    imageData, classesData = generateData('generated_images_lbp_frgc')
+    parser = argparse.ArgumentParser(description='Train Deep Models')
+    parser.add_argument('-n', '--network', help='Name for the model', required=True)
+    parser.add_argument('-p', '--pathBase',default='generated_images_lbp_frgc',help='Path for faces', required=False)
+    args = parser.parse_args()
+
+    imageData, classesData = generateData(args.pathBase)
     gBase, cgBase, rData, crData = getBaseGallery(imageData,classesData)
     foldSize = int(len(rData) / 10)
     foldResult = []
@@ -105,15 +109,6 @@ if __name__ == '__main__':
     foldGallery = generateImageData(gBase + foldGallery)
     foldGalleryClasses = np.array(cgBase + foldGalleryClasses)
 
-    x, img_input, CONCAT_AXIS, INP_SHAPE, DIM_ORDERING = create_model()
-
-    # Create a Keras Model - Functional API
-    model = Model(inputs=img_input,outputs=x)
-
-    model.compile(optimizer='rmsprop',
-                  loss='categorical_crossentropy',
-                metrics=['accuracy'])
-
     checkpoint_path = "training/face_alexnet-{epoch:04d}.ckpt"
 
     if os.path.exists('training'):
@@ -126,39 +121,65 @@ if __name__ == '__main__':
         # Save weights, every 5-epochs.
         period=1)
 
-    foldGallery, foldGalleryClasses, valData, valCasses = separateBetweenValandTrain(foldGallery,foldGalleryClasses)
+    foldGallery, foldGalleryClasses, valData, valCasses = separateBetweenValandTrain(foldGallery, foldGalleryClasses)
 
-    model.fit_generator(
-        generateDataFromArray(foldGallery,foldGalleryClasses,500),
-        steps_per_epoch=foldGallery.shape[0],
-        verbose=1,
-        epochs=10,
-        validation_data=(valData,to_categorical(valCasses - 1, num_classes=466)),
-        callbacks=[cp_callback]
+    if args.network == 'alexnet':
+        from AlexNet import *
 
-    )
+        x, img_input, CONCAT_AXIS, INP_SHAPE, DIM_ORDERING = create_model()
 
-    #y_binary = to_categorical(foldGalleryClasses - 1, num_classes=466)
-    #model.fit(foldGallery, y_binary, epochs=10, batch_size=10, callbacks=[cp_callback])
-    '''
-    dataForTraining,classesData = generateBatchForTraining(foldGallery,foldGalleryClasses - 1,466)
+        # Create a Keras Model - Functional API
+        model = Model(inputs=img_input,outputs=x)
 
-    for d in range(len(dataForTraining)):
-        y_binary = to_categorical(np.array(classesData[d]) - 1,num_classes=466)
-        td = np.array(dataForTraining[d])
-        model.fit(td,y_binary,epochs=10,batch_size=32,callbacks = [cp_callback])
-    '''
-    '''
+        model.compile(optimizer='rmsprop',
+                      loss='categorical_crossentropy',
+                    metrics=['accuracy'])
 
-    y_binary = to_categorical(np.array(foldProbeClasses) -1,num_classes=224)
-    foldProbe = np.array(generateImageData(foldProbe))
-    a, acc = model.evaluate(foldProbe,y_binary)
-    print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
+        model.fit_generator(
+            generateDataFromArray(foldGallery,foldGalleryClasses,500),
+            steps_per_epoch=foldGallery.shape[0],
+            verbose=1,
+            epochs=10,
+            validation_data=(valData,to_categorical(valCasses - 1, num_classes=466)),
+            callbacks=[cp_callback]
 
-    print('\n======================\n')
-    for i in range(1,6):
-        model.load_weights('training/face_alexnet-000'+str(i)+'.ckpt')
-        a, acc = model.evaluate(np.array(foldProbe),y_binary)
-        print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+        )
 
-    '''
+        #y_binary = to_categorical(foldGalleryClasses - 1, num_classes=466)
+        #model.fit(foldGallery, y_binary, epochs=10, batch_size=10, callbacks=[cp_callback])
+        '''
+        dataForTraining,classesData = generateBatchForTraining(foldGallery,foldGalleryClasses - 1,466)
+    
+        for d in range(len(dataForTraining)):
+            y_binary = to_categorical(np.array(classesData[d]) - 1,num_classes=466)
+            td = np.array(dataForTraining[d])
+            model.fit(td,y_binary,epochs=10,batch_size=32,callbacks = [cp_callback])
+        '''
+        '''
+    
+        y_binary = to_categorical(np.array(foldProbeClasses) -1,num_classes=224)
+        foldProbe = np.array(generateImageData(foldProbe))
+        a, acc = model.evaluate(foldProbe,y_binary)
+        print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
+    
+        print('\n======================\n')
+        for i in range(1,6):
+            model.load_weights('training/face_alexnet-000'+str(i)+'.ckpt')
+            a, acc = model.evaluate(np.array(foldProbe),y_binary)
+            print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+    
+        '''
+    elif args.network == 'vggcifar10':
+        from VGGCifar10 import *
+
+        model = base_model()
+
+        model.fit_generator(
+            generateDataFromArray(foldGallery,foldGalleryClasses,500),
+            steps_per_epoch=foldGallery.shape[0],
+            verbose=1,
+            epochs=10,
+            validation_data=(valData,to_categorical(valCasses - 1, num_classes=466)),
+            callbacks=[cp_callback]
+
+        )

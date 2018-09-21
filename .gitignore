@@ -111,3 +111,4 @@ venv.bak/
 dmypy.json
 
 generated_images_lbp_frgc
+pretrained_models/

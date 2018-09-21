@@ -166,6 +166,11 @@ if __name__ == '__main__':
 
         model = base_model(numClasses=args.classNumber)
 
+    elif args.network == 'vgg16':
+        from vgg16 import *
+
+        model = base_model(100,100,4,args.classNumber)
+
     model.fit_generator(
         generateDataFromArray(foldGallery,foldGalleryClasses, args.batch,args.classNumber),
         steps_per_epoch=int(foldGallery.shape[0] / (args.batch*0.1)),

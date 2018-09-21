@@ -104,6 +104,9 @@ class BiometricProcessing:
     def doFeatureExtraction(self, parameters, verbrose=True):
         return self.localcall(parameters)
 
+    def localcall(self, parameters):
+        pass
+
 def unwrap_self_f(arg, **kwarg):
     return BiometricProcessing.applyPreProcessing(*arg, **kwarg)
 

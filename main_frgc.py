@@ -27,6 +27,7 @@ if __name__ == '__main__':
     gallery.feedTemplates()
 
     tdlbp = ThreeDLBP(8,14,[gallery])
+    tdlbp.fullPathGallFile = '/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc'
     if not args.steps is None:
         ppSteps = args.steps.split('_')
         for p in ppSteps:

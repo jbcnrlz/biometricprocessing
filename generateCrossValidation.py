@@ -1,7 +1,6 @@
 import os, shutil, random, numpy as np, tensorflow as tf, math, argparse
 from helper.functions import getFilesInPath
 from PIL import Image as im
-from networks.alexnet import *
 from keras.models import Model
 from keras.utils import to_categorical
 
@@ -51,7 +50,7 @@ def write_label_file(labels_to_class_names, dataset_dir,filename):
             class_name = labels_to_class_names[label]
             f.write('%d:%s\n' % (label, class_name))
 
-def generateDataFromArray(arrayData,Classes,batchSize):
+def generateDataFromArray(arrayData,Classes,batchSize,classesQtd):
     dataReturn = np.zeros((batchSize, arrayData.shape[1], arrayData.shape[2], arrayData.shape[3]))
     classReturn = np.zeros(batchSize)
     currIdx = 0
@@ -60,7 +59,7 @@ def generateDataFromArray(arrayData,Classes,batchSize):
             dataReturn[currIdx] = arrayData[i]
             classReturn[currIdx] = Classes[i]
             if currIdx == batchSize - 1:
-                yield (dataReturn,to_categorical(classReturn - 1, num_classes=466))
+                yield (dataReturn,to_categorical(classReturn - 1, num_classes=classesQtd))
                 currIdx = 0
             else:
                 currIdx += 1
@@ -77,7 +76,7 @@ def separateBetweenValandTrain(data,classes,percVal=0.2):
             returnValidationClasses.append(classes[i])
             returnValidationData.append(data[i])
         else:
-            returnTrainData.append(classes[i])
+            returnTrainData.append(data[i])
             returnTrainClasses.append(classes[i])
 
     return np.array(returnTrainData), np.array(returnTrainClasses), np.array(returnValidationData), np.array(returnValidationClasses)
@@ -86,6 +85,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Deep Models')
     parser.add_argument('-n', '--network', help='Name for the model', required=True)
     parser.add_argument('-p', '--pathBase',default='generated_images_lbp_frgc',help='Path for faces', required=False)
+    parser.add_argument('-b', '--batch', type=int, default=500, help='Size of the batch', required=False)
+    parser.add_argument('-c', '--classNumber', type=int, default=466, help='Quantity of classes', required=False)
     args = parser.parse_args()
 
     imageData, classesData = generateData(args.pathBase)
@@ -109,12 +110,10 @@ if __name__ == '__main__':
     foldGallery = generateImageData(gBase + foldGallery)
     foldGalleryClasses = np.array(cgBase + foldGalleryClasses)
 
-    checkpoint_path = "training/face_alexnet-{epoch:04d}.ckpt"
+    checkpoint_path = "training/face_"+args.network+"-{epoch:04d}.ckpt"
 
-    if os.path.exists('training'):
-        shutil.rmtree('training')
-
-    os.makedirs('training')
+    if not os.path.exists('training'):
+        os.makedirs('training')
 
     cp_callback = tf.keras.callbacks.ModelCheckpoint(
         checkpoint_path, verbose=1, save_weights_only=True,
@@ -123,10 +122,13 @@ if __name__ == '__main__':
 
     foldGallery, foldGalleryClasses, valData, valCasses = separateBetweenValandTrain(foldGallery, foldGalleryClasses)
 
+    foldGallery = foldGallery / 255
+    valData = valData / 255
+    model = None
     if args.network == 'alexnet':
         from AlexNet import *
 
-        x, img_input, CONCAT_AXIS, INP_SHAPE, DIM_ORDERING = create_model()
+        x, img_input, CONCAT_AXIS, INP_SHAPE, DIM_ORDERING = create_model(numClasses=args.classNumber)
 
         # Create a Keras Model - Functional API
         model = Model(inputs=img_input,outputs=x)
@@ -134,16 +136,6 @@ if __name__ == '__main__':
         model.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy',
                     metrics=['accuracy'])
-
-        model.fit_generator(
-            generateDataFromArray(foldGallery,foldGalleryClasses,500),
-            steps_per_epoch=foldGallery.shape[0],
-            verbose=1,
-            epochs=10,
-            validation_data=(valData,to_categorical(valCasses - 1, num_classes=466)),
-            callbacks=[cp_callback]
-
-        )
 
         #y_binary = to_categorical(foldGalleryClasses - 1, num_classes=466)
         #model.fit(foldGallery, y_binary, epochs=10, batch_size=10, callbacks=[cp_callback])
@@ -172,14 +164,14 @@ if __name__ == '__main__':
     elif args.network == 'vggcifar10':
         from VGGCifar10 import *
 
-        model = base_model()
+        model = base_model(numClasses=args.classNumber)
 
-        model.fit_generator(
-            generateDataFromArray(foldGallery,foldGalleryClasses,500),
-            steps_per_epoch=foldGallery.shape[0],
-            verbose=1,
-            epochs=10,
-            validation_data=(valData,to_categorical(valCasses - 1, num_classes=466)),
-            callbacks=[cp_callback]
+    model.fit_generator(
+        generateDataFromArray(foldGallery,foldGalleryClasses, args.batch,args.classNumber),
+        steps_per_epoch=int(foldGallery.shape[0] / (args.batch*0.1)),
+        verbose=1,
+        epochs=10,
+        validation_data=(valData,to_categorical(valCasses - 1, num_classes=args.classNumber)),
+        callbacks=[cp_callback]
 
-        )
+    )

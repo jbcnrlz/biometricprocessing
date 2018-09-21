@@ -23,13 +23,10 @@
 from keras.layers import Conv2D, MaxPooling2D, ZeroPadding2D
 from keras.layers import Flatten, Dense, Dropout
 from keras.layers import Input
-from tensorflow.keras.models import Model
 from keras import regularizers
-#from keras.utils.visualize_util import plot
 from KerasLayers.Custom_layers import LRN2D
 
 # global constants
-NB_CLASS = 466         # number of classes
 LEARNING_RATE = 0.01
 MOMENTUM = 0.9
 ALPHA = 0.0001
@@ -81,7 +78,7 @@ def conv2D_lrn2d(x, nb_filter, nb_row, nb_col,
     return x
 
 
-def create_model(imShape=(100,100),channels=4):
+def create_model(imShape=(100,100),channels=4,numClasses=466):
     # Define image input layer
     if DIM_ORDERING == 'th':
         INP_SHAPE = (channels, imShape[0], imShape[1])  # 3 - Number of RGB Colours
@@ -132,7 +129,7 @@ def create_model(imShape=(100,100),channels=4):
     x = Dropout(DROPOUT)(x)
 
     # Final Channel - Cov Net 9
-    x = Dense(NB_CLASS,activation='softmax')(x)
+    x = Dense(numClasses,activation='softmax')(x)
 
     return x, img_input, CONCAT_AXIS, INP_SHAPE, DIM_ORDERING
 

@@ -61,11 +61,11 @@ class EurecomTemplate(Template):
         filesPath = self.rawRepr.split('/')
         fileName = filesPath[-1].split('.')
         fileName = fileName[0].split('_')
-        if typeTemplate == 'Depth':
+        if typeTemplate.lower() == 'depth':
             filesPath = os.path.join('/'.join(filesPath[:-3]),'Mark','MarkRGB','rgb_'+fileName[1]+'_'+filesPath[:-3][len(filesPath) - 4]+'_'+fileName[3]+'_Points.txt')
-        elif typeTemplate == '3DObj':
+        elif typeTemplate.lower() == '3dobj':
             filesPath = os.path.join('/'.join(filesPath[:-3]),'Mark','Mark3DObj','depth_'+fileName[1]+'_'+filesPath[:-3][len(filesPath) - 4]+'_'+fileName[3]+'_Points_OBJ.txt')
-        elif typeTemplate == 'newdepth':
+        elif typeTemplate.lower() == 'newdepth':
             filesPath = os.path.join('/'.join(filesPath[:-3]),'Mark','MarkRGB','rgb_'+fileName[1]+'_'+filesPath[:-3][len(filesPath) - 4]+'_'+fileName[3]+'_Points_newdepth.txt')
         self.faceMarks = []        
         if (os.path.exists(filesPath)):

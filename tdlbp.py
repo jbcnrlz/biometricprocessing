@@ -158,7 +158,7 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self,points,radius,paralelCalling=False):
+    def featureExtraction(self,points=None,radius=None,paralelCalling=False):
         if paralelCalling:
             poolCalling = Pool()
             for database in self.databases:
@@ -171,7 +171,6 @@ class ThreeDLBP(BiometricProcessing):
                 for template in database.templates:
                     dataForParCal = {'points': points, 'radius': radius, 'template': template}
                     self.doFeatureExtraction(dataForParCal)
-
 
     def localcall(self,parameters):
         print("Iniciando feature extraction")
@@ -197,4 +196,4 @@ class ThreeDLBP(BiometricProcessing):
                 fullImageDescriptor += generateHistogram(desc[0], self.binsize) + generateHistogram(desc[1],self.binsize) + generateHistogram(desc[2], self.binsize) + generateHistogram(desc[3], self.binsize)
         template.features = fullImageDescriptor
         saving = template.saveImageTraining(False,self.fullPathGallFile)
-        return saving , fullImageDescriptor
+        return saving, fullImageDescriptor

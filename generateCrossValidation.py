@@ -1,4 +1,4 @@
-import os, shutil, random, numpy as np, tensorflow as tf, math, argparse
+import os, random, numpy as np, tensorflow as tf, math, argparse
 from helper.functions import getFilesInPath
 from PIL import Image as im
 from keras.models import Model
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     valData = valData / 255
     model = None
     if args.network == 'alexnet':
-        from AlexNet import *
+        from networks.AlexNet import *
 
         x, img_input, CONCAT_AXIS, INP_SHAPE, DIM_ORDERING = create_model(numClasses=args.classNumber)
 
@@ -165,20 +165,20 @@ if __name__ == '__main__':
     
         '''
     elif args.network == 'vggcifar10':
-        from VGGCifar10 import *
+        from networks.VGGCifar10 import *
 
         model = base_model(numClasses=args.classNumber)
 
     elif args.network == 'vgg16':
-        from vgg16 import *
+        from networks.vgg16 import *
 
         model = base_model(foldGallery.shape[1],foldGallery.shape[2],1,args.classNumber)
         np.rollaxis(foldGallery,3,1)
 
     elif args.network == 'vggface':
-        from vggface import *
+        from networks.vggface import *
 
-        model = base_model(imShape=(foldGallery.shape[1],foldGallery.shape[2]),numClasses=args.classNumber)
+        model = base_model(weights=None,input_shape=(100,100,4))
 
 
     model.fit_generator(

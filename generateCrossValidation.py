@@ -178,14 +178,18 @@ if __name__ == '__main__':
     elif args.network == 'vggface':
         from networks.vggface import *
 
-        model = base_model(weights=None,input_shape=(100,100,4))
+        model = base_model(weights=None,input_shape=(224,224,4),classes=args.classNumber)
+
+        model.compile(optimizer='rmsprop',
+                      loss='categorical_crossentropy',
+                    metrics=['accuracy'])
 
 
     model.fit_generator(
         generateDataFromArray(foldGallery,foldGalleryClasses, args.batch,args.classNumber),
         steps_per_epoch=int(foldGallery.shape[0] / (args.batch*0.1)),
         verbose=1,
-        epochs=10,
+        epochs=args.epochs,
         validation_data=(valData,to_categorical(valCasses - 1, num_classes=args.classNumber)),
         callbacks=[cp_callback]
 
@@ -198,7 +202,7 @@ if __name__ == '__main__':
         print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
 
         print('\n======================\n')
-        for i in range(1, 10):
+        for i in range(1, args.epochs):
             model.load_weights('training/face_alexnet-000' + str(i) + '.ckpt')
             a, acc = model.evaluate(np.array(foldProbe), y_binary)
             print("Restored model, accuracy: {:5.2f}%".format(100 * acc))

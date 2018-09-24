@@ -5,7 +5,7 @@
 - [VGGFace2: A dataset for recognising faces across pose and age](http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/vggface2.pdf)
 
 '''
-from resnet50 import *
+from networks.resnet50 import *
 
 
 def base_model(include_top=True, weights='vggface',input_tensor=None, input_shape=None,pooling=None,classes=None):

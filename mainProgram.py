@@ -10,19 +10,12 @@ from FixWithAveragedModel import *
 from FixPaperOcclusion import *
 from RotateFace import *
 #from helper.lmdbGeneration import load_data_into_lmdb
-import scipy.ndimage as ndimage, logging, sys
+import logging, sys, argparse
 #import caffe
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='tdlbp_program_exe.log',
-        filemode='a',
-        format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-        datefmt='%H:%M:%S',
-        level=logging.DEBUG)
 
-    logging.info("Testando 3DLBP")
-
-    gallery = EurecomKinect('/home/joaocardia/Dropbox/Mestrado CC/EURECOM_Kinect_Face_Dataset/EURECOM_Kinect_Face_Dataset','s1','Depth',['LightOn','Neutral','OcclusionMouth','Smile','OcclusionEyes','OpenMouth','OcclusionPaper'])
+    gallery = EurecomKinect('/home/joaocardia/PycharmProjects/EURECOM_Kinect_Face_Dataset','s1','Depth',['LightOn','Neutral','Smile','OpenMouth'])
     #gallery = EurecomKinect('/home/joaocardia/Dropbox/Mestrado CC/EURECOM_Kinect_Face_Dataset/EURECOM_Kinect_Face_Dataset','s1','Depth',['OcclusionPaper'])
     gallery.feedTemplates()
 
@@ -33,7 +26,7 @@ if __name__ == '__main__':
     #gallery.loadTemplateImage()
     #gallery.generateAverageFaceModel()
 
-    probe = EurecomKinect('/home/joaocardia/Dropbox/Mestrado CC/EURECOM_Kinect_Face_Dataset/EURECOM_Kinect_Face_Dataset','s2','Depth',['LightOn','Neutral','OcclusionMouth','Smile','OcclusionEyes','OpenMouth','OcclusionPaper'])
+    probe = EurecomKinect('/home/joaocardia/PycharmProjects/EURECOM_Kinect_Face_Dataset','s2','Depth',['LightOn','Neutral','Smile','OpenMouth'])
     #probe = EurecomKinect('/home/joaocardia/Dropbox/Mestrado CC/EURECOM_Kinect_Face_Dataset/EURECOM_Kinect_Face_Dataset','s2','Depth',['OcclusionPaper'])
     probe.feedTemplates()
 
@@ -59,13 +52,14 @@ if __name__ == '__main__':
     #gallery.saveTemplateImage()
     #probe.saveTemplateImage()    
 
+    tdlbp.fullPathGallFile = '/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_eurecom'
     tdlbp.featureExtraction()
     
     #resultados = tdlbp.matcher()
     
     #print(resultados)
     
-    galleryData = probe.generateDatabaseFile('/home/jbcnrlz/Dropbox/pesquisas/BiometricProcessing/generated_images_lbp',{'Neutral' : ['s1','s2']},[],'generateCharsClasses')
+    #galleryData = probe.generateDatabaseFile('/home/jbcnrlz/Dropbox/pesquisas/BiometricProcessing/generated_images_lbp',{'Neutral' : ['s1','s2']},[],'generateCharsClasses')
     #galeryData = gallery.generateDatabaseFile('/home/joaocardia/Dropbox/pesquisas/classificador/SVMTorch_linux/test_data/gallery_3dlbp_pr16X1.txt',{
     #    'LightOn' : ['s1','s2'],
     #    'Smile' : ['s1','s2'],

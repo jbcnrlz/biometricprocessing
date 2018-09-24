@@ -175,6 +175,12 @@ if __name__ == '__main__':
         model = base_model(foldGallery.shape[1],foldGallery.shape[2],1,args.classNumber)
         np.rollaxis(foldGallery,3,1)
 
+    elif args.network == 'vggface':
+        from vggface import *
+
+        model = base_model(imShape=(foldGallery.shape[1],foldGallery.shape[2]),numClasses=args.classNumber)
+
+
     model.fit_generator(
         generateDataFromArray(foldGallery,foldGalleryClasses, args.batch,args.classNumber),
         steps_per_epoch=int(foldGallery.shape[0] / (args.batch*0.1)),

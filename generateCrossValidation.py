@@ -17,11 +17,12 @@ def generateData(pathFiles):
 
     return returnDataImages, returnDataClass
 
-def generateImageData(paths):
+def generateImageData(paths,resize=None):
     returningPaths = []
     for p in paths:
         ni = im.open(p)
-        #ni = ni.resize((224,224),im.ANTIALIAS)
+        if not resize is None:
+            ni = ni.resize(resize,im.ANTIALIAS)
         returningPaths.append(np.array(ni))
     return np.array(returningPaths)
 
@@ -87,6 +88,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--pathBase',default='generated_images_lbp_frgc',help='Path for faces', required=False)
     parser.add_argument('-b', '--batch', type=int, default=500, help='Size of the batch', required=False)
     parser.add_argument('-c', '--classNumber', type=int, default=466, help='Quantity of classes', required=False)
+    parser.add_argument('-t', '--runOnTest', type=bool, default=False, help='Run on test data', required=False)
+    parser.add_argument('-e', '--epochs', type=int, default=10, help='Epochs to be run', required=False)
     args = parser.parse_args()
 
     imageData, classesData = generateData(args.pathBase)
@@ -169,7 +172,8 @@ if __name__ == '__main__':
     elif args.network == 'vgg16':
         from vgg16 import *
 
-        model = base_model(100,100,4,args.classNumber)
+        model = base_model(foldGallery.shape[1],foldGallery.shape[2],1,args.classNumber)
+        np.rollaxis(foldGallery,3,1)
 
     model.fit_generator(
         generateDataFromArray(foldGallery,foldGalleryClasses, args.batch,args.classNumber),
@@ -180,3 +184,15 @@ if __name__ == '__main__':
         callbacks=[cp_callback]
 
     )
+
+    if args.runOnTest:
+        y_binary = to_categorical(np.array(foldProbeClasses) - 1, num_classes=args.classNumber)
+        foldProbe = np.array(generateImageData(foldProbe))
+        a, acc = model.evaluate(foldProbe, y_binary)
+        print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
+
+        print('\n======================\n')
+        for i in range(1, 10):
+            model.load_weights('training/face_alexnet-000' + str(i) + '.ckpt')
+            a, acc = model.evaluate(np.array(foldProbe), y_binary)
+            print("Restored model, accuracy: {:5.2f}%".format(100 * acc))

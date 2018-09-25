@@ -176,9 +176,9 @@ if __name__ == '__main__':
         np.rollaxis(foldGallery,3,1)
 
     elif args.network == 'vggface':
-        from networks.vggface import *
+        from networks.otherVGGFace import *
 
-        model = base_model(weights=None,input_shape=(224,224,4),classes=args.classNumber)
+        model = base_model(input_shape=(100,100,4),classes=args.classNumber)
 
         model.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy',

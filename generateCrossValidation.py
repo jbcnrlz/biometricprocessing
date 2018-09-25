@@ -178,7 +178,7 @@ if __name__ == '__main__':
     elif args.network == 'vggface':
         from networks.otherVGGFace import *
 
-        model = base_model(input_shape=(100,100,4),classes=args.classNumber)
+        model = base_model((100,100,4),args.classNumber)
 
         model.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy',

@@ -1,10 +1,6 @@
-import sys, argparse
+import argparse
 from FRGC import *
 from tdlbp import *
-#from CenterFace import *
-#from SymmetricFilling import *
-#from GenerateNewDepthMapsRFRGC import *
-#from RotateFaceLFW import *
 
 if __name__ == '__main__':
 
@@ -17,7 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('-ap', '--points',type=int,default=None,help='Quantity of points',required=False)
     parser.add_argument('-r', '--radius',type=int,default=None, help='Quantity of points', required=False)
     parser.add_argument('-s', '--steps', default=None, help='Pre-Processing steps, class names separated with _ parameters starts wth : and separated with ,', required=False)
-
+    parser.add_argument('-gImg', '--pathImages', default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc', help='Path for image signature', required=False)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -27,7 +23,7 @@ if __name__ == '__main__':
     gallery.feedTemplates()
 
     tdlbp = ThreeDLBP(8,14,[gallery])
-    tdlbp.fullPathGallFile = '/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc'
+    tdlbp.fullPathGallFile = args.pathImages
     if not args.steps is None:
         ppSteps = args.steps.split('_')
         for p in ppSteps:
@@ -52,13 +48,6 @@ if __name__ == '__main__':
                 tdlbp.preProcessingSteps = class_()
             else:
                 tdlbp.preProcessingSteps = class_(**kwargsList)
-
-    '''            
-    tdlbp.preProcessingSteps = CenterFace()
-    tdlbp.preProcessingSteps = SymmetricFilling(regenerate=False)
-    tdlbp.preProcessingSteps = RotateFaceLFW()
-    tdlbp.preProcessingSteps = GenerateNewDepthMapsRFRGC()
-    '''
 
     if args.operation in ['both','pp']:
         tdlbp.preProcessing(True,args.parcal)

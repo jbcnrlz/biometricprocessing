@@ -1,64 +1,82 @@
 from Eurecom import *
 from tdlbp import *
-from FixPose import *
 from SegmentFace import *
-from SymmetricFilling import *
 from TranslateFix import *
-from GenerateNewDepthMaps import *
-from NormalizaImageDepth import *
 from FixWithAveragedModel import *
 from FixPaperOcclusion import *
 from RotateFace import *
-#from helper.lmdbGeneration import load_data_into_lmdb
-import logging, sys, argparse
-#import caffe
+import argparse
 
 if __name__ == '__main__':
 
-    gallery = EurecomKinect('/home/joaocardia/PycharmProjects/EURECOM_Kinect_Face_Dataset','s1','Depth',['LightOn','Neutral','Smile','OpenMouth'])
-    #gallery = EurecomKinect('/home/joaocardia/Dropbox/Mestrado CC/EURECOM_Kinect_Face_Dataset/EURECOM_Kinect_Face_Dataset','s1','Depth',['OcclusionPaper'])
-    gallery.feedTemplates()
+    parser = argparse.ArgumentParser(description='Process and extract FRGC database')
+    parser.add_argument('-p','--pathdatabase',help='Path for the database',required=True)
+    parser.add_argument('-t', '--typeoffile',choices=['Depth', 'NewDepth', 'Range'], help='Type of files (Depth, NewDepth, Range)', required=True)
+    parser.add_argument('-op', '--operation',choices=['pp', 'fe', 'both'], default='both', help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
+    parser.add_argument('-f', '--pathtrainingfile', default=None,help='Path for the training file', required=False)
+    parser.add_argument('-c', '--parcal', default=False,type=bool, help='Should execute in parallell mode?', required=False)
+    parser.add_argument('-ap', '--points',type=int,default=None,help='Quantity of points',required=False)
+    parser.add_argument('-r', '--radius',type=int,default=None, help='Quantity of points', required=False)
+    parser.add_argument('-s', '--steps', default=None, help='Pre-Processing steps, class names separated with _ parameters starts wth : and separated with ,', required=False)
+    parser.add_argument('-gImg', '--pathImages', default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc', help='Path for image signature', required=False)
+    parser.add_argument('-v', '--faceVariation',default='Neutral',help='Type of face, separated by _', required=False)
+    parser.add_argument('--angles', default=None, help='Angles of face to load',required=False)
+    parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
+    args = parser.parse_args()
 
-    gallery.loadNewDepthImage()
-    #gallery.loadRotatedFaces([10,20,30,-10,-20,-30]) #,,,50,-50
+    faceDataset = []
+    sets = ['s1','s2']
+    for s in sets:
+        ek = EurecomKinect(args.pathdatabase,s,args.typeoffile,args.faceVariation.split('_'))
+        ek.feedTemplates()
 
-    #gallery.noiseImageGenerate()
-    #gallery.loadTemplateImage()
-    #gallery.generateAverageFaceModel()
+        if args.loadNewDepth:
+            ek.loadNewDepthImage()
 
-    probe = EurecomKinect('/home/joaocardia/PycharmProjects/EURECOM_Kinect_Face_Dataset','s2','Depth',['LightOn','Neutral','Smile','OpenMouth'])
-    #probe = EurecomKinect('/home/joaocardia/Dropbox/Mestrado CC/EURECOM_Kinect_Face_Dataset/EURECOM_Kinect_Face_Dataset','s2','Depth',['OcclusionPaper'])
-    probe.feedTemplates()
+        if args.angles:
+            ek.loadRotatedFaces(args.angles.split('_'))
 
-    probe.loadNewDepthImage()
-    #probe.loadRotatedFaces([10,20,30,-10,-20,-30])#,40,-40,70,-70,80,-80,90,-90,50,-50
-    
-    #probe.noiseImageGenerate()
-    #probe.loadTemplateImage()
-    #probe.fixingProbe()
+        faceDataset.append(ek)
 
-    tdlbp = ThreeDLBP(8,14,[probe,gallery])
-    tdlbp.preProcessingSteps = SegmentFace()
-    tdlbp.preProcessingSteps = TranslateFix()
-    tdlbp.preProcessingSteps = SymmetricFilling()    
-    tdlbp.preProcessingSteps = FixPaperOcclusion()
-    tdlbp.preProcessingSteps = RotateFace()
-    tdlbp.preProcessingSteps = GenerateNewDepthMaps()
+    tdlbp = ThreeDLBP(8,14,faceDataset)
+    tdlbp.fullPathGallFile = args.pathImages
 
-    #tdlbp.preProcessingSteps = NormalizaImageDepth()    
+    if not args.steps is None:
+        ppSteps = args.steps.split('_')
+        for p in ppSteps:
+            className = None
+            parameters = None
+            kwargsList = None
+            if ':' in p:
+                parameters = p.split(':')
+                className = parameters[0]
+                parameters = parameters[1].split(',')
+                kwargsList = {}
+                for pr in parameters:
+                    lParameters = pr.split('=')
+                    kwargsList[lParameters[0]] = eval(lParameters[1])
 
-    #tdlbp.preProcessing(True)
+            else:
+                className = p
 
-    #gallery.saveTemplateImage()
-    #probe.saveTemplateImage()    
+            module = __import__(className)
+            class_ = getattr(module,className)
+            if kwargsList is None:
+                tdlbp.preProcessingSteps = class_()
+            else:
+                tdlbp.preProcessingSteps = class_(**kwargsList)
 
-    tdlbp.fullPathGallFile = '/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_eurecom'
-    tdlbp.featureExtraction()
-    
-    #resultados = tdlbp.matcher()
-    
-    #print(resultados)
-    
+    if args.operation in ['both','pp']:
+        tdlbp.preProcessing(True,args.parcal)
+
+    if args.operation in ['both', 'fe']:
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal)
+
+    if not args.pathtrainingfile is None:
+        faceVariationGenerate = { k : ['s1','s2'] for k in args.faceVariation.split('_') }
+        galeryData = faceDataset[0].generateDatabaseFile(args.pathtrainingfile,faceVariationGenerate,[faceDataset[1]],'SVMTorchFormat')
+
+
     #galleryData = probe.generateDatabaseFile('/home/jbcnrlz/Dropbox/pesquisas/BiometricProcessing/generated_images_lbp',{'Neutral' : ['s1','s2']},[],'generateCharsClasses')
     #galeryData = gallery.generateDatabaseFile('/home/joaocardia/Dropbox/pesquisas/classificador/SVMTorch_linux/test_data/gallery_3dlbp_pr16X1.txt',{
     #    'LightOn' : ['s1','s2'],

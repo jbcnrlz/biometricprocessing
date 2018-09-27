@@ -172,7 +172,7 @@ class ThreeDLBP(BiometricProcessing):
             for database in self.databases:
                 for template in database.templates:
                     dataForParCal = {'points': points, 'radius': radius, 'template': template}
-                    self.doFeatureExtraction(dataForParCal)
+                    a, template.features = self.doFeatureExtraction(dataForParCal)
 
 
     def localcall(self,parameters):

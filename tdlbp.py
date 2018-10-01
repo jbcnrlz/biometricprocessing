@@ -3,6 +3,7 @@ from scipy.special import expit
 from FRGCTemplate import *
 from LFWTemplate import *
 from baseClasses.BiometricProcessing import *
+from scipy.interpolate import interp2d
 from helper.functions import generateHistogram, bilinear_interpolation, mergeArraysDiff, printProgressBar
 
 
@@ -61,15 +62,35 @@ class ThreeDLBP(BiometricProcessing):
     Gera indices quando usando P e R no 3DLBP ao inves da vizinhanca fixa de 3x3
     '''
 
-    def generateIndexes(self, R, P, p):
-        x = round(-R * np.sin((2 * np.pi * p) / P) + 1, 5)
-        y = round(R * np.cos((2 * np.pi * p) / P) + 1, 5)
-        return (x, y)
+    def generateImagePoints(self, image, centerIndex):
+        pointsImage = []
+        for x in range(image.shape[0]):
+            for y in range(image.shape[1]):
+                pointsImage.append([y-centerIndex[1],(x*-1)+centerIndex[0],image[x,y]])
+        return np.array(pointsImage)
+
+    def getByPosition(self,x,y,image):
+        for i in image:
+            if i[0] == x and i[1] == y:
+                return i
+
+        else:
+            return None
+
+    def get_pixel2d(self,image,rows,cols,r,c,cval):
+        if (r<0) or (r>=rows) or (c<0) or (c >= cols):
+            return cval
+        else:
+            return image[r][c]
 
     def generateCodePR(self, image, center, P, R, type='Normal'):
-        idxs = []
-        for p in range(P):
-            idxs.append(self.generateIndexes(R, P, p))
+        image = np.ascontiguousarray(image, dtype=np.double)
+        xPositions = np.round(- R * np.sin(2 * np.pi * np.arange(P, dtype=np.double) / P),5) + center[0]
+        yPositions = np.round(R * np.cos(2 * np.pi * np.arange(P, dtype=np.double) / P),5) + center[1]
+        idxs = np.array([x for x in zip(xPositions,yPositions)])
+        idxs = idxs[-3:].tolist() + idxs[0:-3].tolist()
+
+        #currImage = self.generateImagePoints(image,(R,R))
 
         layers = [[], [], [], []]
         for i in idxs:
@@ -77,19 +98,27 @@ class ThreeDLBP(BiometricProcessing):
             if (not i[0].is_integer() or not i[1].is_integer()):
                 xidxs = [math.floor(i[0]), math.ceil(i[0])]
                 yidxs = [math.floor(i[1]), math.ceil(i[1])]
-                imageDataBil = [
+                '''
+                imageDataBil = np.array([
                     (xidxs[0], yidxs[0], image[xidxs[0]][yidxs[0]]),
                     (xidxs[0], yidxs[1], image[xidxs[0]][yidxs[1]]),
                     (xidxs[1], yidxs[0], image[xidxs[1]][yidxs[0]]),
-                    (xidxs[1], yidxs[1], image[xidxs[1]][yidxs[1]]),
-                ]
-                # subraction = int(round(bilinear_interpolation(i[0],i[1],imageDataBil)) - image[center[0]][center[1]])
-                subraction = bilinear_interpolation(i[0], i[1], imageDataBil) - image[center[0]][center[1]]
+                    (xidxs[1], yidxs[1], image[xidxs[1]][yidxs[1]])
+                ])
+                nFunc = interp2d(imageDataBil[:,0],imageDataBil[:,1],imageDataBil[:,2])
+                nv = nFunc(i[0], i[1])[0]
+                '''
+                dr = i[0] - xidxs[0]
+                dc = i[1] - yidxs[0]
+                top = (1 - dc) * self.get_pixel2d(image,image.shape[0]-1,image.shape[1]-1,xidxs[0],yidxs[0],0) + dc * self.get_pixel2d(image,image.shape[0],image.shape[1],xidxs[0],yidxs[1],0)
+                bottom = (1 - dc) * self.get_pixel2d(image, image.shape[0]-1, image.shape[1]-1, xidxs[1], yidxs[0],0) + dc * self.get_pixel2d(image, image.shape[0], image.shape[1],xidxs[1], yidxs[1], 0)
+                nv = (1 - dr) * top + dr * bottom
+                subraction = nv - image[center[0]][center[1]]
             else:
                 subraction = image[int(i[0])][int(i[1])] - image[center[0]][center[1]]
 
             if type == 'Normal':
-                subraction = int(round(subraction))
+                #subraction = int(round(subraction))
 
                 # self.saveDebug('debug_subs',subraction)
 
@@ -101,8 +130,9 @@ class ThreeDLBP(BiometricProcessing):
                 subraction = np.histogram(expit(subraction), bins=7, range=[0, 1])[0]
                 subraction = np.argwhere(subraction == 1)[0][0]
 
-            bin = '{0:03b}'.format(abs(subraction))
             layers[0].append(str(int(subraction >= 0)))
+
+            bin = '{0:03b}'.format(abs(int(round(subraction))))
             layers[1].append(bin[0])
             layers[2].append(bin[1])
             layers[3].append(bin[2])
@@ -160,18 +190,18 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self, points=None, radius=None, paralelCalling=False):
+    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4]):
         if paralelCalling:
             poolCalling = Pool()
             for database in self.databases:
-                dataForParCal = [{'template': t, 'points': points, 'radius': radius} for t in database.templates]
+                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize} for t in database.templates]
                 responses = poolCalling.map(unwrap_self_f_feature, zip([self] * len(dataForParCal), dataForParCal))
                 for i in range(len(responses)):
                     database.templates[i].features = responses[i][1]
         else:
             for database in self.databases:
                 for template in database.templates:
-                    dataForParCal = {'points': points, 'radius': radius, 'template': template}
+                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize}
                     a, template.features = self.doFeatureExtraction(dataForParCal)
 
 
@@ -204,8 +234,8 @@ class ThreeDLBP(BiometricProcessing):
                         for wpz in range(windowPiece.shape[2]):
                             reshapedWindow[wpz].append(windowPiece[wpx,wpy,wpz])
 
-                for wpx in reshapedWindow:
-                    fullImageDescriptor += generateHistogram(wpx, self.binsize)
+                for idxLayer in parameters['layersUtilize']:
+                    fullImageDescriptor += generateHistogram(reshapedWindow[idxLayer-1], self.binsize)
 
         return saving, fullImageDescriptor
 

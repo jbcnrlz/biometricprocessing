@@ -70,7 +70,7 @@ if __name__ == '__main__':
         tdlbp.preProcessing(True,args.parcal)
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4])
 
     if not args.pathtrainingfile is None:
         faceVariationGenerate = { k : ['s1','s2'] for k in args.faceVariation.split('_') }

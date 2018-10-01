@@ -3,6 +3,7 @@ from helper.functions import getFilesInPath
 from PIL import Image as im
 from keras.models import Model
 from keras.utils import to_categorical
+from networks.center_loss import *
 
 def generateData(pathFiles):
     returnDataImages = []
@@ -151,9 +152,10 @@ if __name__ == '__main__':
 
         # Create a Keras Model - Functional API
         model = Model(inputs=img_input,outputs=x)
+        center_loss = get_center_loss(0.5, args.classNumber)
 
         model.compile(optimizer='rmsprop',
-                      loss='categorical_crossentropy',
+                      loss=center_loss,
                     metrics=['accuracy'])
 
         #y_binary = to_categorical(foldGalleryClasses - 1, num_classes=466)

@@ -60,8 +60,9 @@ def generateDataFromArray(arrayData,Classes,batchSize,classesQtd):
             dataReturn[currIdx] = arrayData[i]
             classReturn[currIdx] = Classes[i]
             if currIdx == batchSize - 1:
-                yield (dataReturn,classReturn)
+                yield (dataReturn,to_categorical(classReturn - 1, num_classes=classesQtd))
                 dataReturn = np.zeros((batchSize, arrayData.shape[1], arrayData.shape[2], arrayData.shape[3]))
+                classReturn = np.zeros(batchSize)
                 currIdx = 0
             else:
                 currIdx += 1

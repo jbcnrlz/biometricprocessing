@@ -84,12 +84,13 @@ def separateBetweenValandTrain(data,classes,percVal=0.2):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Deep Models')
-    parser.add_argument('-n', '--network', help='Name for the model', required=True)
+    parser.add_argument('-n', '--network', default=None, help='Name for the model', required=False)
     parser.add_argument('-p', '--pathBase',default='generated_images_lbp_frgc',help='Path for faces', required=False)
     parser.add_argument('-b', '--batch', type=int, default=500, help='Size of the batch', required=False)
     parser.add_argument('-c', '--classNumber', type=int, default=466, help='Quantity of classes', required=False)
     parser.add_argument('-t', '--runOnTest', type=bool, default=False, help='Run on test data', required=False)
     parser.add_argument('-e', '--epochs', type=int, default=10, help='Epochs to be run', required=False)
+    parser.add_argument('-y', '--h5Path', default=None, help='Path to build h5 files', required=False)
     args = parser.parse_args()
 
     imageData, classesData = generateData(args.pathBase)
@@ -113,7 +114,7 @@ if __name__ == '__main__':
     foldGallery = generateImageData(gBase + foldGallery)
     foldGalleryClasses = np.array(cgBase + foldGalleryClasses)
 
-    checkpoint_path = "training/face_"+args.network+"-{epoch:04d}.ckpt"
+    checkpoint_path = None if args.network is None else "training/face_"+args.network+"-{epoch:04d}.ckpt"
 
     if not os.path.exists('training'):
         os.makedirs('training')
@@ -123,11 +124,24 @@ if __name__ == '__main__':
         # Save weights, every 5-epochs.
         period=1)
 
+    foldGallery = foldGallery / 255
+
+    if not args.h5Path is None:
+        from helper.lmdbGeneration import h5Format
+
+        foldProbe = generateImageData(foldProbe)
+        foldProbe = foldProbe / 255
+        foldProbeClasses = np.array(foldProbeClasses)
+
+        h5Format(os.path.join(args.h5Path,'train_files.h5'),foldGallery,foldGalleryClasses)
+        h5Format(os.path.join(args.h5Path, 'test_files.h5'), foldProbe, foldProbeClasses)
+
+
     foldGallery, foldGalleryClasses, valData, valCasses = separateBetweenValandTrain(foldGallery, foldGalleryClasses)
 
-    foldGallery = foldGallery / 255
     valData = valData / 255
     model = None
+
     if args.network == 'alexnet':
         from networks.AlexNet import *
 
@@ -178,22 +192,24 @@ if __name__ == '__main__':
     elif args.network == 'vggface':
         from networks.otherVGGFace import *
 
-        model = base_model((100,100,4),args.classNumber)
+        model,img_input = base_model((100,100,4),args.classNumber)
+
+        model = Model(inputs=img_input, outputs=model)
 
         model.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy',
                     metrics=['accuracy'])
 
+    if not args.network is None:
+        model.fit_generator(
+            generateDataFromArray(foldGallery,foldGalleryClasses, args.batch,args.classNumber),
+            steps_per_epoch=int(foldGallery.shape[0] / (args.batch*0.1)),
+            verbose=1,
+            epochs=args.epochs,
+            validation_data=(valData,to_categorical(valCasses - 1, num_classes=args.classNumber)),
+            callbacks=[cp_callback]
 
-    model.fit_generator(
-        generateDataFromArray(foldGallery,foldGalleryClasses, args.batch,args.classNumber),
-        steps_per_epoch=int(foldGallery.shape[0] / (args.batch*0.1)),
-        verbose=1,
-        epochs=args.epochs,
-        validation_data=(valData,to_categorical(valCasses - 1, num_classes=args.classNumber)),
-        callbacks=[cp_callback]
-
-    )
+        )
 
     if args.runOnTest:
         y_binary = to_categorical(np.array(foldProbeClasses) - 1, num_classes=args.classNumber)

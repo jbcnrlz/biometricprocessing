@@ -1,10 +1,5 @@
 from Eurecom import *
 from tdlbp import *
-from SegmentFace import *
-from TranslateFix import *
-from FixWithAveragedModel import *
-from FixPaperOcclusion import *
-from RotateFace import *
 import argparse
 
 if __name__ == '__main__':

@@ -51,22 +51,21 @@ def write_label_file(labels_to_class_names, dataset_dir,filename):
             class_name = labels_to_class_names[label]
             f.write('%d:%s\n' % (label, class_name))
 
-def generateDataFromArray(arrayData,Classes):
-    #dataReturn = np.zeros((batchSize, arrayData.shape[1], arrayData.shape[2], arrayData.shape[3]))
-    #classReturn = np.zeros(batchSize)
-    #currIdx = 0
+def generateDataFromArray(arrayData,Classes,batchSize,classesQtd):
+    dataReturn = np.zeros((batchSize, arrayData.shape[1], arrayData.shape[2], arrayData.shape[3]))
+    classReturn = np.zeros(batchSize)
+    currIdx = 0
     while True:
         for i in range(arrayData.shape[0]):
-            yield (arrayData[i], Classes[i])
-            '''
             dataReturn[currIdx] = arrayData[i]
             classReturn[currIdx] = Classes[i]
             if currIdx == batchSize - 1:
-                yield (dataReturn,to_categorical(classReturn - 1, num_classes=classesQtd))
+                yield (dataReturn,classReturn)
+                dataReturn = np.zeros((batchSize, arrayData.shape[1], arrayData.shape[2], arrayData.shape[3]))
                 currIdx = 0
             else:
                 currIdx += 1
-            '''
+
 def separateBetweenValandTrain(data,classes,percVal=0.2):
     valSize = math.ceil(data.shape[0] * percVal)
     indexesVal = random.sample([i for i in range(data.shape[0])],valSize)
@@ -204,8 +203,8 @@ if __name__ == '__main__':
 
     if not args.network is None:
         model.fit_generator(
-            generateDataFromArray(foldGallery,foldGalleryClasses),
-            steps_per_epoch=int(foldGallery.shape[0] / args.batch),
+            generateDataFromArray(foldGallery,foldGalleryClasses, args.batch,args.classNumber),
+            steps_per_epoch=math.ceil(foldGallery.shape[0] / args.batch),
             verbose=1,
             epochs=args.epochs,
             validation_data=(valData,to_categorical(valCasses - 1, num_classes=args.classNumber)),

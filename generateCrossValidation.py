@@ -152,10 +152,10 @@ if __name__ == '__main__':
 
         # Create a Keras Model - Functional API
         model = Model(inputs=img_input,outputs=x)
-        center_loss = get_center_loss(0.5, args.classNumber)
+        #center_loss = get_center_loss(1, args.classNumber,args.classNumber)
 
         model.compile(optimizer='rmsprop',
-                      loss=center_loss,
+                      loss='mean_squared_logarithmic_error',
                     metrics=['accuracy'])
 
         #y_binary = to_categorical(foldGalleryClasses - 1, num_classes=466)
@@ -222,7 +222,7 @@ if __name__ == '__main__':
         print("Untrained model, accuracy: {:5.2f}%".format(100 * acc))
 
         print('\n======================\n')
-        for i in range(1, args.epochs):
+        for i in range(1, args.epochs+1):
             model.load_weights('training/face_alexnet-000' + str(i) + '.ckpt')
             a, acc = model.evaluate(np.array(foldProbe), y_binary)
             print("Restored model, accuracy: {:5.2f}%".format(100 * acc))

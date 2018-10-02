@@ -1,4 +1,4 @@
-import caffe, lmdb, numpy as np, h5py
+import lmdb, numpy as np, h5py
 
 def load_data_into_lmdb(lmdb_name, features, labels=None):
     env = lmdb.open(lmdb_name, map_size=features.nbytes*2)

@@ -3,7 +3,8 @@ import tensorflow as tf, functools
 
 def _center_loss_func(features, labels, alpha, num_classes,centers, feature_dim):
     assert feature_dim == features.get_shape()[1]
-    labels = K.reshape(labels, [-1])
+    #labels = K.reshape(labels, [-1])
+    labels = tf.argmax(labels, axis=1)
     labels = tf.to_int32(labels)
     centers_batch = tf.gather(centers, labels)
     diff = (1 - alpha) * (centers_batch - features)

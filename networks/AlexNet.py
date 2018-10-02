@@ -115,9 +115,9 @@ def create_model(imShape=(100,100),channels=4,numClasses=466):
     #x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
 
     # Channel 1 - Cov Net Layer 6
-    #x = conv2D_lrn2d(x, 128, 27, 27, subsample=(1, 1), border_mode='same')
-    #x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), data_format='channels_last')(x)
-    #x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
+    x = conv2D_lrn2d(x, 128, 27, 27, subsample=(1, 1), border_mode='same')
+    x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), data_format='channels_last')(x)
+    x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
 
     # Channel 1 - Cov Net Layer 7
     x = Flatten()(x)

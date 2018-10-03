@@ -90,12 +90,24 @@ class ThreeDLBP(BiometricProcessing):
         idxs = np.array([x for x in zip(xPositions,yPositions)])
         idxs = idxs[-3:].tolist() + idxs[0:-3].tolist()
 
+        #currImage = self.generateImagePoints(image,(R,R))
+
         layers = [[], [], [], []]
         for i in idxs:
             subraction = 0
             if (not i[0].is_integer() or not i[1].is_integer()):
                 xidxs = [math.floor(i[0]), math.ceil(i[0])]
                 yidxs = [math.floor(i[1]), math.ceil(i[1])]
+                '''
+                imageDataBil = np.array([
+                    (xidxs[0], yidxs[0], image[xidxs[0]][yidxs[0]]),
+                    (xidxs[0], yidxs[1], image[xidxs[0]][yidxs[1]]),
+                    (xidxs[1], yidxs[0], image[xidxs[1]][yidxs[0]]),
+                    (xidxs[1], yidxs[1], image[xidxs[1]][yidxs[1]])
+                ])
+                nFunc = interp2d(imageDataBil[:,0],imageDataBil[:,1],imageDataBil[:,2])
+                nv = nFunc(i[0], i[1])[0]
+                '''
                 dr = i[0] - xidxs[0]
                 dc = i[1] - yidxs[0]
                 top = (1 - dc) * self.get_pixel2d(image,image.shape[0]-1,image.shape[1]-1,xidxs[0],yidxs[0],0) + dc * self.get_pixel2d(image,image.shape[0],image.shape[1],xidxs[0],yidxs[1],0)
@@ -106,6 +118,10 @@ class ThreeDLBP(BiometricProcessing):
                 subraction = image[int(i[0])][int(i[1])] - image[center[0]][center[1]]
 
             if type == 'Normal':
+                #subraction = int(round(subraction))
+
+                # self.saveDebug('debug_subs',subraction)
+
                 if subraction < -7:
                     subraction = -7
                 elif subraction > 7:
@@ -127,21 +143,15 @@ class ThreeDLBP(BiometricProcessing):
     def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None):
         returnValue = [[], [], [], []]
 
-        for i in range(0, image.shape[0]):
-            for j in range(0, image.shape[1]):
+        for i in range(r, image.shape[0] - r):
+            for j in range(r, image.shape[1] - r):
                 resultCode = None
-                windowExtract = np.zeros((3,3))
-                startinx = 0 if (i-r < 0) else i-r
-                startiny = 0 if (j-r < 0) else j-r
-                endingx = image.shape[0] if (i + (r+1) >= image.shape[0]) else i + (r + 1)
-                endingy = image.shape[1] if (j + (r+1) >= image.shape[1]) else j + (r + 1)
-                windowExtract[int(i == 0):3 - int(i == image.shape[0]-1),int(j == 0):3 - int(j == image.shape[0]-1)] = image[startinx:endingx,startiny:endingy]
                 if typeLBP == 'original':
-                    resultCode = self.generateCode(windowExtract, np.array([1, 1]), typeMeasurement)
+                    resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement)
                 elif typeLBP == 'pr':
-                    resultCode = self.generateCodePR(windowExtract, np.array([r, r]), p,r, typeMeasurement)
+                    resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), p,r, typeMeasurement)
 
-                if template is not None:
+                if not template is None:
                     for chan in range(template.layersChar.shape[2]):
                         template.layersChar[i][j][chan] = resultCode[chan]
 
@@ -214,7 +224,7 @@ class ThreeDLBP(BiometricProcessing):
         offsetx = int(math.ceil(imgCroped.shape[0] / float(self.windowSize)))
         offsety = int(math.ceil(imgCroped.shape[1] / float(self.windowSize)))
         fullImageDescriptor = []
-        imgCroped = template.layersChar
+        imgCroped = template.layersChar[1:99,1:99,:]
         for i in range(0, imgCroped.shape[0], offsetx):
             for j in range(0, imgCroped.shape[1], offsety):
                 windowPiece = imgCroped[i:(i + offsetx), j:(j + offsety)]

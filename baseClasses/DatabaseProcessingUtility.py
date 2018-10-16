@@ -13,7 +13,7 @@ class DatabaseProcessingUtility:
     def __init__(self,path):
         self.databasePath = path
         self.templates = []
-        self.modelDatabase = self.getModel()
+        #self.modelDatabase = self.getModel()
 
     def feedTemplates(self):
         pass

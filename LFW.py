@@ -21,6 +21,10 @@ class LFW(DatabaseProcessingUtility):
             
         return dts
 
+    def calculateNormalsForTemplates(self):
+        for t in self.templates:
+            t.generateNormals()
+
     def saveTemplateImage(self):
         for t in self.templates:
             t.save(True)

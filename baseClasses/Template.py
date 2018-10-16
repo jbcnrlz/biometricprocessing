@@ -2,7 +2,7 @@ from PIL import Image as im
 from helper.functions import loadOBJ
 from models.models import *
 from models.engine_creation import *
-import pcl, numpy as np
+import pcl, numpy as np, sys, os
 
 class Template:
 
@@ -26,7 +26,12 @@ class Template:
     def loadImageData(self):
         if (self.__rawRepr[-3:] == 'obj'):
             self.imageLoaded = True
-            a, b, imageFace, y = loadOBJ(self.__rawRepr)
+            imageFace = None
+            if str(type(self)) == "<class 'LFWTemplate.LFWTemplate'>":
+                a, b, imageFace, y, facets = loadOBJ(self.__rawRepr,True)
+                self.facets = facets
+            else:
+                a, b, imageFace, y = loadOBJ(self.__rawRepr)
             self.image = imageFace
         elif (self.__rawRepr[-3:] == 'jpg'):
             self.imageLoaded = True

@@ -79,12 +79,13 @@ def minmax(itens):
         returnOrdered.append((i - minval) / divisor)
     return returnOrdered
 
-def loadOBJ(filename):
+def loadOBJ(filename,outputFacet=False):
     numVerts = 0
     verts = []
     norms = []
     vertsOut = []
     normsOut = []
+    idxsVerts = []
     for line in open(filename, "r"):
         vals = line.split()
         if (len(vals) > 0):
@@ -95,13 +96,18 @@ def loadOBJ(filename):
                 n = list(map(float, vals[1:4]))
                 norms.append(n)
             if vals[0] == "f":
+                idxsVerts.append([])
                 for f in vals[1:]:
                     w = f.split("/")
                     # OBJ Files are 1-indexed so we must subtract 1 below
                     vertsOut.append(list(verts[int(w[0])-1]))
+                    idxsVerts[-1].append(int(w[0]) - 1)
                     normsOut.append(list(norms[int(w[2])-1]))
                     numVerts += 1
-    return vertsOut, normsOut, verts, norms
+    if outputFacet:
+        return vertsOut, normsOut, verts, norms, idxsVerts
+    else:
+        return vertsOut, normsOut, verts, norms
 
 def isUniform(number):
     changes = 0
@@ -264,9 +270,11 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 def getDirectoriesInPath(path):
     return [f for f in os.listdir(path) if not os.path.isfile(os.path.join(path, f))]
 
-def getFilesInPath(path):
-    return [os.path.join(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-
+def getFilesInPath(path,onlyFiles=True):
+    if onlyFiles:
+        return [os.path.join(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    else:
+        return [os.path.join(path,f) for f in os.listdir(path)]
 if __name__ == '__main__':
     print(generateArrayUniform())
 

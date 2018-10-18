@@ -141,14 +141,22 @@ def generateArrayUniform(points):
     uniformNumbersDecimal['n'] = 0
     return uniformNumbersDecimal
 
-def generateHistogramUniform(data,numberPoints):
-    histogram = generateArrayUniform(numberPoints)
+def generateHistogramUniform(data,numberPoints,histogram=None):
+    if histogram is None:
+        histogram = generateArrayUniform(numberPoints)
+    else:
+        histogram = dict(histogram)
+
     for d in data:
         if d in histogram.keys():
             histogram[d] += 1
         else:
             histogram['n'] += 1
-    return list(histogram.values())
+
+    lastArgument = histogram['n']
+    del histogram['n']
+    returnOrderedHistogram = [histogram[key] for key in sorted(histogram.keys())]+[lastArgument]
+    return minmax(returnOrderedHistogram)
 
 def outputObj(points,fileName):
     f = open(fileName,'w')

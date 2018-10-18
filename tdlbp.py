@@ -4,16 +4,17 @@ from FRGCTemplate import *
 from LFWTemplate import *
 from baseClasses.BiometricProcessing import *
 from scipy.interpolate import interp2d
-from helper.functions import generateHistogram, bilinear_interpolation, mergeArraysDiff, printProgressBar
+from helper.functions import generateHistogram, generateHistogramUniform, generateArrayUniform
 
 
 class ThreeDLBP(BiometricProcessing):
 
-    def __init__(self, windowsize, binsize, database):
+    def __init__(self, windowsize, binsize, database,generateImages=True):
         self.windowSize = windowsize
         self.binsize = binsize
         self.databases = database
         self.methodName = '3DLBP'
+        self.generateImagesTrainig = generateImages
         super().__init__()
 
     def saveDebug(self, folder, data):
@@ -211,16 +212,18 @@ class ThreeDLBP(BiometricProcessing):
         points = parameters['points']
         radius = parameters['radius']
         imgCroped = np.asarray(template.image).astype(np.int64)
-
+        uniArray = None
         if template.layersChar is None:
             template.layersChar = np.full((imgCroped.shape[0], imgCroped.shape[1], 4),255)
 
         if (not points is None) and (not radius is None):
+            uniArray = generateArrayUniform(points)
             desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template)
         else:
             desc = self.generateImageDescriptor(imgCroped,template=template)
 
-        saving = template.saveImageTraining(False, self.fullPathGallFile)
+        if self.generateImagesTrainig:
+            saving = template.saveImageTraining(False, self.fullPathGallFile)
         offsetx = int(math.ceil(imgCroped.shape[0] / float(self.windowSize)))
         offsety = int(math.ceil(imgCroped.shape[1] / float(self.windowSize)))
         fullImageDescriptor = []
@@ -235,7 +238,10 @@ class ThreeDLBP(BiometricProcessing):
                             reshapedWindow[wpz].append(windowPiece[wpx,wpy,wpz])
 
                 for idxLayer in parameters['layersUtilize']:
-                    fullImageDescriptor += generateHistogram(reshapedWindow[idxLayer-1], self.binsize)
+                    if points is None:
+                        fullImageDescriptor += generateHistogram(reshapedWindow[idxLayer-1], self.binsize)
+                    else:
+                        fullImageDescriptor += generateHistogramUniform(reshapedWindow[idxLayer - 1], points,uniArray)
 
         return saving, fullImageDescriptor
 

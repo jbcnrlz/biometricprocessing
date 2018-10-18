@@ -33,7 +33,6 @@ class FRGC(DatabaseProcessingUtility):
 
     def __init__(self,path,imageType='Range'):
         self.imageType = imageType
-        self.extensionFile = {'Range' : 'jpg', 'NewDepth' : 'jpeg', 'Depth' : 'obj'}
         super().__init__(path)
 
     def loadNewDepthImage(self):

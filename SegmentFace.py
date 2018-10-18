@@ -5,6 +5,11 @@ from helper.functions import outputObj
 
 class SegmentFace(PreProcessingStep):
 
+    def __init__(self,**kwargs):
+        self.nosetipindex = kwargs.get('nosetip',2)
+        if type(self.nosetipindex) is not int:
+            self.nosetipindex = int(self.nosetipindex)
+
     def findCenterIndex(self,points,center):
         smallerDistance = [100000000000000000000000000000000000000000000000000000000,0]
         for p in range(len(points)):
@@ -35,16 +40,12 @@ class SegmentFace(PreProcessingStep):
         return neighbors
 
     def doPreProcessing(self,template):
-        '''
-        distancePoints = euclidean(template.faceMarks[0],template.faceMarks[1])
-        if distancePoints > 70:
-            distancePoints = 70
-        '''
         distancePoints = 70
-        if template.faceMarks:
-            template.image = self.getFaceFromCenterPoint(template.faceMarks[2],distancePoints,template.image)
+        imFile = template.image
+        if len(template.faceMarks) > 0:
+            template.image = self.getFaceFromCenterPoint(template.faceMarks[self.nosetipindex],distancePoints,imFile)
         else:
-            template.image = self.getFaceFromCenterPoint(np.array([0,0,0]),60000,template.image)
+            template.image = self.getFaceFromCenterPoint(np.array([0,0,0]),60000,imFile)
             txtFilePath = template.rawRepr[0:-4] + '_segmented.pcd'
             cloudp = pcl.PointCloud()
             cloudp.from_array(np.array(template.image))

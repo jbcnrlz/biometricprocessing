@@ -1,4 +1,5 @@
 from baseClasses.PreProcessingStep import *
+from helper.functions import scaleValues
 import math, numpy as np,matlab.engine, os
 from scipy.signal import savgol_filter
 from helper.functions import outputObj
@@ -39,7 +40,7 @@ class GenerateNewDepthMapsLFW(PreProcessingStep):
         self.saveTXTMatlab(txtFilePath,template.image)
         #template.image = savgol_filter(np.array(self.generateImage(txtFilePath,100,100)),51,3).tolist()
         template.image = savgol_filter(np.array(self.generateImage(txtFilePath,100,100)),51,3)
-        template = self.fixImage(template)
+        template.image = scaleValues(0, 255, template.image)
         template.image = template.image.tolist()
         os.remove(txtFilePath)
         return template

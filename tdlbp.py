@@ -2,6 +2,7 @@ import math, operator
 from scipy.special import expit
 from FRGCTemplate import *
 from LFWTemplate import *
+from BosphorusTemplate import *
 from baseClasses.BiometricProcessing import *
 from scipy.interpolate import interp2d
 from helper.functions import generateHistogram, generateHistogramUniform, generateArrayUniform
@@ -171,7 +172,7 @@ class ThreeDLBP(BiometricProcessing):
         return image.crop((points_crop[0], points_crop[1], points_crop[2], points_crop[3]))
 
     def setupTemplate(self, template):
-        if (not type(template) is LFWTemplate) and (not type(template) is FRGCTemplate):
+        if (type(template) is not LFWTemplate) and (type(template) is not FRGCTemplate) and (type(template) is not BosphorusTemplate):
             template.loadMarks('3DObj')
             subject = "%04d" % (template.itemClass)
             template3Dobj = template.rawRepr.split(os.path.sep)[:-3]
@@ -184,7 +185,7 @@ class ThreeDLBP(BiometricProcessing):
         return template
 
     def cleanupTemplate(self, template):
-        if (not type(template) is FRGCTemplate):
+        if (type(template) is not FRGCTemplate) and (type(template) is not BosphorusTemplate):
             template.layersChar = np.zeros((len(template.image), len(template.image[0]), 4))
             template.image = im.fromarray(np.array(template.image, dtype=np.uint8))
             template.image = template.image.rotate(-180)

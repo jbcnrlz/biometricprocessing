@@ -47,7 +47,8 @@ class BosphorusTemplate(Template):
             self.image = np.array(im.open(self.rawRepr[0:-4] + '_newdepth.jpeg'))
 
     def saveNewDepth(self):
-        sImage = im.fromarray(self.image.T).convert('RGB')
+        sImage = im.fromarray(self.image).convert('RGB')
+        sImage = sImage.rotate(180)
         sImage.save(self.rawRepr[0:-4] + '_newdepth.jpeg')
 
     def save(self, saveOnPath=False, prefix='_segmented'):

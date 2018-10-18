@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     if args.operation in ['both','pp']:
         tdlbp.preProcessing(True,args.parcal)
-        gallery.saveNewDepthImages()
+        #gallery.saveNewDepthImages()
 
     if args.operation in ['both', 'fe']:
         tdlbp.featureExtraction(args.points,args.radius,args.parcal)

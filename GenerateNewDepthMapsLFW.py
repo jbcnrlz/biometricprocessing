@@ -39,8 +39,8 @@ class GenerateNewDepthMapsLFW(PreProcessingStep):
         txtFilePath = template.rawRepr[0:-4] + '_processing_matlab.obj'
         self.saveTXTMatlab(txtFilePath,template.image)
         #template.image = savgol_filter(np.array(self.generateImage(txtFilePath,100,100)),51,3).tolist()
-        template.image = savgol_filter(np.array(self.generateImage(txtFilePath,100,100)),51,3)
+        template.image = np.array(self.generateImage(txtFilePath,100,100))
         template.image = scaleValues(0, 255, template.image)
-        template.image = template.image.tolist()
+        template.saveNewDepth()
         os.remove(txtFilePath)
         return template

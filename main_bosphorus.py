@@ -15,6 +15,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--steps', default=None, help='Pre-Processing steps, class names separated with _ parameters starts wth : and separated with ,', required=False)
     parser.add_argument('-v', '--faceVariation', default='N', help='Type of face, separated by _', required=False)
     parser.add_argument('-gImg', '--pathImages', default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc', help='Path for image signature', required=False)
+    parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -23,34 +24,38 @@ if __name__ == '__main__':
     gallery = Bosphorus(args.pathdatabase,args.typeoffile,args.faceVariation)
     gallery.feedTemplates()
 
+    if args.loadNewDepth:
+        gallery.loadNewDepthImage()
+
     tdlbp = ThreeDLBP(8,14,[gallery])
     tdlbp.fullPathGallFile = args.pathImages
-    if not args.steps is None:
-        ppSteps = args.steps.split('_')
-        for p in ppSteps:
-            className = None
-            parameters = None
-            kwargsList = None
-            if ':' in p:
-                parameters = p.split(':')
-                className = parameters[0]
-                parameters = parameters[1].split(',')
-                kwargsList = {}
-                for pr in parameters:
-                    lParameters = pr.split('=')
-                    kwargsList[lParameters[0]] = eval(lParameters[1])
-
-            else:
-                className = p
-
-            module = __import__(className)
-            class_ = getattr(module,className)
-            if kwargsList is None:
-                tdlbp.preProcessingSteps = class_()
-            else:
-                tdlbp.preProcessingSteps = class_(**kwargsList)
 
     if args.operation in ['both','pp']:
+        if not args.steps is None:
+            ppSteps = args.steps.split('_')
+            for p in ppSteps:
+                className = None
+                parameters = None
+                kwargsList = None
+                if ':' in p:
+                    parameters = p.split(':')
+                    className = parameters[0]
+                    parameters = parameters[1].split(',')
+                    kwargsList = {}
+                    for pr in parameters:
+                        lParameters = pr.split('=')
+                        kwargsList[lParameters[0]] = eval(lParameters[1])
+
+                else:
+                    className = p
+
+                module = __import__(className)
+                class_ = getattr(module, className)
+                if kwargsList is None:
+                    tdlbp.preProcessingSteps = class_()
+                else:
+                    tdlbp.preProcessingSteps = class_(**kwargsList)
+
         tdlbp.preProcessing(True,args.parcal)
         #gallery.saveNewDepthImages()
 

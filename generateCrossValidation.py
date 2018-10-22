@@ -30,6 +30,7 @@ def generateImageData(paths,resize=None):
         if ni.shape == (100,100,4):
             returningPaths.append(np.array(ni))
         else:
+            print(p)
             print('oi')
     return np.array(returningPaths)
 
@@ -135,6 +136,29 @@ def prepareNetwork(network):
                       metrics=['accuracy'])
     return model, uModel
 
+def separateAugmentedData(dataFiles,classesFiles):
+    normalData = []
+    normalDataClasses = []
+    augData = []
+    augDataClasses = []
+    for i, d in enumerate(dataFiles):
+        if 'rotate' in d:
+            augData.append(d)
+            augDataClasses.append(classesFiles[i])
+        else:
+            normalData.append(d)
+            normalDataClasses.append(classesFiles[i])
+
+    return normalData, normalDataClasses, augData, augDataClasses
+
+def getAugData(classOriginal,dataFiles,classes):
+    returnData = []
+    for i in range(len(classes)):
+        if classOriginal == classes[i]:
+            returnData.append(dataFiles[i])
+
+    return returnData
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Deep Models')
     parser.add_argument('-n', '--network', default=None, help='Name for the model', required=False)
@@ -145,6 +169,8 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--epochs', type=int, default=10, help='Epochs to be run', required=False)
     parser.add_argument('-f', '--folds', type=int, default=10, help='Fold quantity', required=False)
     parser.add_argument('-y', '--h5Path', default=None, help='Path to build h5 files', required=False)
+    parser.add_argument('--onlyOnGallery', default=False, help='Utilize augmented data only on Gallery', type=bool, required=False)
+    parser.add_argument('--normalization', default=None, help='Normalization function', required=False)
     args = parser.parse_args()
 
     if args.network == 'alexnet':
@@ -156,35 +182,70 @@ if __name__ == '__main__':
     elif args.network == 'vggface':
         from networks.otherVGGFace import *
 
+    normFunction = args.normalization
+    if (normFunction is not None):
+        fName = args.normalization.split('.')[-2:]
+        moduleName = args.normalization.split('.')[0:-2]
+        moduleName = '.'.join(moduleName)
+        normFunction = __import__(moduleName)
+        for func in fName:
+            normFunction = getattr(normFunction,func)
+
     imageData, classesData = generateData(args.pathBase)
     #gBase, cgBase, rData, crData = getBaseGallery(imageData,classesData)
     foldSize = int(len(imageData) / args.folds)
     foldResult = []
-    for foldNumber in range(args.folds):
-        foldChoices = random.sample([i for i in range(len(imageData))], foldSize)
-        foldProbe = []
-        foldProbeClasses = []
-        foldGallery = []
-        foldGalleryClasses = []
-        for i in range(len(imageData)):
-            if i in foldChoices:
-                foldProbe.append(imageData[i])
-                foldProbeClasses.append(classesData[i])
-            else:
-                foldGallery.append(imageData[i])
-                foldGalleryClasses.append(classesData[i])
+    if not args.onlyOnGallery:
+        for foldNumber in range(args.folds):
+            foldChoices = random.sample([i for i in range(len(imageData))], foldSize)
+            foldProbe = []
+            foldProbeClasses = []
+            foldGallery = []
+            foldGalleryClasses = []
+            for i in range(len(imageData)):
+                if i in foldChoices:
+                    foldProbe.append(imageData[i])
+                    foldProbeClasses.append(classesData[i])
+                else:
+                    foldGallery.append(imageData[i])
+                    foldGalleryClasses.append(classesData[i])
 
-        foldGallery = generateImageData(foldGallery)
-        foldGalleryClasses = np.array(foldGalleryClasses)
-        foldResult.append([foldGallery,foldGalleryClasses,foldProbe,foldProbeClasses])
+            foldGallery = generateImageData(foldGallery)
+            foldGalleryClasses = np.array(foldGalleryClasses)
+            foldResult.append([foldGallery,foldGalleryClasses,foldProbe,foldProbeClasses])
+    else:
+        normalData, ndc, augData, adc = separateAugmentedData(imageData,classesData)
+        foldSize = int(len(normalData) / args.folds)
+        for foldNumber in range(args.folds):
+            foldChoices = random.sample([i for i in range(len(normalData))], foldSize)
+            foldProbe = []
+            foldProbeClasses = []
+            foldGallery = []
+            foldGalleryClasses = []
+
+            for i in range(len(normalData)):
+                if i in foldChoices:
+                    foldProbe.append(normalData[i])
+                    foldProbeClasses.append(ndc[i])
+                else:
+                    foldGallery.append(normalData[i])
+                    foldGalleryClasses.append(ndc[i])
+                    aDataCur = getAugData(ndc[i],augData,adc)
+                    cDataCur = [ndc[i]]*len(aDataCur)
+                    foldGallery = foldGallery + aDataCur
+                    foldGalleryClasses = foldGalleryClasses + cDataCur
+
+            #foldGallery = generateImageData(foldGallery)
+            #foldGalleryClasses = np.array(foldGalleryClasses)
+            foldResult.append([foldGallery,foldGalleryClasses,foldProbe,foldProbeClasses])
 
     efr = []
 
     for foldData in range(len(foldResult)):
         foldProbe = foldResult[foldData][2]
         foldProbeClasses = foldResult[foldData][3]
-        foldGallery = foldResult[foldData][0]
-        foldGalleryClasses = foldResult[foldData][1]
+        foldGallery = generateImageData(foldResult[foldData][0])
+        foldGalleryClasses = np.array(foldResult[foldData][1])
 
         checkpoint_path = None if args.network is None else "training/"+str(foldData)+"/face_"+args.network+"-{epoch:04d}.ckpt"
 
@@ -201,13 +262,26 @@ if __name__ == '__main__':
 
         bd_callback = TensorBoard(log_dir='./logs',histogram_freq=0,write_graph=True, write_images=False)
 
-        foldGallery = foldGallery / 255
+        if normFunction is None:
+            foldGallery = foldGallery / 255
+        else:
+            for i in range(len(foldGallery)):
+                for j in range(foldGallery[i].shape[2]):
+                    foldGallery[i,:,:,j] = np.array(normFunction(foldGallery[i,:,:,j].flatten())).reshape((100,100))
 
         if not args.h5Path is None:
             from helper.lmdbGeneration import h5Format
 
             foldProbe = generateImageData(foldProbe)
-            foldProbe = foldProbe / 255
+
+            if normFunction is None:
+                foldProbe = foldProbe / 255
+            else:
+                for i in range(len(foldProbe)):
+                    for j in range(foldProbe[i].shape[2]):
+                        foldProbe[i, :, :, j] = np.array(normFunction(foldProbe[i, :, :, j].flatten())).reshape((100, 100))
+
+            #foldProbe = foldProbe / 255
             foldProbeClasses = np.array(foldProbeClasses)
 
             h5Format(os.path.join(args.h5Path,'train_files.h5'),foldGallery,foldGalleryClasses)
@@ -233,7 +307,15 @@ if __name__ == '__main__':
         if args.runOnTest:
             model, uModel = prepareNetwork(args.network)
             y_binary = to_categorical(np.array(foldProbeClasses) - 1, num_classes=args.classNumber)
-            foldProbe = np.array(generateImageData(foldProbe)) / 255.0
+            foldProbe = generateImageData(foldProbe) / 255.0
+            if normFunction is None:
+                foldProbe = foldProbe / 255
+            else:
+                for i in range(len(foldProbe)):
+                    for j in range(foldProbe[i].shape[2]):
+                        foldProbe[i, :, :, j] = np.array(normFunction(foldProbe[i, :, :, j].flatten())).reshape((100, 100))
+
+            #foldProbe = np.array(generateImageData(foldProbe)) / 255.0
             a, accut = uModel.evaluate(foldProbe, y_binary)
             print("Untrained model, accuracy: {:5.2f}%".format(100 * accut))
             efr.append([accut])

@@ -33,7 +33,15 @@ class EurecomTemplate(Template):
             outputObj(self.image,os.path.join('temporaryTemplate',str(self.itemClass) + '_' + self.folderTemplate + '_' + self.typeTemplate + '.obj'))
             self.outputMarks()
         else:
-            self.image.save(self.rawRepr[0:-4] + '_newdepth.bmp')
+            pathCImg = self.rawRepr.split(os.path.sep)
+            if pathCImg.index('EURECOM_Kinect_Face_Dataset') >= 0:
+                fileName = pathCImg[-1]
+                pathCImg = os.path.sep.join(pathCImg[0:-2])
+                self.image.save(os.path.join(pathCImg, 'Depth', 'DepthBMP',
+                                             fileName[0:-4] + '_newdepth.bmp'))
+            else:
+                self.image.save(self.rawRepr[0:-4] + '_newdepth.bmp')
+
 
     def outputMarks(self,saveOnPath=False,typeTemplate='Depth'):
         if (not saveOnPath):

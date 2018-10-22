@@ -172,6 +172,7 @@ class ThreeDLBP(BiometricProcessing):
         return image.crop((points_crop[0], points_crop[1], points_crop[2], points_crop[3]))
 
     def setupTemplate(self, template):
+        '''
         if (type(template) is not LFWTemplate) and (type(template) is not FRGCTemplate) and (type(template) is not BosphorusTemplate):
             template.loadMarks('3DObj')
             subject = "%04d" % (template.itemClass)
@@ -179,7 +180,7 @@ class ThreeDLBP(BiometricProcessing):
             folderType = template3Dobj[template3Dobj.index(subject) + 1]
             a, b, c, y = loadOBJ(os.path.join(os.path.sep.join(template3Dobj), '3DObj','depth_' + subject + '_' + folderType + '_' + template.typeTemplate + '.obj'))
             template.image = c
-
+        '''
         # template.image = self.cropImage(template.image,template.faceMarks[0],template.faceMarks[1],template.faceMarks[2]).convert('L')
         # template.image = np.asarray(template.image.resize((64,64), im.ANTIALIAS))
         return template

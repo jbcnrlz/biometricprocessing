@@ -7,6 +7,9 @@ from PIL import Image as im
 
 class RotateFace(PreProcessingStep):
 
+    def __init__(self,**kwargs):
+        self.axis = kwargs.get('axis', ['x','y'])
+
     def outputObj(self,points,fileName):
         f = open(fileName,'w')
         f.write('g \n')
@@ -58,21 +61,25 @@ class RotateFace(PreProcessingStep):
         if (not os.path.exists(os.path.join('temporaryTemplate','objRotated'))):
             os.makedirs(os.path.join('temporaryTemplate','objRotated'))
 
-        for i in range(-90,100,10):
-            if (i != 0):
-                rty = self.getRotationMatrix(i,'y')
-                nObj = copy.deepcopy(template)
-                nObj.image = self.multiplyMatrices(faceCloud,rty)
-                self.outputObj(nObj.image,os.path.join('temporaryTemplate','objRotated',nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'.obj'))
-                nObj = genFaces.doPreProcessing(nObj)
-                nObj.image = im.fromarray(np.array(nObj.image,dtype=np.uint8))
-                nObj.image = nObj.image.rotate(-180)        
-                nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_newdepth.bmp')
+        for ax in self.axis:
+            for i in range(-30,31,10):
+                if (i != 0):
+                    rty = self.getRotationMatrix(i,ax)
+                    nObj = copy.deepcopy(template)
+                    nObj.image = self.multiplyMatrices(faceCloud,rty)
+                    self.outputObj(nObj.image,os.path.join('temporaryTemplate','objRotated',nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.obj'))
+                    nObj = genFaces.doPreProcessing(nObj)
+                    nObj.image = im.fromarray(np.array(nObj.image,dtype=np.uint8))
+                    nObj.image = nObj.image.rotate(-180)
+                    pathCImg = nObj.rawRepr.split(os.path.sep)
+                    if pathCImg.index('EURECOM_Kinect_Face_Dataset') >=0 :
+                        fileName = pathCImg[-1]
+                        pathCImg = os.path.sep.join(pathCImg[0:-2])
+                        nObj.image.save(os.path.join(pathCImg,'Depth','DepthBMP',fileName[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp'))
+                    else:
+                        nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp')
 
         return template
 
 if __name__ == '__main__':
     a = [[-37.824600,51.693600,-726.000000],[26.659599,55.858101,-731.000000],[-2.407010,24.070200,-693.000000]]
-    tf = TranslateFix(None)
-    aline = tf.translateToOriginByNoseTip(a,[-2.407010,24.070200,-693.000000])
-    print(aline)

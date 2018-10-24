@@ -151,10 +151,13 @@ def separateAugmentedData(dataFiles,classesFiles):
 
     return normalData, normalDataClasses, augData, augDataClasses
 
-def getAugData(classOriginal,dataFiles,classes):
+def getAugData(originalFile,dataFiles,classes):
     returnData = []
-    for i in range(len(classes)):
-        if classOriginal == classes[i]:
+    fileNameWithoutExtension = originalFile[0:-4]
+    for i in range(len(dataFiles)):
+        augFrom = dataFiles[i].split(os.path.sep)[-1]
+        augFrom = augFrom[0:len(fileNameWithoutExtension)]
+        if fileNameWithoutExtension == augFrom:
             returnData.append(dataFiles[i])
 
     return returnData
@@ -197,6 +200,7 @@ if __name__ == '__main__':
     foldResult = []
     if not args.onlyOnGallery:
         for foldNumber in range(args.folds):
+            print('Fazendo fold ' + str(foldNumber))
             foldChoices = random.sample([i for i in range(len(imageData))], foldSize)
             foldProbe = []
             foldProbeClasses = []
@@ -210,13 +214,14 @@ if __name__ == '__main__':
                     foldGallery.append(imageData[i])
                     foldGalleryClasses.append(classesData[i])
 
-            foldGallery = generateImageData(foldGallery)
-            foldGalleryClasses = np.array(foldGalleryClasses)
+            #foldGallery = generateImageData(foldGallery)
+            #foldGalleryClasses = np.array(foldGalleryClasses)
             foldResult.append([foldGallery,foldGalleryClasses,foldProbe,foldProbeClasses])
     else:
         normalData, ndc, augData, adc = separateAugmentedData(imageData,classesData)
         foldSize = int(len(normalData) / args.folds)
         for foldNumber in range(args.folds):
+            print('Fazendo fold '+str(foldNumber))
             foldChoices = random.sample([i for i in range(len(normalData))], foldSize)
             foldProbe = []
             foldProbeClasses = []
@@ -230,8 +235,10 @@ if __name__ == '__main__':
                 else:
                     foldGallery.append(normalData[i])
                     foldGalleryClasses.append(ndc[i])
-                    aDataCur = getAugData(ndc[i],augData,adc)
-                    cDataCur = [ndc[i]]*len(aDataCur)
+
+                    aDataCur = getAugData(normalData[i].split(os.path.sep)[-1], augData, adc)
+                    cDataCur = [ndc[i]] * len(aDataCur)
+
                     foldGallery = foldGallery + aDataCur
                     foldGalleryClasses = foldGalleryClasses + cDataCur
 
@@ -242,11 +249,12 @@ if __name__ == '__main__':
     efr = []
 
     for foldData in range(len(foldResult)):
+        print('Starting the fold data '+str(foldData))
         foldProbe = foldResult[foldData][2]
         foldProbeClasses = foldResult[foldData][3]
         foldGallery = generateImageData(foldResult[foldData][0])
         foldGalleryClasses = np.array(foldResult[foldData][1])
-
+        print('Iniciando extração')
         checkpoint_path = None if args.network is None else "training/"+str(foldData)+"/face_"+args.network+"-{epoch:04d}.ckpt"
 
         if not os.path.exists('training'):
@@ -260,7 +268,7 @@ if __name__ == '__main__':
             # Save weights, every 5-epochs.
             period=5)
 
-        bd_callback = TensorBoard(log_dir='./logs',histogram_freq=0,write_graph=True, write_images=False)
+        #bd_callback = TensorBoard(log_dir='./logs',histogram_freq=0,write_graph=True, write_images=False)
 
         if normFunction is None:
             foldGallery = foldGallery / 255
@@ -300,14 +308,14 @@ if __name__ == '__main__':
                 verbose=1,
                 epochs=args.epochs,
                 #validation_data=(valData,to_categorical(valCasses - 1, num_classes=args.classNumber)),
-                callbacks=[cp_callback,bd_callback]
+                callbacks=[cp_callback]
 
             )
 
         if args.runOnTest:
             model, uModel = prepareNetwork(args.network)
             y_binary = to_categorical(np.array(foldProbeClasses) - 1, num_classes=args.classNumber)
-            foldProbe = generateImageData(foldProbe) / 255.0
+            foldProbe = generateImageData(foldProbe)
             if normFunction is None:
                 foldProbe = foldProbe / 255
             else:

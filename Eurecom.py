@@ -98,17 +98,18 @@ class EurecomKinect(DatabaseProcessingUtility):
         for t in self.templates:
             t.loadNewDepthImage()
 
-    def loadRotatedFaces(self,angles):
+    def loadRotatedFaces(self,angles,axis):
         addTemplates = []
         for t in self.templates:
             print("Gerando copia de "+t.rawRepr)
-            for a in angles:
-                print("Angulo = "+ str(a))
-                nobj = copy.deepcopy(t)
-                with im.open(nobj.rawRepr[0:-4] + '_rotate_'+str(a)+'_newdepth.bmp') as currImg:
-                    nobj.image = np.asarray(currImg)
-                    nobj.rawRepr = nobj.rawRepr[0:-4] + '_rotate_'+str(a)+'_newdepth.bmp'
-                addTemplates.append(nobj)
+            for ax in axis:
+                for a in angles:
+                    print("Angulo = "+ str(a)+' Eixo = '+ax)
+                    nobj = copy.deepcopy(t)
+                    with im.open(nobj.rawRepr[0:-4] + '_rotate_'+str(a)+'_'+str(ax)+'_newdepth.bmp') as currImg:
+                        nobj.image = np.asarray(currImg)
+                        nobj.rawRepr = nobj.rawRepr[0:-4] + '_rotate_'+str(a)+'_'+str(ax)+'_newdepth.bmp'
+                    addTemplates.append(nobj)
 
         self.templates = self.templates + addTemplates
 

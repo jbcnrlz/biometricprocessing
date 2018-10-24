@@ -19,6 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('--generateImages', default=True, type=bool, help='If should generate images or not',required=False)
     parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
     parser.add_argument('--loadSymmImages', default=False, type=bool, help='Load symmetric filling images', required=False)
+    parser.add_argument('--axis', default='x_y', help='Load symmetric filling images',required=False)
     args = parser.parse_args()
 
     faceDataset = []
@@ -33,7 +34,7 @@ if __name__ == '__main__':
             ek.loadSymmFilledImages()
 
         if args.angles:
-            ek.loadRotatedFaces(args.angles.split('_'))
+            ek.loadRotatedFaces(args.angles.split('_'),args.axis.split('_'))
 
         faceDataset.append(ek)
 
@@ -72,7 +73,7 @@ if __name__ == '__main__':
     if args.operation in ['both', 'fe']:
         tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4])
 
-    if not args.pathtrainingfile is None:
+    if (args.pathtrainingfile is not None) and (args.operation == 'fe'):
         faceVariationGenerate = { k : ['s1','s2'] for k in args.faceVariation.split('_') }
         galeryData = faceDataset[0].generateDatabaseFile(args.pathtrainingfile,faceVariationGenerate,[faceDataset[1]],'SVMTorchFormat')
 

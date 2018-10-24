@@ -82,17 +82,20 @@ class Bosphorus(DatabaseProcessingUtility):
         for t in self.templates:
             t.loadNewDepthImage()
 
-    def loadRotatedFaces(self, angles):
+    def loadRotatedFaces(self,angles,axis):
         addTemplates = []
         for t in self.templates:
-            print("Gerando copia de " + t.rawRepr)
-            for a in angles:
-                print("Angulo = " + str(a))
-                nobj = copy.deepcopy(t)
-                with im.open(nobj.rawRepr[0:-4] + '_rotate_' + str(a) + '_newdepth.bmp') as currImg:
-                    nobj.image = np.asarray(currImg)
-                    nobj.rawRepr = nobj.rawRepr[0:-4] + '_rotate_' + str(a) + '_newdepth.bmp'
-                addTemplates.append(nobj)
+            print("Gerando copia de "+t.rawRepr)
+            for ax in axis:
+                for a in angles:
+                    print("Angulo = "+ str(a))
+                    nobj = copy.deepcopy(t)
+                    if os.path.exists(nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'):
+                        pathImages = nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'
+                        with im.open(pathImages) as currImg:
+                            nobj.image = np.asarray(currImg)
+                            nobj.rawRepr = pathImages
+                        addTemplates.append(nobj)
 
         self.templates = self.templates + addTemplates
 

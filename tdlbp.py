@@ -211,6 +211,7 @@ class ThreeDLBP(BiometricProcessing):
     def localcall(self,parameters):
         print("Iniciando feature extraction")
         template = parameters['template']
+        print(template.rawRepr)
         points = parameters['points']
         radius = parameters['radius']
         imgCroped = np.asarray(template.image).astype(np.int64)

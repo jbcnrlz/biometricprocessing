@@ -16,6 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--faceVariation', default='N', help='Type of face, separated by _', required=False)
     parser.add_argument('-gImg', '--pathImages', default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc', help='Path for image signature', required=False)
     parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
+    parser.add_argument('--angles', default=None, help='Angles of face to load', required=False)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -26,6 +27,9 @@ if __name__ == '__main__':
 
     if args.loadNewDepth:
         gallery.loadNewDepthImage()
+
+    if args.angles:
+        gallery.loadRotatedFaces(args.angles.split('_'),['x','y'])
 
     tdlbp = ThreeDLBP(8,14,[gallery])
     tdlbp.fullPathGallFile = args.pathImages

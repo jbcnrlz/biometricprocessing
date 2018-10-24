@@ -2,8 +2,6 @@ import os, tensorflow as tf, numpy as np
 from generateCrossValidation import *
 from networks.small_AlexNet import *
 from keras.models import Model
-from keras.utils import to_categorical
-from keras.callbacks import TensorBoard
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Deep Models')
@@ -21,9 +19,9 @@ if __name__ == '__main__':
         os.makedirs(os.path.join('training', 'full'))
 
     checkpoint_path = None if args.network is None else "training/full/face_"+args.network+"-{epoch:04d}.ckpt"
-    cp_callback = tf.keras.callbacks.ModelCheckpoint(checkpoint_path, verbose=1, save_weights_only=True,period=args.epochs)
+    cp_callback = tf.keras.callbacks.ModelCheckpoint(checkpoint_path, verbose=1, save_weights_only=True,period=10)
     imageData, classesData = generateData(args.pathBase)
-    imageData = np.array(generateImageData(imageData))
+    imageData = np.array(generateImageData(imageData)) / 255.0
     classesData = np.array(classesData)
 
     x, img_input, CONCAT_AXIS, INP_SHAPE, DIM_ORDERING = create_model(numClasses=args.classNumber)

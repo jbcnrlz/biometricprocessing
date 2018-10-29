@@ -1,6 +1,5 @@
-import os, tensorflow as tf, numpy as np
 from generateCrossValidation import *
-from networks.small_AlexNet import *
+from networks.Keras.small_AlexNet import *
 from keras.models import Model
 
 if __name__ == '__main__':

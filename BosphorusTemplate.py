@@ -11,15 +11,34 @@ class BosphorusTemplate(Template):
         self.faceMarks = []
         super().__init__(pathFile, None, True, dataset)
 
+    def loadLandmarksfromFile(self):
+        returnLandMarks = {}
+        with open(self.rawRepr[:-3]+'lm3','r') as lFile:
+            fullLines = lFile.readlines()
+            keyIndex = ''
+            for i, l in enumerate(fullLines[3:]):
+                if i%2 == 0:
+                    keyIndex = l.replace(' ','').strip('\n')
+                else:
+                    returnLandMarks[keyIndex] = list(map(float,l.split(' ')))
+
+        return returnLandMarks
+
     def loadImageData(self):
         self.imageLoaded = True
         if (self.rawRepr[-3:] == 'mat'):
             arrays = {}
-            with h5py.File(self.rawRepr) as fPy:
-                for k, v in fPy.items():
-                    arrays[k] = np.array(v)
-            self.image = arrays['vertex'].T
-            self.faceMarks = arrays['lm3d'].T
+            try:
+                with h5py.File(self.rawRepr) as fPy:
+                    for k, v in fPy.items():
+                        arrays[k] = np.array(v)
+                self.image = arrays['vertex'].T
+                self.faceMarks = arrays['lm3d'].T
+            except:
+                import scipy.io as sio
+                arrays = sio.loadmat(self.rawRepr)
+                self.image = arrays['d'][:,0:3]
+                self.faceMarks = self.loadLandmarksfromFile()
         else:
             self.image = np.array(im.open(self.rawRepr).convert('L'))
 

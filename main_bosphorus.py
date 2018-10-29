@@ -48,7 +48,7 @@ if __name__ == '__main__':
                     kwargsList = {}
                     for pr in parameters:
                         lParameters = pr.split('=')
-                        kwargsList[lParameters[0]] = eval(lParameters[1])
+                        kwargsList[lParameters[0]] = lParameters[1]
 
                 else:
                     className = p

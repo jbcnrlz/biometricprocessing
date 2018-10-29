@@ -5,7 +5,7 @@ class TranslateFix(PreProcessingStep):
 
     def __init__(self,**kwargs):
         self.nosetipindex = kwargs.get('nosetip',2)
-        if type(self.nosetipindex) is not int:
+        if type(self.nosetipindex) is not int and self.nosetipindex.isdigit():
             self.nosetipindex = int(self.nosetipindex)
 
     def translateToOriginByNoseTip(self,points,nosetip):
@@ -18,5 +18,6 @@ class TranslateFix(PreProcessingStep):
 
     def doPreProcessing(self,template):
         template.image = self.translateToOriginByNoseTip(template.image,template.faceMarks[self.nosetipindex])
-        template.faceMarks = self.translateToOriginByNoseTip(template.faceMarks,template.faceMarks[self.nosetipindex])
+        if (self.nosetipindex.isdigit()):
+            template.faceMarks = self.translateToOriginByNoseTip(template.faceMarks,template.faceMarks[self.nosetipindex])
         return template

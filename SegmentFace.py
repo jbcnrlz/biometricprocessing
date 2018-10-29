@@ -7,7 +7,7 @@ class SegmentFace(PreProcessingStep):
 
     def __init__(self,**kwargs):
         self.nosetipindex = kwargs.get('nosetip',2)
-        if type(self.nosetipindex) is not int:
+        if type(self.nosetipindex) is not int and self.nosetipindex.isdigit():
             self.nosetipindex = int(self.nosetipindex)
 
     def findCenterIndex(self,points,center):

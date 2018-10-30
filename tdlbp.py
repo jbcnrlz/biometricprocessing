@@ -193,60 +193,63 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4]):
+    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True):
         if paralelCalling:
             poolCalling = Pool()
             for database in self.databases:
-                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize} for t in database.templates]
+                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage} for t in database.templates]
                 responses = poolCalling.map(unwrap_self_f_feature, zip([self] * len(dataForParCal), dataForParCal))
                 for i in range(len(responses)):
                     database.templates[i].features = responses[i][1]
         else:
             for database in self.databases:
                 for template in database.templates:
-                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize}
+                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage}
                     a, template.features = self.doFeatureExtraction(dataForParCal)
 
 
     def localcall(self,parameters):
         print("Iniciando feature extraction")
         template = parameters['template']
-        print(template.rawRepr)
-        points = parameters['points']
-        radius = parameters['radius']
-        imgCroped = np.asarray(template.image).astype(np.int64)
-        uniArray = None
-        if template.layersChar is None:
-            template.layersChar = np.full((imgCroped.shape[0], imgCroped.shape[1], 4),255)
+        if parameters['forceImage'] or not template.isFileExists(self.fullPathGallFile):
+            print(template.rawRepr)
+            points = parameters['points']
+            radius = parameters['radius']
+            imgCroped = np.asarray(template.image).astype(np.int64)
+            uniArray = None
+            if template.layersChar is None:
+                template.layersChar = np.full((imgCroped.shape[0], imgCroped.shape[1], 4),255)
 
-        if (not points is None) and (not radius is None):
-            uniArray = generateArrayUniform(points)
-            desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template)
+            if (not points is None) and (not radius is None):
+                uniArray = generateArrayUniform(points)
+                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template)
+            else:
+                desc = self.generateImageDescriptor(imgCroped,template=template)
+
+            if self.generateImagesTrainig:
+                saving = template.saveImageTraining(False, self.fullPathGallFile)
+            offsetx = int(math.ceil(imgCroped.shape[0] / float(self.windowSize)))
+            offsety = int(math.ceil(imgCroped.shape[1] / float(self.windowSize)))
+            fullImageDescriptor = []
+            imgCroped = template.layersChar[1:99,1:99,:]
+            for i in range(0, imgCroped.shape[0], offsetx):
+                for j in range(0, imgCroped.shape[1], offsety):
+                    windowPiece = imgCroped[i:(i + offsetx), j:(j + offsety)]
+                    reshapedWindow = [[],[],[],[]]
+                    for wpx in range(windowPiece.shape[0]):
+                        for wpy in range(windowPiece.shape[1]):
+                            for wpz in range(windowPiece.shape[2]):
+                                reshapedWindow[wpz].append(windowPiece[wpx,wpy,wpz])
+
+                    for idxLayer in parameters['layersUtilize']:
+                        if points is None:
+                            fullImageDescriptor += generateHistogram(reshapedWindow[idxLayer-1], self.binsize)
+                        else:
+                            fullImageDescriptor += generateHistogramUniform(reshapedWindow[idxLayer - 1], points,uniArray)
+
+            return saving, fullImageDescriptor
         else:
-            desc = self.generateImageDescriptor(imgCroped,template=template)
-
-        if self.generateImagesTrainig:
-            saving = template.saveImageTraining(False, self.fullPathGallFile)
-        offsetx = int(math.ceil(imgCroped.shape[0] / float(self.windowSize)))
-        offsety = int(math.ceil(imgCroped.shape[1] / float(self.windowSize)))
-        fullImageDescriptor = []
-        imgCroped = template.layersChar[1:99,1:99,:]
-        for i in range(0, imgCroped.shape[0], offsetx):
-            for j in range(0, imgCroped.shape[1], offsety):
-                windowPiece = imgCroped[i:(i + offsetx), j:(j + offsety)]
-                reshapedWindow = [[],[],[],[]]
-                for wpx in range(windowPiece.shape[0]):
-                    for wpy in range(windowPiece.shape[1]):
-                        for wpz in range(windowPiece.shape[2]):
-                            reshapedWindow[wpz].append(windowPiece[wpx,wpy,wpz])
-
-                for idxLayer in parameters['layersUtilize']:
-                    if points is None:
-                        fullImageDescriptor += generateHistogram(reshapedWindow[idxLayer-1], self.binsize)
-                    else:
-                        fullImageDescriptor += generateHistogramUniform(reshapedWindow[idxLayer - 1], points,uniArray)
-
-        return saving, fullImageDescriptor
+            return None, None
 
     '''
     def localcall(self, parameters):

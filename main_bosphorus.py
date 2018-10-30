@@ -17,6 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('-gImg', '--pathImages', default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc', help='Path for image signature', required=False)
     parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
     parser.add_argument('--angles', default=None, help='Angles of face to load', required=False)
+    parser.add_argument('--forceImage', default=False, help='Force Image regeneration', required=False, type=bool)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -64,7 +65,7 @@ if __name__ == '__main__':
         #gallery.saveNewDepthImages()
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,forceImage=args.forceImage)
 
     if not args.pathtrainingfile is None:
         galeryData = gallery.generateDatabaseFile(args.pathtrainingfile)

@@ -28,20 +28,25 @@ if __name__ == '__main__':
         os.makedirs('training_pytorch')
 
     for f, datas in enumerate(folds):
-        foldProbe = datas[2]
-        foldProbeClasses = datas[3]
+        foldProbe = generateImageData(datas[2])
+        foldProbeClasses = np.array(datas[3])
         foldGallery = generateImageData(datas[0])
         foldGalleryClasses = np.array(datas[1])
 
         foldGallery = foldGallery / 255
+        foldProbe = foldProbe / 255
 
         muda.train()
         qntBatches = foldGallery.shape[0] / args.batch
         foldGallery = torch.from_numpy(np.rollaxis(foldGallery, 3, 1)).float()
         foldGalleryClasses = torch.from_numpy(foldGalleryClasses)
-
         tdata = torch.utils.data.TensorDataset(foldGallery, foldGalleryClasses)
         train_loader = torch.utils.data.DataLoader(tdata, batch_size=args.batch, shuffle=True)
+
+        foldProbe = torch.from_numpy(np.rollaxis(foldProbe, 3, 1)).float()
+        foldProbeClasses = torch.from_numpy(foldProbeClasses)
+        pdata = torch.utils.data.TensorDataset(foldProbe, foldProbeClasses)
+        test_loader = torch.utils.data.DataLoader(pdata, batch_size=args.batch, shuffle=False)
 
         optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
 
@@ -58,6 +63,18 @@ if __name__ == '__main__':
                 print('[%d, %05d de %05d] loss: %.3f' %(ep+ 1, bIdx + 1, qntBatches, loss.item()))
 
             if ep % 5 == 0:
+                total = 0
+                correct = 0
+                with torch.no_grad():
+                    for data in test_loader:
+                        images, labels = data
+                        outputs = muda(images)
+                        _, predicted = torch.max(outputs.data, 1)
+                        total += labels.size(0)
+                        correct += (predicted == labels).sum().item()
+
+                print('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
+                input()
                 fName = '%s_checkpoint_%05d.pth.tar' % ('GioGio',ep)
                 fName = os.path.join('training_pytorch', str(f),fName)
                 save_checkpoint({

@@ -15,44 +15,6 @@ LRN2D_norm = True       # whether to use batch normalization
 DIM_ORDERING = 'tf'
 
 
-def conv2D_lrn2d(x, nb_filter, nb_row, nb_col,
-                 border_mode='same', subsample=(1, 1),
-                 activation='relu', LRN2D_norm=True,
-                 weight_decay=WEIGHT_DECAY, dim_ordering=DIM_ORDERING):
-    '''
-
-        Info:
-            Function taken from the Inceptionv3.py script keras github
-
-
-            Utility function to apply to a tensor a module Convolution + lrn2d
-            with optional weight decay (L2 weight regularization).
-    '''
-    if weight_decay:
-        W_regularizer = regularizers.l2(weight_decay)
-        b_regularizer = regularizers.l2(weight_decay)
-    else:
-        W_regularizer = None
-        b_regularizer = None
-
-    x = Conv2D(nb_filter, (nb_row, nb_col),
-               strides=subsample,
-               activation=activation,
-               padding=border_mode,
-               kernel_regularizer=W_regularizer,
-               activity_regularizer=b_regularizer,
-               use_bias=False,
-               data_format='channels_last')(x)
-    x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
-
-    if LRN2D_norm:
-
-        x = LRN2D(alpha=ALPHA, beta=BETA)(x)
-        x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
-
-    return x
-
-
 def create_model(imShape=(100,100),channels=4,numClasses=466):
     # Define image input layer
     if DIM_ORDERING == 'th':
@@ -66,43 +28,13 @@ def create_model(imShape=(100,100),channels=4,numClasses=466):
     else:
         raise Exception('Invalid dim ordering: ' + str(DIM_ORDERING))
 
-    # Channel 1 - Convolution Net Layer 1
-    #x = conv2D_lrn2d(img_input, 3, 11, 11, subsample=(1, 1), border_mode='same')
 
-    x = Conv2D(3,(8,8),
-               strides=(8,8),
-               activation='relu',
-               padding='same',
-               kernel_regularizer=regularizers.l2(WEIGHT_DECAY),
-               activity_regularizer=regularizers.l2(WEIGHT_DECAY),
-               use_bias=False,
-               data_format='channels_last')(img_input)
-
-    #x = MaxPooling2D(pool_size=(4, 4), strides=(4, 4), data_format='channels_last')(x)
-    #x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
-
-    # Channel 1 - Convolution Net Layer 2
-    #x = conv2D_lrn2d(x, 48, 55, 55, subsample=(1, 1), border_mode='same')
-    #x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), data_format='channels_last')(x)
-    #x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
-
-    # Channel 1 - Convolution Net Layer 3
-    #x = conv2D_lrn2d(x, 128, 27, 27, subsample=(1, 1), border_mode='same')
-    #x =  MaxPooling2D(pool_size=(2, 2), strides=(2, 2), data_format='channels_last')(x)
-    #x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
-
-    # Channel 1 - Convolution Net Layer 4
-    #x = conv2D_lrn2d(x, 192, 13, 13, subsample=(1, 1), border_mode='same')
-    #x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
-
-    # Channel 1 - Convolution Net Layer 5
-    #x = conv2D_lrn2d(x, 192, 13, 13, subsample=(1, 1), border_mode='same')
-    #x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
-
-    # Channel 1 - Cov Net Layer 6
-    #x = conv2D_lrn2d(x, 128, 27, 27, subsample=(1, 1), border_mode='same')
-    #x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), data_format='channels_last')(x)
-    #x = ZeroPadding2D(padding=(1, 1), data_format='channels_last')(x)
+    x = Conv2D(3,(8,8),strides=(8,8),activation='relu',padding='same',
+        kernel_regularizer=regularizers.l2(WEIGHT_DECAY),
+        activity_regularizer=regularizers.l2(WEIGHT_DECAY),
+        use_bias=False,
+        data_format='channels_last'
+    )(img_input)
 
     # Channel 1 - Cov Net Layer 7
     x = Flatten()(x)

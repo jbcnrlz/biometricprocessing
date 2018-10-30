@@ -1,5 +1,6 @@
-import operator, math, numpy as np, os
+import operator, math, numpy as np, os, random
 from scipy.spatial.distance import euclidean
+from PIL import Image as im
 
 def bilinear_interpolation(x, y, points):
     '''Interpolate (x,y) from values associated with four points.
@@ -283,6 +284,59 @@ def getFilesInPath(path,onlyFiles=True):
         return [os.path.join(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     else:
         return [os.path.join(path,f) for f in os.listdir(path)]
+
+def generateData(pathFiles):
+    returnDataImages = []
+    returnDataClass = []
+    filesOnPath = getFilesInPath(pathFiles)
+    for f in filesOnPath:
+        if f[-3:] == 'png':
+            returnDataImages.append(f)
+            classNumber = f.split(os.path.sep)[-1]
+            classNumber = classNumber.split('_')[0]
+            returnDataClass.append(int(classNumber))
+
+    return returnDataImages, returnDataClass
+
+def generateFoldsOfData(fq,imageData,classesData):
+    foldSize = int(len(imageData) / fq)
+    foldResult = []
+    alreadyWentFold = []
+    for foldNumber in range(fq):
+        print('Fazendo fold ' + str(foldNumber+1))
+        foldChoices = random.sample([i for i in range(len(imageData)) if i not in alreadyWentFold], foldSize)
+        alreadyWentFold = alreadyWentFold + foldChoices
+        foldProbe = []
+        foldProbeClasses = []
+        foldGallery = []
+        foldGalleryClasses = []
+        for i in range(len(imageData)):
+            if i in foldChoices:
+                foldProbe.append(imageData[i])
+                foldProbeClasses.append(classesData[i])
+            else:
+                foldGallery.append(imageData[i])
+                foldGalleryClasses.append(classesData[i])
+
+        foldResult.append([foldGallery, foldGalleryClasses, foldProbe, foldProbeClasses])
+
+    return foldResult
+
+def generateImageData(paths,resize=None):
+    returningPaths = []
+    for p in paths:
+        ni = im.open(p)
+        if not resize is None:
+            ni = ni.resize(resize,im.ANTIALIAS)
+
+        ni = np.array(ni)
+        if ni.shape == (100,100,4):
+            returningPaths.append(np.array(ni))
+        else:
+            print(p)
+            print('oi')
+    return np.array(returningPaths)
+
 if __name__ == '__main__':
     print(generateArrayUniform())
 

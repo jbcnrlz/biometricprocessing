@@ -1,4 +1,4 @@
-from networks.small_AlexNet import *
+from networks.Keras.small_AlexNet import *
 from keras.models import Model
 from helper.functions import  getFilesInPath
 from PIL import Image as im

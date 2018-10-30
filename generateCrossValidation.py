@@ -1,10 +1,9 @@
-import os, random, numpy as np, tensorflow as tf, math, argparse, matplotlib.pyplot as plt, shutil
+import os, random, numpy as np, math, argparse
 from helper.functions import getFilesInPath
 from PIL import Image as im
 from keras.models import Model
 from keras.utils import to_categorical
-from keras.callbacks import TensorBoard
-from networks.center_loss import *
+from networks.Keras.center_loss import *
 
 def generateData(pathFiles):
     returnDataImages = []
@@ -177,13 +176,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.network == 'alexnet':
-        from networks.small_AlexNet import *
+        from networks.Keras.small_AlexNet import *
     elif args.network == 'vggcifar10':
-        from networks.VGGCifar10 import *
+        from networks.Keras.VGGCifar10 import *
     elif args.network == 'vgg16':
-        from networks.vgg16 import *
+        from networks.Keras.vgg16 import *
     elif args.network == 'vggface':
-        from networks.otherVGGFace import *
+        from networks.Keras.otherVGGFace import *
 
     normFunction = args.normalization
     if (normFunction is not None):

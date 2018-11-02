@@ -29,7 +29,7 @@ def create_model(imShape=(100,100),channels=4,numClasses=466):
         raise Exception('Invalid dim ordering: ' + str(DIM_ORDERING))
 
 
-    x = Conv2D(3,(8,8),strides=(8,8),activation='relu',padding='same',
+    x = Conv2D(64,(8,8),strides=(8,8),activation='relu',padding='same',
         kernel_regularizer=regularizers.l2(WEIGHT_DECAY),
         activity_regularizer=regularizers.l2(WEIGHT_DECAY),
         use_bias=False,

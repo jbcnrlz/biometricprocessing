@@ -5,7 +5,7 @@
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
-      <env name="CUDA_VISIBLE_DEVICES" value="0" />
+      <env name="LD_LIBRARY_PATH" value="/usr/local/cuda/lib64:$LD_LIBRARY_PATH" />
     </envs>
     <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -13,7 +13,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateCrossValidation.py" />
-    <option name="PARAMETERS" value="-c=105 -p=generated_images_bosphorus -n=alexnet -e=100 --runOnTest=True" />
+    <option name="PARAMETERS" value="-c=1000 -p=generated_images_eurecom -n=alexnet -e=100 --runOnTest=True" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

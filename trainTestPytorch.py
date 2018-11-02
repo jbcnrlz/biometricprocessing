@@ -1,4 +1,4 @@
-from helper.functions import generateData, generateFoldsOfData, generateImageData
+from helper.functions import generateData, generateFoldsOfData, generateImageData, loadFoldFromFolders
 import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
 import torch.utils.data, shutil, os
 
@@ -15,19 +15,26 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--runOnTest', type=bool, default=False, help='Run on test data', required=False)
     parser.add_argument('-e', '--epochs', type=int, default=10, help='Epochs to be run', required=False)
     parser.add_argument('-f', '--folds', type=int, default=10, help='Fold quantity', required=False)
+    parser.add_argument('--loadFromFolder', default=None, help='Load folds from folders', required=False)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    muda = jojo.GioGio(args.classNumber)
-    muda.to(device)
 
-    imageData, classesData = generateData(args.pathBase)
+    if args.loadFromFolder is None:
+        imageData, classesData = generateData(args.pathBase)
+        folds = generateFoldsOfData(args.folds,imageData,classesData)
 
-    folds = generateFoldsOfData(args.folds,imageData,classesData)
+    else:
+        folds = loadFoldFromFolders(args.loadFromFolder)
 
     if not os.path.exists('training_pytorch'):
         os.makedirs('training_pytorch')
 
+    foldResults = []
     for f, datas in enumerate(folds):
+        print('====================== Fazendo Fold =======================')
+        muda = jojo.GioGio(args.classNumber)
+        muda.to(device)
+        foldResults.append([])
         foldProbe = generateImageData(datas[2])
         foldProbeClasses = np.array(datas[3])
         foldGallery = generateImageData(datas[0])
@@ -35,11 +42,14 @@ if __name__ == '__main__':
 
         foldGallery = foldGallery / 255
         foldProbe = foldProbe / 255
+        if np.amin(foldGalleryClasses) == 1:
+            foldGalleryClasses = foldGalleryClasses - 1
+            foldProbeClasses = foldProbeClasses - 1
 
         muda.train()
         qntBatches = foldGallery.shape[0] / args.batch
         foldGallery = torch.from_numpy(np.rollaxis(foldGallery, 3, 1)).float()
-        foldGalleryClasses = torch.from_numpy(foldGalleryClasses)
+        foldGalleryClasses = torch.from_numpy(foldGalleryClasses).to(device)
         tdata = torch.utils.data.TensorDataset(foldGallery, foldGalleryClasses)
         train_loader = torch.utils.data.DataLoader(tdata, batch_size=args.batch, shuffle=True)
 
@@ -53,28 +63,38 @@ if __name__ == '__main__':
         if not os.path.exists(os.path.join('training_pytorch', str(f))):
             os.makedirs(os.path.join('training_pytorch', str(f)))
 
+        bestResult = -1
+        bestEpoch = -1
         for ep in range(args.epochs):
+
             for bIdx, (currBatch,currTargetBatch) in enumerate(train_loader):
                 optimizer.zero_grad()
-                output = muda(currBatch)
-                loss = F.cross_entropy(output, currTargetBatch)
+                output = muda(currBatch.to(device))
+                loss = F.cross_entropy(output, currTargetBatch.to(device))
                 loss.backward()
                 optimizer.step()
-                print('[%d, %05d de %05d] loss: %.3f' %(ep+ 1, bIdx + 1, qntBatches, loss.item()))
+                print('\r[%d, %05d de %05d] loss: %.3f' %(ep+ 1, bIdx + 1, qntBatches, loss.item()),end='\r')
 
-            if ep % 5 == 0:
-                total = 0
-                correct = 0
-                with torch.no_grad():
-                    for data in test_loader:
-                        images, labels = data
-                        outputs = muda(images)
-                        _, predicted = torch.max(outputs.data, 1)
-                        total += labels.size(0)
-                        correct += (predicted == labels).sum().item()
 
-                print('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
-                input()
+            total = 0
+            correct = 0
+            with torch.no_grad():
+                for data in test_loader:
+                    images, labels = data
+                    outputs = muda(images.to(device))
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels.to(device) ).sum().item()
+
+            cResult = correct / total
+
+            print('[EPOCH %d] Accuracy of the network on the %d test images: %d %%' % (ep,total,100 * cResult))
+
+            if bestResult < cResult:
+                bestResult = cResult
+                bestEpoch = ep
+
+            if ep % 10 == 0:
                 fName = '%s_checkpoint_%05d.pth.tar' % ('GioGio',ep)
                 fName = os.path.join('training_pytorch', str(f),fName)
                 save_checkpoint({
@@ -83,4 +103,9 @@ if __name__ == '__main__':
                     'state_dict': muda.state_dict(),
                     'optimizer': optimizer.state_dict(),
                 }, False, fName)
+                foldResults[-1].append(correct / total)
 
+        print('Best result %2.6f Epoch %d' % (bestResult*100,bestEpoch))
+
+
+    print(foldResults)

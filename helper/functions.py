@@ -337,6 +337,26 @@ def generateImageData(paths,resize=None):
             print('oi')
     return np.array(returningPaths)
 
+def loadFoldFromFolders(pathFolders):
+    inFolder = getDirectoriesInPath(pathFolders)
+    returnFolders = []
+    for inF in inFolder:
+        returnFolders.append([[],[],[],[]])
+        types = getDirectoriesInPath(os.path.join(pathFolders,inF))
+        for t in types:
+            filesForFold = getFilesInPath(os.path.join(pathFolders,inF,t))
+            for ffolder in filesForFold:
+                currFile = ffolder.split(os.path.sep)[-1]
+                cClass = int(currFile.split('_')[0])
+                if t == 'probe':
+                    returnFolders[-1][2].append(ffolder)
+                    returnFolders[-1][3].append(cClass)
+                else:
+                    returnFolders[-1][0].append(ffolder)
+                    returnFolders[-1][1].append(cClass)
+
+    return returnFolders
+
 if __name__ == '__main__':
     print(generateArrayUniform())
 

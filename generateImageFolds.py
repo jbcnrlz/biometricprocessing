@@ -12,10 +12,16 @@ def validateFold(foldedData):
         galle = fData[0]
         for p in probe:
             cPFile = p.split(os.path.sep)[-1]
-            cPFile = cPFile[:cPFile.find('newdepth')+len('newdepth')]
+            if cPFile.find('newdepth') == -1:
+                cPFile = cPFile[:-3]
+            else:
+                cPFile = cPFile[:cPFile.find('newdepth')+len('newdepth')]
             for g in galle:
                 gFile = g.split(os.path.sep)[-1]
-                gFile = gFile[:gFile.find('newdepth') + len('newdepth')]
+                if gFile.find('newdepth') == -1:
+                    gFile = gFile[:-3]
+                else:
+                    gFile = gFile[:gFile.find('newdepth') + len('newdepth')]
                 if (cPFile == gFile):
                     return False
 

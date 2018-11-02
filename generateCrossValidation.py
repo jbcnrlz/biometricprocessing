@@ -1,5 +1,5 @@
 import os, random, numpy as np, math, argparse
-from helper.functions import getFilesInPath
+from helper.functions import getFilesInPath, loadFoldFromFolders
 from PIL import Image as im
 from keras.models import Model
 from keras.utils import to_categorical
@@ -173,6 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('-y', '--h5Path', default=None, help='Path to build h5 files', required=False)
     parser.add_argument('--onlyOnGallery', default=False, help='Utilize augmented data only on Gallery', type=bool, required=False)
     parser.add_argument('--normalization', default=None, help='Normalization function', required=False)
+    parser.add_argument('--loadFromFolder', default=None, help='Load folds from folders', required=False)
     args = parser.parse_args()
 
     if args.network == 'alexnet':
@@ -193,58 +194,63 @@ if __name__ == '__main__':
         for func in fName:
             normFunction = getattr(normFunction,func)
 
-    imageData, classesData = generateData(args.pathBase)
-    #gBase, cgBase, rData, crData = getBaseGallery(imageData,classesData)
-    foldSize = int(len(imageData) / args.folds)
-    foldResult = []
-    if not args.onlyOnGallery:
-        for foldNumber in range(args.folds):
-            print('Fazendo fold ' + str(foldNumber))
-            foldChoices = random.sample([i for i in range(len(imageData))], foldSize)
-            foldProbe = []
-            foldProbeClasses = []
-            foldGallery = []
-            foldGalleryClasses = []
-            for i in range(len(imageData)):
-                if i in foldChoices:
-                    foldProbe.append(imageData[i])
-                    foldProbeClasses.append(classesData[i])
-                else:
-                    foldGallery.append(imageData[i])
-                    foldGalleryClasses.append(classesData[i])
+    foldResult = None
 
-            #foldGallery = generateImageData(foldGallery)
-            #foldGalleryClasses = np.array(foldGalleryClasses)
-            foldResult.append([foldGallery,foldGalleryClasses,foldProbe,foldProbeClasses])
+    if args.loadFromFolder is None:
+
+        imageData, classesData = generateData(args.pathBase)
+        #gBase, cgBase, rData, crData = getBaseGallery(imageData,classesData)
+        foldSize = int(len(imageData) / args.folds)
+        foldResult = []
+        if not args.onlyOnGallery:
+            for foldNumber in range(args.folds):
+                print('Fazendo fold ' + str(foldNumber))
+                foldChoices = random.sample([i for i in range(len(imageData))], foldSize)
+                foldProbe = []
+                foldProbeClasses = []
+                foldGallery = []
+                foldGalleryClasses = []
+                for i in range(len(imageData)):
+                    if i in foldChoices:
+                        foldProbe.append(imageData[i])
+                        foldProbeClasses.append(classesData[i])
+                    else:
+                        foldGallery.append(imageData[i])
+                        foldGalleryClasses.append(classesData[i])
+
+                #foldGallery = generateImageData(foldGallery)
+                #foldGalleryClasses = np.array(foldGalleryClasses)
+                foldResult.append([foldGallery,foldGalleryClasses,foldProbe,foldProbeClasses])
+        else:
+            normalData, ndc, augData, adc = separateAugmentedData(imageData,classesData)
+            foldSize = int(len(normalData) / args.folds)
+            for foldNumber in range(args.folds):
+                print('Fazendo fold '+str(foldNumber))
+                foldChoices = random.sample([i for i in range(len(normalData))], foldSize)
+                foldProbe = []
+                foldProbeClasses = []
+                foldGallery = []
+                foldGalleryClasses = []
+
+                for i in range(len(normalData)):
+                    if i in foldChoices:
+                        foldProbe.append(normalData[i])
+                        foldProbeClasses.append(ndc[i])
+                    else:
+                        foldGallery.append(normalData[i])
+                        foldGalleryClasses.append(ndc[i])
+
+                        aDataCur = getAugData(normalData[i].split(os.path.sep)[-1], augData, adc)
+                        cDataCur = [ndc[i]] * len(aDataCur)
+
+                        foldGallery = foldGallery + aDataCur
+                        foldGalleryClasses = foldGalleryClasses + cDataCur
+
+                #foldGallery = generateImageData(foldGallery)
+                #foldGalleryClasses = np.array(foldGalleryClasses)
+                foldResult.append([foldGallery,foldGalleryClasses,foldProbe,foldProbeClasses])
     else:
-        normalData, ndc, augData, adc = separateAugmentedData(imageData,classesData)
-        foldSize = int(len(normalData) / args.folds)
-        for foldNumber in range(args.folds):
-            print('Fazendo fold '+str(foldNumber))
-            foldChoices = random.sample([i for i in range(len(normalData))], foldSize)
-            foldProbe = []
-            foldProbeClasses = []
-            foldGallery = []
-            foldGalleryClasses = []
-
-            for i in range(len(normalData)):
-                if i in foldChoices:
-                    foldProbe.append(normalData[i])
-                    foldProbeClasses.append(ndc[i])
-                else:
-                    foldGallery.append(normalData[i])
-                    foldGalleryClasses.append(ndc[i])
-
-                    aDataCur = getAugData(normalData[i].split(os.path.sep)[-1], augData, adc)
-                    cDataCur = [ndc[i]] * len(aDataCur)
-
-                    foldGallery = foldGallery + aDataCur
-                    foldGalleryClasses = foldGalleryClasses + cDataCur
-
-            #foldGallery = generateImageData(foldGallery)
-            #foldGalleryClasses = np.array(foldGalleryClasses)
-            foldResult.append([foldGallery,foldGalleryClasses,foldProbe,foldProbeClasses])
-
+        foldResult = loadFoldFromFolders(args.loadFromFolder)
     efr = []
 
     for foldData in range(len(foldResult)):

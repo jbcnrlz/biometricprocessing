@@ -51,4 +51,15 @@ if __name__ == '__main__':
             optimizer.step()
             print('\r[%d, %05d de %05d] loss: %.3f' % (ep + 1, bIdx + 1, qntBatches, loss.item()), end='\r')
 
+            if ep % 20 == 0:
+                fName = '%s_checkpoint_%05d.pth.tar' % ('GioGio',ep)
+                fName = os.path.join('training_full_pytorch', fName)
+                save_checkpoint({
+                    'epoch': ep + 1,
+                    'arch': 'GioGio',
+                    'state_dict': muda.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                }, False, fName)
+
+
     print('Terminou')

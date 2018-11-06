@@ -25,12 +25,10 @@ if __name__ == '__main__':
         shutil.rmtree('training_full_pytorch')
 
     os.makedirs('training_full_pytorch')
-
     muda = jojo.GioGio(args.classNumber)
     muda.to(device)
 
     qntBatches = imageData.shape[0] / args.batch
-
 
     if np.amin(classesData) == 1:
         foldGalleryClasses = classesData - 1

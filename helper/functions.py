@@ -1,4 +1,4 @@
-import operator, math, numpy as np, os, random
+import operator, math, numpy as np, os, random, re
 from scipy.spatial.distance import euclidean
 from PIL import Image as im
 
@@ -297,6 +297,34 @@ def generateData(pathFiles):
             returnDataClass.append(int(classNumber))
 
     return returnDataImages, returnDataClass
+
+def generateExperimentDataPattern(imageData,classesData,patternProbe,patternGallery):
+    foldProbe = []
+    foldProbeClasses = []
+    foldGallery = []
+    foldGalleryClasses = []
+    for i in range(len(imageData)):
+        isProbe = False
+        fileName = imageData[i].split(os.path.sep)[-1]
+        for p in patternProbe:
+            if re.match(p, fileName):
+                foldProbe.append(imageData[i])
+                foldProbeClasses.append(classesData[i])
+                isProbe = True
+                break
+
+        if not isProbe:
+            if patternGallery is None:
+                foldGallery.append(imageData[i])
+                foldGalleryClasses.append(classesData[i])
+            else:
+                for pg in patternGallery:
+                    if re.match(pg,fileName):
+                        foldGallery.append(imageData[i])
+                        foldGalleryClasses.append(classesData[i])
+
+    return foldGallery, foldGalleryClasses, foldProbe, foldProbeClasses
+
 
 def generateFoldsOfData(fq,imageData,classesData):
     foldSize = int(len(imageData) / fq)

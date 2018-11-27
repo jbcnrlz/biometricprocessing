@@ -1,4 +1,4 @@
-import os, random, numpy as np, math, argparse
+import os, random, numpy as np, math, argparse, time
 from helper.functions import getFilesInPath, loadFoldFromFolders
 from PIL import Image as im
 from keras.models import Model
@@ -338,6 +338,11 @@ if __name__ == '__main__':
                 a, acc = model.evaluate(foldProbe, y_binary)
                 print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
                 efr[-1].append(acc)
+
+        del model
+        del uModel
+
+        time.sleep(2)
 
     with open('results_fold.txt','w') as rf:
         for e in efr:

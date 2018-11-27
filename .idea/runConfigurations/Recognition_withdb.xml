@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="mainProgram" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="Recognition_withdb" type="PythonConfigurationType" factoryName="Python">
     <module name="biometricprocessing" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -11,8 +11,8 @@
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/mainProgram.py" />
-    <option name="PARAMETERS" value="-p=$USER_HOME$/local_mount/EURECOM_Kinect_Face_Dataset -t=Depth -op=fe -f=$PROJECT_DIR$/../svm_torch_files/3dlbp_eurecom.txt --loadNewDepth=True --faceVariation=Neutral --pathImages=generated_images_eurecom_3b3 --angles=-30_-20_-10_10_20_30 --parcal=True" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Recognition_withdb.py" />
+    <option name="PARAMETERS" value="-p=$PROJECT_DIR$/../features_extracted/eurecom_all_chars.txt" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

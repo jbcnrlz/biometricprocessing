@@ -32,8 +32,9 @@ class SymmetricFilling(PreProcessingStep):
 
         return np.array(mirroredList,dtype=np.float32)
 
-    def symmetricFillingPCL(self,face,mirroredFace,pathCompl=''):
-        mirroredFace = self.applyICP(face,mirroredFace,pathCompl)
+    def symmetricFillingPCL(self,face,mirroredFace,pathCompl='',doICP=True):
+        if doICP:
+            mirroredFace = self.applyICP(face,mirroredFace,pathCompl)
         facet = pcl.PointCloud()
         facet.from_array(face)
         mirror = pcl.PointCloud()
@@ -43,7 +44,7 @@ class SymmetricFilling(PreProcessingStep):
         symmetricFilledFace = []
         for x in range(mirror.size):
             if (sqr_distances[x][1] > self.symmThreshold):
-                symmetricFilledFace.append(mirror[x])
+                    symmetricFilledFace.append(mirror[x])
         symfacecon = np.array(symmetricFilledFace,dtype=np.float32)
         return np.concatenate((face,symfacecon))
 
@@ -57,7 +58,7 @@ class SymmetricFilling(PreProcessingStep):
 
     def outputSymmFillObj(self,template):
         subject = "%04d" % (template.itemClass)
-        template3Dobj = template.rawRepr.split(os.path.sep)[:-3]
+        template3Dobj = template.rawRepr.split(os.path.sep)[:-2]
         folderType = template3Dobj[template3Dobj.index(subject) + 1]
         outputObj(template.image,os.path.join(os.path.sep.join(template3Dobj),'3DObj','depth_'+subject+'_'+folderType+'_'+template.typeTemplate+'_symmetricfilled.obj'))
 
@@ -68,7 +69,7 @@ class SymmetricFilling(PreProcessingStep):
         imageFromFace = np.array(template.image,dtype=np.float32)
         mirroredFace = self.mirrorFace(imageFromFace)
         folderPath = template.rawRepr.split(os.path.sep)
-        faceSimmetricalFused = self.symmetricFillingPCL(imageFromFace,mirroredFace,os.path.sep.join(folderPath[:-1]))
+        faceSimmetricalFused = self.symmetricFillingPCL(imageFromFace,mirroredFace,os.path.sep.join(folderPath[:-1]),doICP=(template.typeTemplate != 'OcclusionPaper'))
         if not type(template) is FRGCTemplate:
             template.image = faceSimmetricalFused.tolist()
             self.outputSymmFillObj(template)

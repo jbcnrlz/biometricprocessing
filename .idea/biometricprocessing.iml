@@ -3,11 +3,16 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/bosphorus" />
+      <excludeFolder url="file://$MODULE_DIR$/eurecom_folds" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_bosphorus" />
+      <excludeFolder url="file://$MODULE_DIR$/generated_images_bosphorus_folds" />
+      <excludeFolder url="file://$MODULE_DIR$/generated_images_bosphorus_folds_withoutcc_cr" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_bosphorus_withoutocc_cr" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_eurecom" />
+      <excludeFolder url="file://$MODULE_DIR$/generated_images_lbp_frgc" />
       <excludeFolder url="file://$MODULE_DIR$/temporaryTemplate" />
       <excludeFolder url="file://$MODULE_DIR$/training" />
+      <excludeFolder url="file://$MODULE_DIR$/training_full_pytorch" />
       <excludeFolder url="file://$MODULE_DIR$/training_pytorch" />
     </content>
     <orderEntry type="inheritedJdk" />

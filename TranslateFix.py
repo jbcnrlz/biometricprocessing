@@ -18,6 +18,6 @@ class TranslateFix(PreProcessingStep):
 
     def doPreProcessing(self,template):
         template.image = self.translateToOriginByNoseTip(template.image,template.faceMarks[self.nosetipindex])
-        if (self.nosetipindex.isdigit()):
+        if (type(self.nosetipindex) is int) or (self.nosetipindex.isdigit()):
             template.faceMarks = self.translateToOriginByNoseTip(template.faceMarks,template.faceMarks[self.nosetipindex])
         return template

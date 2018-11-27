@@ -1,6 +1,6 @@
 from helper.functions import generateData, generateFoldsOfData, generateImageData, loadFoldFromFolders
 import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
-import torch.utils.data, shutil, os
+import torch.utils.data, shutil, os, time
 
 def save_checkpoint(state,is_best,filename='checkpoint.pth.tar'):
     torch.save(state, filename)
@@ -16,6 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--epochs', type=int, default=10, help='Epochs to be run', required=False)
     parser.add_argument('-f', '--folds', type=int, default=10, help='Fold quantity', required=False)
     parser.add_argument('--loadFromFolder', default=None, help='Load folds from folders', required=False)
+    parser.add_argument('--fineTuneWeights', default=None, help='Do fine tuning with weights', required=False)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -30,10 +31,13 @@ if __name__ == '__main__':
         os.makedirs('training_pytorch')
 
     foldResults = []
+    trainTimeFolds = []
     for f, datas in enumerate(folds):
         print('====================== Fazendo Fold =======================')
         muda = jojo.GioGio(args.classNumber)
+        print(muda)
         muda.to(device)
+
         foldResults.append([])
         foldProbe = generateImageData(datas[2])
         foldProbeClasses = np.array(datas[3])
@@ -63,18 +67,27 @@ if __name__ == '__main__':
         if not os.path.exists(os.path.join('training_pytorch', str(f))):
             os.makedirs(os.path.join('training_pytorch', str(f)))
 
+        if args.fineTuneWeights is not None:
+            checkpoint = torch.load(args.fineTuneWeights)
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            muda.load_state_dict(checkpoint['state_dict'])
+
         bestResult = -1
         bestEpoch = -1
+
+        fTrainignTime = []
         for ep in range(args.epochs):
 
+            start_time = time.time()
             for bIdx, (currBatch,currTargetBatch) in enumerate(train_loader):
                 optimizer.zero_grad()
                 output = muda(currBatch.to(device))
                 loss = F.cross_entropy(output, currTargetBatch.to(device))
                 loss.backward()
                 optimizer.step()
-                print('\r[%d, %05d de %05d] loss: %.3f' %(ep+ 1, bIdx + 1, qntBatches, loss.item()),end='\r')
-
+                print('[%d, %05d de %05d] loss: %.3f' %(ep+ 1, bIdx + 1, qntBatches, loss.item()))
+            finishTime = time.time() - start_time
+            fTrainignTime.append(finishTime)
 
             total = 0
             correct = 0
@@ -105,7 +118,9 @@ if __name__ == '__main__':
                 }, False, fName)
                 foldResults[-1].append(correct / total)
 
+        trainTimeFolds.append(sum(fTrainignTime))
         print('Best result %2.6f Epoch %d' % (bestResult*100,bestEpoch))
 
 
     print(foldResults)
+    print(trainTimeFolds)

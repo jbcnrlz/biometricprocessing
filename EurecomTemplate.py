@@ -113,10 +113,6 @@ class EurecomTemplate(Template):
         fullPath = fullPath[0]
         imageSaveDLP = im.fromarray(np.uint8(self.layersChar))
         pathNImage = pathImage+'/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath +'.png'
-        while (os.path.exists(pathNImage)):
-            idxRandomIm = random.randint(1,255)
-            pathNImage = pathImage+'/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath +'_'+str(idxRandomIm)+'.png'
-            
         imageSaveDLP.save(pathNImage)
 
     def saveHistogramImage(self,imageSave=None,folder='generated_images_wld'):

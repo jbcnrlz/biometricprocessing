@@ -26,22 +26,26 @@ class SegmentFace(PreProcessingStep):
         centerPoint = points[center]
         sortedList = list(points)
         neighbors = []
-        for x in range(center-1,-1,-1):
-            if ((centerPoint != sortedList[x]).all() and (sortedList[x] != [0.0,0.0,0.0]).all()):
-                distancePoints = euclidean(np.array(centerPoint[0:2]),np.array(sortedList[x][0:2]))
-                if distancePoints <= radius:
-                    neighbors.append(sortedList[x])
-
+        for x in range(len(sortedList)):
+            distancePoints = euclidean(np.array(centerPoint[0:2]),np.array(sortedList[x][0:2]))
+            if distancePoints <= radius:
+                neighbors.append(sortedList[x])
+        '''
         for x in range(center + 1,len(sortedList)):
             if ((centerPoint != sortedList[x]).all() and (sortedList[x] != [0.0,0.0,0.0]).all()):
                 distancePoints = euclidean(np.array(centerPoint[0:2]),np.array(sortedList[x][0:2]))
                 if distancePoints <= radius:
                     neighbors.append(sortedList[x])
+        '''
         return neighbors
 
     def doPreProcessing(self,template):
         distancePoints = 70
-        imFile = template.image
+        imFile = None
+        if type(template.image) is list:
+            imFile = np.array(template.image)
+        else:
+            imFile = template.image
         if len(template.faceMarks) > 0:
             template.image = self.getFaceFromCenterPoint(template.faceMarks[self.nosetipindex],distancePoints,imFile)
         else:

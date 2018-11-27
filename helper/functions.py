@@ -353,6 +353,7 @@ def generateFoldsOfData(fq,imageData,classesData):
 def generateImageData(paths,resize=None):
     returningPaths = []
     for p in paths:
+        print('Loading image '+p)
         ni = im.open(p)
         if not resize is None:
             ni = ni.resize(resize,im.ANTIALIAS)
@@ -366,7 +367,13 @@ def generateImageData(paths,resize=None):
     return np.array(returningPaths)
 
 def loadFoldFromFolders(pathFolders):
-    inFolder = getDirectoriesInPath(pathFolders)
+    inFolder = None
+    try:
+        inFolder = list(map(int,getDirectoriesInPath(pathFolders)))
+        inFolder.sort()
+        inFolder = list(map(str, inFolder))
+    except:
+        inFolder = getDirectoriesInPath(pathFolders)
     returnFolders = []
     for inF in inFolder:
         returnFolders.append([[],[],[],[]])

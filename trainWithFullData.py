@@ -18,7 +18,7 @@ if __name__ == '__main__':
         os.makedirs(os.path.join('training', 'full'))
 
     checkpoint_path = None if args.network is None else "training/full/face_"+args.network+"-{epoch:04d}.ckpt"
-    cp_callback = tf.keras.callbacks.ModelCheckpoint(checkpoint_path, verbose=1, save_weights_only=True,period=10)
+    cp_callback = tf.keras.callbacks.ModelCheckpoint(checkpoint_path, verbose=1, save_weights_only=True,period=20)
     imageData, classesData = generateData(args.pathBase)
     imageData = np.array(generateImageData(imageData)) / 255.0
     classesData = np.array(classesData)

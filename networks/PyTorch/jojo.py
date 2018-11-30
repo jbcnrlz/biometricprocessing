@@ -18,14 +18,14 @@ class GioGio(nn.Module):
             nn.Conv2d(64, 192, kernel_size=5, padding=2),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
-            #nn.Conv2d(192, 384, kernel_size=3, padding=1),
-            #nn.ReLU(inplace=True),
-            #nn.MaxPool2d(kernel_size=3, stride=2)
+            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(192*12*12, 4096),
+            nn.Linear(384*5*5, 4096),
             nn.ReLU(inplace=True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
@@ -35,6 +35,6 @@ class GioGio(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), 192*12*12)
+        x = x.view(x.size(0), 384*5*5)
         x = self.classifier(x)
         return x

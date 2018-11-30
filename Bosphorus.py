@@ -53,6 +53,13 @@ class Bosphorus(DatabaseProcessingUtility):
         explodedFile = explodedFile[0].split('_')
         return explodedFile.pop()
 
+    def feedTemplatesFromList(self,listOfFaces):
+        for l in listOfFaces:
+            subjectNumber = l.split(os.path.sep)[-1]
+            subjectNumber = int(subjectNumber[2:5])
+            euTemp = BosphorusTemplate(l, subjectNumber)
+            self.templates.append(euTemp)
+
     def feedTemplates(self):
         for subject in getDirectoriesInPath(self.databasePath):
             directories = self.getFilesFromDirectory(os.path.join(self.databasePath,subject))

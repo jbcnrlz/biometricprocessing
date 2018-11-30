@@ -28,7 +28,7 @@ class SegmentFace(PreProcessingStep):
         neighbors = []
         for x in range(len(sortedList)):
             distancePoints = euclidean(np.array(centerPoint[0:2]),np.array(sortedList[x][0:2]))
-            if distancePoints <= radius:
+            if distancePoints <= radius and sortedList[x][2] != 0:
                 neighbors.append(sortedList[x])
         '''
         for x in range(center + 1,len(sortedList)):
@@ -40,7 +40,7 @@ class SegmentFace(PreProcessingStep):
         return neighbors
 
     def doPreProcessing(self,template):
-        distancePoints = 70
+        distancePoints = 200
         imFile = None
         if type(template.image) is list:
             imFile = np.array(template.image)
@@ -50,11 +50,5 @@ class SegmentFace(PreProcessingStep):
             template.image = self.getFaceFromCenterPoint(template.faceMarks[self.nosetipindex],distancePoints,imFile)
         else:
             template.image = self.getFaceFromCenterPoint(np.array([0,0,0]),60000,imFile)
-            txtFilePath = template.rawRepr[0:-4] + '_segmented.pcd'
-            cloudp = pcl.PointCloud()
-            cloudp.from_array(np.array(template.image))
-            if (os.path.exists(txtFilePath)):
-                os.remove(txtFilePath)
-            cloudp.to_file(txtFilePath.encode('utf-8'))
 
         return template

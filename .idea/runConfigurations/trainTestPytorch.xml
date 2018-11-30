@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorch.py" />
-    <option name="PARAMETERS" value="-c=52 -p=generated_images_eurecom -e=100 --runOnTest=True -b=20 --loadFromFolder=experiment_eurecom_ocpaper" />
+    <option name="PARAMETERS" value="-c=1000 -p=generated_images_eurecom -e=100 --runOnTest=True -b=10 --loadFromFolder=experiment_bosphorus_paper" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

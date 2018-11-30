@@ -18,13 +18,17 @@ if __name__ == '__main__':
     parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
     parser.add_argument('--angles', default=None, help='Angles of face to load', required=False)
     parser.add_argument('--forceImage', default=False, help='Force Image regeneration', required=False, type=bool)
+    parser.add_argument('--loadImages', default=None, help='Images to load', required=False)
     args = parser.parse_args()
 
     print('Iniciando...')
     print(args)
 
     gallery = Bosphorus(args.pathdatabase,args.typeoffile,args.faceVariation)
-    gallery.feedTemplates()
+    if args.loadImages is None:
+        gallery.feedTemplates()
+    else:
+        gallery.feedTemplatesFromList(args.loadImages.split('__'))
 
     if args.loadNewDepth:
         gallery.loadNewDepthImage()

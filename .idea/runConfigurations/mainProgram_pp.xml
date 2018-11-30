@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/mainProgram.py" />
-    <option name="PARAMETERS" value="-p=$USER_HOME$/local_mount/EURECOM_Kinect_Face_Dataset -t=3DObj -op=pp -f=$PROJECT_DIR$/../svm_torch_files/3dlbp_eurecom.txt --faceVariation=OcclusionPaper --pathImages=generated_images_kinect -s=SegmentFace_TranslateFix:nosetip=2_FixPaperOcclusion_SymmetricFilling_RotateFace_GenerateNewDepthMaps -ap=16 -r=1 --parcal=True" />
+    <option name="PARAMETERS" value="-p=$USER_HOME$/local_mount/EURECOM_Kinect_Face_Dataset -t=3DObj -op=pp -f=$PROJECT_DIR$/../svm_torch_files/3dlbp_eurecom.txt --faceVariation=LightOn_OcclusionEyes_OcclusionMouth_OpenMouth_Smile --pathImages=generated_images_kinect -s=SegmentFace_TranslateFix:nosetip=2_SymmetricFilling_RotateFace_GenerateNewDepthMaps -ap=16 -r=1 --parcal=True" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

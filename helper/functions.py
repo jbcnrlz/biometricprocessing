@@ -285,16 +285,20 @@ def getFilesInPath(path,onlyFiles=True):
     else:
         return [os.path.join(path,f) for f in os.listdir(path)]
 
-def generateData(pathFiles):
+def generateData(pathFiles,extension='png'):
     returnDataImages = []
     returnDataClass = []
     filesOnPath = getFilesInPath(pathFiles)
     for f in filesOnPath:
-        if f[-3:] == 'png':
+        if f[-3:] == extension:
             returnDataImages.append(f)
             classNumber = f.split(os.path.sep)[-1]
-            classNumber = classNumber.split('_')[0]
+            if extension == 'png':
+                classNumber = classNumber.split('_')[0]
+            else:
+                classNumber = classNumber.split('_')[1]
             returnDataClass.append(int(classNumber))
+
 
     return returnDataImages, returnDataClass
 
@@ -359,11 +363,7 @@ def generateImageData(paths,resize=None):
             ni = ni.resize(resize,im.ANTIALIAS)
 
         ni = np.array(ni)
-        if ni.shape == (100,100,4):
-            returningPaths.append(np.array(ni))
-        else:
-            print(p)
-            print('oi')
+        returningPaths.append(np.array(ni))
     return np.array(returningPaths)
 
 def loadFoldFromFolders(pathFolders):
@@ -382,6 +382,7 @@ def loadFoldFromFolders(pathFolders):
             filesForFold = getFilesInPath(os.path.join(pathFolders,inF,t))
             for ffolder in filesForFold:
                 currFile = ffolder.split(os.path.sep)[-1]
+
                 cClass = int(currFile.split('_')[0])
                 if t == 'probe':
                     returnFolders[-1][2].append(ffolder)

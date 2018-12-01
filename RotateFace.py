@@ -8,7 +8,7 @@ from PIL import Image as im
 class RotateFace(PreProcessingStep):
 
     def __init__(self,**kwargs):
-        self.axis = kwargs.get('axis', ['x','y'])
+        self.axis = kwargs.get('axis', ['x','y','xy'])
 
     def outputObj(self,points,fileName):
         f = open(fileName,'w')
@@ -64,20 +64,39 @@ class RotateFace(PreProcessingStep):
         for ax in self.axis:
             for i in range(-30,31,10):
                 if (i != 0):
-                    rty = self.getRotationMatrix(i,ax)
                     nObj = copy.deepcopy(template)
-                    nObj.image = self.multiplyMatrices(faceCloud,rty)
-                    self.outputObj(nObj.image,os.path.join('temporaryTemplate','objRotated',nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.obj'))
-                    nObj = genFaces.doPreProcessing(nObj)
-                    nObj.image = im.fromarray(np.array(nObj.image,dtype=np.uint8))
-                    nObj.image = nObj.image.rotate(-180)
-                    pathCImg = nObj.rawRepr.split(os.path.sep)
-                    if pathCImg.index('EURECOM_Kinect_Face_Dataset') >=0 :
-                        fileName = pathCImg[-1]
-                        pathCImg = os.path.sep.join(pathCImg[0:-2])
-                        nObj.image.save(os.path.join(pathCImg,'Depth','DepthBMP',fileName[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp'))
+                    if ax == 'xy':
+                        rtx = self.getRotationMatrix(i, 'x')
+                        for j in range(-30,31,10):
+                            rty = self.getRotationMatrix(j, 'y')
+                            nObj.image = self.multiplyMatrices(faceCloud, rtx)
+                            nObj.image = self.multiplyMatrices(nObj.image.tolist(), rty)
+                            self.outputObj(nObj.image,os.path.join('temporaryTemplate','objRotated',nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+str(j)+'_'+ax+'_newdepth.obj'))
+                            nObj = genFaces.doPreProcessing(nObj)
+                            nObj.image = im.fromarray(np.array(nObj.image,dtype=np.uint8))
+                            nObj.image = nObj.image.rotate(-180)
+                            pathCImg = nObj.rawRepr.split(os.path.sep)
+                            if pathCImg.index('EURECOM_Kinect_Face_Dataset') >=0 :
+                                fileName = pathCImg[-1]
+                                pathCImg = os.path.sep.join(pathCImg[0:-2])
+                                nObj.image.save(os.path.join(pathCImg,'Depth','DepthBMP',fileName[0:-4] + '_rotate_'+str(i)+'_'+str(j)+'_'+ax+'_newdepth.bmp'))
+                            else:
+                                nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+str(j)+'_'+ax+'_newdepth.bmp')
+
                     else:
-                        nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp')
+                        rty = self.getRotationMatrix(i,ax)
+                        nObj.image = self.multiplyMatrices(faceCloud,rty)
+                        self.outputObj(nObj.image,os.path.join('temporaryTemplate','objRotated',nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.obj'))
+                        nObj = genFaces.doPreProcessing(nObj)
+                        nObj.image = im.fromarray(np.array(nObj.image,dtype=np.uint8))
+                        nObj.image = nObj.image.rotate(-180)
+                        pathCImg = nObj.rawRepr.split(os.path.sep)
+                        if pathCImg.index('EURECOM_Kinect_Face_Dataset') >=0 :
+                            fileName = pathCImg[-1]
+                            pathCImg = os.path.sep.join(pathCImg[0:-2])
+                            nObj.image.save(os.path.join(pathCImg,'Depth','DepthBMP',fileName[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp'))
+                        else:
+                            nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp')
 
         return template
 

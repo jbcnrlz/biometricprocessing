@@ -53,7 +53,7 @@ class RotateFaceLFW(PreProcessingStep):
 
     def __init__(self,**kwargs):
         self.regenFaces = kwargs.get('regenarate', True)
-        self.axis = kwargs.get('axis', ['x','y'])
+        self.axis = kwargs.get('axis', ['x','y','xy'])
 
     def doPreProcessing(self,template):
         genFaces = None
@@ -76,24 +76,40 @@ class RotateFaceLFW(PreProcessingStep):
             for i in range(-30,40,10):
                 if (i != 0):                
                     if (self.regenFaces) or (not os.path.exists(template.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.'+extentionFiles)):
-                        rty = self.getRotationMatrix(i,ax)
-                        nObj = copy.deepcopy(template)
-                        nObj.image = self.multiplyMatrices(faceCloud.tolist(),rty)
-                        newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
-                        fullPathPCD = nObj.rawRepr[0:-4]+'_rotate_'+str(i)+'_'+ax+'.pcd'
-                        newCloud.to_file(fullPathPCD.encode('utf-8'))
-                        if type(nObj) is FRGCTemplate:
-                            genFaces.fileExtension = '_rotate_'+str(i)+'_'+ax
-                        nObj = genFaces.doPreProcessing(nObj)
-                        nObj.image = im.fromarray(np.array(nObj.image,dtype=np.uint8))
-                        if not type(nObj) is FRGCTemplate:
-                            nObj.image = nObj.image.rotate(-180)
-                            nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.bmp')
+
+                        if ax == 'xy':
+                            rtx = self.getRotationMatrix(i, 'x')
+                            for j in range(-30, 31, 10):
+                                rty = self.getRotationMatrix(j, 'y')
+                                nObj.image = self.multiplyMatrices(faceCloud, rtx)
+                                nObj.image = self.multiplyMatrices(nObj.image.tolist(), rty)
+                                nObj = genFaces.doPreProcessing(nObj)
+                                nObj.image = im.fromarray(np.array(nObj.image, dtype=np.uint8))
+                                newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
+                                fullPathPCD = nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '.pcd'
+                                newCloud.to_file(fullPathPCD.encode('utf-8'))
+                                if type(nObj) is FRGCTemplate:
+                                    genFaces.fileExtension = '_rotate_' + str(i) + '_' + ax
+                                nObj = genFaces.doPreProcessing(nObj)
+                                nObj.image = im.fromarray(np.array(nObj.image, dtype=np.uint8))
+                                if not type(nObj) is FRGCTemplate:
+                                    nObj.image = nObj.image.rotate(-180)
+                                    nObj.image.save(
+                                        nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '_newdepth.bmp')
+
+                        else:
+                            rty = self.getRotationMatrix(i, ax)
+                            nObj = copy.deepcopy(template)
+                            nObj.image = self.multiplyMatrices(faceCloud.tolist(), rty)
+                            newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
+                            fullPathPCD = nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '.pcd'
+                            newCloud.to_file(fullPathPCD.encode('utf-8'))
+                            if type(nObj) is FRGCTemplate:
+                                genFaces.fileExtension = '_rotate_' + str(i) + '_' + ax
+                            nObj = genFaces.doPreProcessing(nObj)
+                            nObj.image = im.fromarray(np.array(nObj.image, dtype=np.uint8))
+                            if not type(nObj) is FRGCTemplate:
+                                nObj.image = nObj.image.rotate(-180)
+                                nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '_newdepth.bmp')
 
         return template
-
-if __name__ == '__main__':
-    a = [[-37.824600,51.693600,-726.000000],[26.659599,55.858101,-731.000000],[-2.407010,24.070200,-693.000000]]
-    tf = TranslateFix(None)
-    aline = tf.translateToOriginByNoseTip(a,[-2.407010,24.070200,-693.000000])
-    print(aline)

@@ -19,6 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('--angles', default=None, help='Angles of face to load', required=False)
     parser.add_argument('--forceImage', default=False, help='Force Image regeneration', required=False, type=bool)
     parser.add_argument('--loadImages', default=None, help='Images to load', required=False)
+    parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -69,7 +70,7 @@ if __name__ == '__main__':
         #gallery.saveNewDepthImages()
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,forceImage=args.forceImage)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,forceImage=args.forceImage,typeMeasurement=args.typeMeasure)
 
     if not args.pathtrainingfile is None:
         galeryData = gallery.generateDatabaseFile(args.pathtrainingfile)

@@ -4,6 +4,7 @@ from FRGCTemplate import *
 from LFWTemplate import *
 from BosphorusTemplate import *
 from baseClasses.BiometricProcessing import *
+from scipy.spatial.distance import euclidean
 from scipy.interpolate import interp2d
 from helper.functions import generateHistogram, generateHistogramUniform, generateArrayUniform
 
@@ -22,7 +23,7 @@ class ThreeDLBP(BiometricProcessing):
         with open(folder + '/subtraction.txt', 'a') as rty:
             rty.write(str(data) + '\n')
 
-    def generateCode(self, image, center, typeOp='Normal'):
+    def generateCode(self, image, center, typeOp='Normal',truncMaskPlus=None,truncMaskMinus=None):
         idxs = [
             (center[0] - 1, center[1] - 1),
             (center[0] - 1, center[1]),
@@ -44,13 +45,18 @@ class ThreeDLBP(BiometricProcessing):
                     print(image[center[0]][center[1]])
                     print(subraction)
                 if subraction < -7:
+                    if truncMaskMinus is not None:
+                        truncMaskMinus[i[0]][i[1]] += abs(subraction + 7)
                     subraction = -7
                 elif subraction > 7:
+                    if truncMaskPlus is not None:
+                        truncMaskPlus[i[0]][i[1]] += subraction - 7
                     subraction = 7
             else:
                 subraction = image[i[0]][i[1]] - image[center[0]][center[1]]
+                signSub = -1 if subraction < 0 else 1
                 subraction = np.histogram(expit(subraction), bins=7, range=[0, 1])[0]
-                subraction = np.argwhere(subraction == 1)[0][0]
+                subraction = np.argwhere(subraction == 1)[0][0] * signSub
             bin = '{0:03b}'.format(abs(subraction))
             layers[0].append(str(int(subraction >= 0)))
             layers[1].append(bin[0])
@@ -63,7 +69,6 @@ class ThreeDLBP(BiometricProcessing):
     '''
     Gera indices quando usando P e R no 3DLBP ao inves da vizinhanca fixa de 3x3
     '''
-
     def generateImagePoints(self, image, centerIndex):
         pointsImage = []
         for x in range(image.shape[0]):
@@ -85,7 +90,7 @@ class ThreeDLBP(BiometricProcessing):
         else:
             return image[r][c]
 
-    def generateCodePR(self, image, center, P, R, type='Normal'):
+    def generateCodePR(self, image, center, P, R, type='Normal',truncMaskPlus=None,truncMaskMinus=None):
         image = np.ascontiguousarray(image, dtype=np.double)
         xPositions = np.round(- R * np.sin(2 * np.pi * np.arange(P, dtype=np.double) / P),5) + center[0]
         yPositions = np.round(R * np.cos(2 * np.pi * np.arange(P, dtype=np.double) / P),5) + center[1]
@@ -125,12 +130,30 @@ class ThreeDLBP(BiometricProcessing):
                 # self.saveDebug('debug_subs',subraction)
 
                 if subraction < -7:
+                    if truncMaskMinus is not None and i[0].is_integer() and i[1].is_integer():
+                        truncMaskMinus[int(i[0])][int(i[1])] += abs(subraction + 7)
+                    elif truncMaskMinus is not None:
+                        xidxs = [math.floor(i[0]), math.ceil(i[0])]
+                        yidxs = [math.floor(i[1]), math.ceil(i[1])]
+                        for interpX in range(2):
+                            for interpY in range(2):
+                                truncMaskMinus[xidxs[interpX]][yidxs[interpY]] += abs(subraction + 7) * euclidean([xidxs[interpX], yidxs[interpY]],i)
+
                     subraction = -7
                 elif subraction > 7:
+                    if truncMaskPlus is not None and i[0].is_integer() and i[1].is_integer():
+                        truncMaskPlus[int(i[0])][int(i[1])] += abs(subraction - 7)
+                    elif truncMaskPlus is not None:
+                        xidxs = [math.floor(i[0]), math.ceil(i[0])]
+                        yidxs = [math.floor(i[1]), math.ceil(i[1])]
+                        for interpX in range(2):
+                            for interpY in range(2):
+                                truncMaskPlus[xidxs[interpX]][yidxs[interpY]] += abs(subraction - 7) * euclidean([xidxs[interpX], yidxs[interpY]],i)
                     subraction = 7
             else:
+                signSub = -1 if subraction < 0 else 1
                 subraction = np.histogram(expit(subraction), bins=7, range=[0, 1])[0]
-                subraction = np.argwhere(subraction == 1)[0][0]
+                subraction = np.argwhere(subraction == 1)[0][0] * signSub
 
             layers[0].append(str(int(subraction >= 0)))
 
@@ -145,13 +168,16 @@ class ThreeDLBP(BiometricProcessing):
     def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None):
         returnValue = [[], [], [], []]
 
+        template.underFlow = None
+        template.overFlow = None
+
         for i in range(r, image.shape[0] - r):
             for j in range(r, image.shape[1] - r):
                 resultCode = None
                 if typeLBP == 'original':
-                    resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement)
+                    resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2])
                 elif typeLBP == 'pr':
-                    resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), p,r, typeMeasurement)
+                    resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), p,r, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)])
 
                 if not template is None:
                     for chan in range(template.layersChar.shape[2]):
@@ -193,18 +219,18 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True):
+    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal'):
         if paralelCalling:
             poolCalling = Pool()
             for database in self.databases:
-                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage} for t in database.templates]
+                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement} for t in database.templates]
                 responses = poolCalling.map(unwrap_self_f_feature, zip([self] * len(dataForParCal), dataForParCal))
                 for i in range(len(responses)):
                     database.templates[i].features = responses[i][1]
         else:
             for database in self.databases:
                 for template in database.templates:
-                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage}
+                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement}
                     a, template.features = self.doFeatureExtraction(dataForParCal)
 
 
@@ -222,9 +248,13 @@ class ThreeDLBP(BiometricProcessing):
 
             if (not points is None) and (not radius is None):
                 uniArray = generateArrayUniform(points)
-                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template)
+                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'])
+                #template.saveMasks('overflowMasks_pr','overflow')
+                #template.saveMasks('underflowMasks_pr', 'underflow')
             else:
-                desc = self.generateImageDescriptor(imgCroped,template=template)
+                desc = self.generateImageDescriptor(imgCroped,template=template,typeMeasurement=parameters['typeMeasurement'])
+                #template.saveMasks('overflowMasks','overflow')
+                #template.saveMasks('underflowMasks', 'underflow')
 
             if self.generateImagesTrainig:
                 saving = template.saveImageTraining(False, self.fullPathGallFile)

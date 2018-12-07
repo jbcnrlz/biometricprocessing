@@ -53,7 +53,7 @@ class RotateFaceLFW(PreProcessingStep):
 
     def __init__(self,**kwargs):
         self.regenFaces = kwargs.get('regenarate', True)
-        self.axis = kwargs.get('axis', ['x','y','xy'])
+        self.axis = kwargs.get('axis', ['x','y'])
 
     def doPreProcessing(self,template):
         genFaces = None

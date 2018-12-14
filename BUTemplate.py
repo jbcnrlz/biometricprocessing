@@ -39,6 +39,8 @@ class BUTemplate(Template):
                 arrays = sio.loadmat(self.rawRepr)
                 self.image = arrays['d'][:,0:3]
                 self.faceMarks = self.loadLandmarksfromFile()
+        elif (self.rawRepr[-4:] == 'jpeg') or (self.rawRepr[-3:] == 'bmp') or (self.rawRepr[-3:] == 'jpg'):
+            self.image = np.array(im.open(self.rawRepr).convert('L'))
         else:
             holder = []
             with open(self.rawRepr, "rb") as vrml:

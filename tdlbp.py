@@ -175,9 +175,15 @@ class ThreeDLBP(BiometricProcessing):
             for j in range(r, image.shape[1] - r):
                 resultCode = None
                 if typeLBP == 'original':
-                    resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2])
+                    if template.underFlow is None or template.overFlow is None:
+                        resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]),typeMeasurement)
+                    else:
+                        resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2])
                 elif typeLBP == 'pr':
-                    resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), p,r, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)])
+                    if template.underFlow is None or template.overFlow is None:
+                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),p, r, typeMeasurement)
+                    else:
+                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), p,r, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)])
 
                 if not template is None:
                     for chan in range(template.layersChar.shape[2]):

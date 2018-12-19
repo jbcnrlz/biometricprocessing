@@ -36,7 +36,10 @@ class BosphorusTemplate(Template):
                     self.image = arrays['vertex'].T
                     self.faceMarks = arrays['lm3d'].T
                 else:
-                    self.image = arrays['defShape'].T
+                    if 'defShape' in arrays.keys():
+                        self.image = arrays['defShape'].T
+                    else:
+                        self.image = arrays['exprShape'].T
                     pathLandmarks = self.rawRepr.split(os.path.sep)[0:-2]
                     lnMarks = {}
                     with h5py.File(os.path.join(os.path.sep.join(pathLandmarks),'avgModel_bh_1779_NE.mat')) as fPy:

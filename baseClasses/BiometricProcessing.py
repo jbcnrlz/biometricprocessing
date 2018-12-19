@@ -64,9 +64,9 @@ class BiometricProcessing:
             traceback.print_exc()
         template = self.cleanupTemplate(template)
 
-    def preProcessing(self,verbose=False,paralelCalling=True):
+    def preProcessing(self,verbose=False,paralelCalling=True,procs=10):
         if paralelCalling:
-            poolCalling = Pool()
+            poolCalling = Pool(processes=procs)
             for database in self.databases:
                 poolCalling.map(unwrap_self_f,zip([self]*len(database.templates), database.templates))
         else:

@@ -41,7 +41,7 @@ class SegmentFace(PreProcessingStep):
         return neighbors
 
     def doPreProcessing(self,template):
-        distancePoints = 60
+        distancePoints = 120
         imFile = None
         if type(template.image) is list:
             imFile = np.array(template.image)
@@ -50,7 +50,7 @@ class SegmentFace(PreProcessingStep):
         if type(template is BUTemplate):
             nosetip = euclidean(np.array(template.faceMarks[37]),np.array(template.faceMarks[42]))
             nosetip = np.array(template.faceMarks[37]) + (nosetip / 2)
-            template.faceMarks['nosetip'] = nosetip
+            template.faceMarks[self.nosetipindex] = nosetip
             template.image = self.getFaceFromCenterPoint(nosetip, distancePoints, imFile)
         elif len(template.faceMarks) > 0:
             template.image = self.getFaceFromCenterPoint(template.faceMarks[self.nosetipindex],distancePoints,imFile)

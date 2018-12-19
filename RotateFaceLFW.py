@@ -46,6 +46,8 @@ class RotateFaceLFW(PreProcessingStep):
     def multiplyMatrices(self,m1,m2):
         multiResult = []
         for m in m1:
+            if type(m) == np.ndarray:
+                m = m.tolist()
             multMat = np.dot(m+[1],m2)[:-1]
             multiResult.append(multMat)
 

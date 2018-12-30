@@ -225,9 +225,9 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal'):
+    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10):
         if paralelCalling:
-            poolCalling = Pool()
+            poolCalling = Pool(processes=procs)
             for database in self.databases:
                 dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement} for t in database.templates]
                 responses = poolCalling.map(unwrap_self_f_feature, zip([self] * len(dataForParCal), dataForParCal))

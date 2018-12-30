@@ -32,8 +32,20 @@ class BosphorusTemplate(Template):
                 with h5py.File(self.rawRepr) as fPy:
                     for k, v in fPy.items():
                         arrays[k] = np.array(v)
-                self.image = arrays['vertex'].T
-                self.faceMarks = arrays['lm3d'].T
+                if 'vertex' in arrays.keys():
+                    self.image = arrays['vertex'].T
+                    self.faceMarks = arrays['lm3d'].T
+                else:
+                    if 'defShape' in arrays.keys():
+                        self.image = arrays['defShape'].T
+                    else:
+                        self.image = arrays['exprShape'].T
+                    pathLandmarks = self.rawRepr.split(os.path.sep)[0:-2]
+                    lnMarks = {}
+                    with h5py.File(os.path.join(os.path.sep.join(pathLandmarks),'avgModel_bh_1779_NE.mat')) as fPy:
+                        for k, v in fPy.items():
+                            lnMarks[k] = np.array(v)
+                    self.faceMarks = self.image[lnMarks['idxLandmarks3D'].flatten().astype(np.uint8)]
             except:
                 import scipy.io as sio
                 arrays = sio.loadmat(self.rawRepr)

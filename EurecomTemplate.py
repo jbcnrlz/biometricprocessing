@@ -9,6 +9,8 @@ class EurecomTemplate(Template):
     folderTemplate = None
     faceMarks = []
     layersChar = None
+    overFlow = None
+    underFlow = None
 
     def loadImage(self):
         if self.rawRepr[-3:] == 'bmp':
@@ -127,5 +129,20 @@ class EurecomTemplate(Template):
         while (os.path.exists(pathNImage)):
             idxRandomIm = random.randint(1,255)
             pathNImage = folder+'/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath +'_'+str(idxRandomIm)+'.png'
+
+        imageSaveDLP.convert('RGB').save(pathNImage)
+
+    def saveMasks(self,folder,type):
+        fullPath = self.rawRepr.split(os.path.sep)
+        fullPath = fullPath[-1].split('.')
+        fullPath = fullPath[0]
+        imageSaveDLP = None
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        pathNImage = folder+'/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath + '_' + type + '.bmp'
+        if type == 'overflow':
+            imageSaveDLP = im.fromarray(self.overFlow)
+        else:
+            imageSaveDLP = im.fromarray(self.underFlow)
 
         imageSaveDLP.convert('RGB').save(pathNImage)

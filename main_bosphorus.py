@@ -20,6 +20,8 @@ if __name__ == '__main__':
     parser.add_argument('--forceImage', default=False, help='Force Image regeneration', required=False, type=bool)
     parser.add_argument('--loadImages', default=None, help='Images to load', required=False)
     parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
+    parser.add_argument('--axisRotate', default='x_y', help='Rotate over axis', required=False)
+    parser.add_argument('--quantityProcesses', default=10, help='Maximum number of processes', required=False)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -35,7 +37,7 @@ if __name__ == '__main__':
         gallery.loadNewDepthImage()
 
     if args.angles:
-        gallery.loadRotatedFaces(args.angles.split('_'),['x','y'])
+        gallery.loadRotatedFaces(args.angles.split('_'),args.axisRotate.split('_'))
 
     tdlbp = ThreeDLBP(8,14,[gallery])
     tdlbp.fullPathGallFile = args.pathImages
@@ -66,11 +68,11 @@ if __name__ == '__main__':
                 else:
                     tdlbp.preProcessingSteps = class_(**kwargsList)
 
-        tdlbp.preProcessing(True,args.parcal)
+        tdlbp.preProcessing(True,args.parcal,procs=args.quantityProcesses)
         #gallery.saveNewDepthImages()
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,forceImage=args.forceImage,typeMeasurement=args.typeMeasure)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,forceImage=args.forceImage,typeMeasurement=args.typeMeasure,procs=args.quantityProcesses)
 
     if not args.pathtrainingfile is None:
         galeryData = gallery.generateDatabaseFile(args.pathtrainingfile)

@@ -46,6 +46,8 @@ class RotateFaceLFW(PreProcessingStep):
     def multiplyMatrices(self,m1,m2):
         multiResult = []
         for m in m1:
+            if type(m) == np.ndarray:
+                m = m.tolist()
             multMat = np.dot(m+[1],m2)[:-1]
             multiResult.append(multMat)
 
@@ -53,7 +55,7 @@ class RotateFaceLFW(PreProcessingStep):
 
     def __init__(self,**kwargs):
         self.regenFaces = kwargs.get('regenarate', True)
-        self.axis = kwargs.get('axis', ['x','y'])
+        self.axis = kwargs.get('axis', ['xy','x','y'])
 
     def doPreProcessing(self,template):
         genFaces = None
@@ -76,15 +78,15 @@ class RotateFaceLFW(PreProcessingStep):
             for i in range(-30,40,10):
                 if (i != 0):                
                     if (self.regenFaces) or (not os.path.exists(template.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.'+extentionFiles)):
-
+                        nObj = copy.deepcopy(template)
                         if ax == 'xy':
                             rtx = self.getRotationMatrix(i, 'x')
                             for j in range(-30, 31, 10):
+                                if (j == 0):
+                                    continue
                                 rty = self.getRotationMatrix(j, 'y')
                                 nObj.image = self.multiplyMatrices(faceCloud, rtx)
                                 nObj.image = self.multiplyMatrices(nObj.image.tolist(), rty)
-                                nObj = genFaces.doPreProcessing(nObj)
-                                nObj.image = im.fromarray(np.array(nObj.image, dtype=np.uint8))
                                 newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
                                 fullPathPCD = nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '.pcd'
                                 newCloud.to_file(fullPathPCD.encode('utf-8'))
@@ -99,7 +101,6 @@ class RotateFaceLFW(PreProcessingStep):
 
                         else:
                             rty = self.getRotationMatrix(i, ax)
-                            nObj = copy.deepcopy(template)
                             nObj.image = self.multiplyMatrices(faceCloud.tolist(), rty)
                             newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
                             fullPathPCD = nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '.pcd'

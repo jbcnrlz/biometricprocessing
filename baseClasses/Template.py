@@ -23,6 +23,9 @@ class Template:
         if not self.lazyLoading:
             self.loadImageData()
 
+    def isFileExists(self,pathImage):
+        pass
+
     def loadImageData(self):
         if (self.__rawRepr[-3:] == 'obj'):
             self.imageLoaded = True

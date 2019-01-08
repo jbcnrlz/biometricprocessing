@@ -6,13 +6,13 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
+    <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="false" />
+    <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_BU3DFE.py" />
-    <option name="PARAMETERS" value="-p=$USER_HOME$/mount_point_local/BU-3DFE -t=VRML -op=fe --faceVariation=NE_AN_DI_FE_HA_SA_SU --pathImages=generated_images_bu --loadNewDepth=True -ap=16 -r=1 --angles=-30_-20_-10_10_20_30 --parcal=True" />
+    <option name="PARAMETERS" value="-p=$PROJECT_DIR$/../BU-3DFE -t=VRML -op=fe --faceVariation=NE_AN_DI_FE_HA_SA_SU --pathImages=generated_images_bu_sigmoide --loadNewDepth=True -ap=16 -r=1 --angles=-30_-20_-10_10_20_30 --parcal=True --typeMeasure=Sigmoid" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorch.py" />
-    <option name="PARAMETERS" value="-c=1000 -p=generated_images_eurecom -e=100 --runOnTest=True -b=10 --loadFromFolder=experiment_bosphorus_paper" />
+    <option name="PARAMETERS" value="-c=1000 -p=generated_images_bosphorus -e=100 --runOnTest=True -b=10 --loadFromFolder=bosphorus_final_3dlbp --fineTuneWeights=training_full_pytorch/GioGio_checkpoint_00199.pth.tar --tensorBoardName=GioGioRotationTest --fineTuningClasses=52" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

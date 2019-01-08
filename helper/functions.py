@@ -1,10 +1,8 @@
-import operator, math, numpy as np, os, random, re, itertools, matplotlib
+import operator, math, numpy as np, os, random, re, itertools, matplotlib.pyplot as plt
 from scipy.spatial.distance import euclidean
 from PIL import Image as im
 from textwrap import wrap
 from sklearn.metrics import confusion_matrix
-
-
 
 def plot_confusion_matrix(correct_labels, predict_labels, labels, title='Confusion matrix', tensor_name = 'MyFigure/image', normalize=False):
     '''
@@ -22,7 +20,7 @@ def plot_confusion_matrix(correct_labels, predict_labels, labels, title='Confusi
         - Depending on the number of category and the data , you may have to modify the figzie, font sizes etc.
         - Currently, some of the ticks dont line up due to rotations.
     '''
-    cm = confusion_matrix(correct_labels, predict_labels, labels=labels)
+    cm = confusion_matrix(correct_labels, predict_labels)
     if normalize:
         cm = cm.astype('float')*10 / cm.sum(axis=1)[:, np.newaxis]
         cm = np.nan_to_num(cm, copy=True)
@@ -31,7 +29,7 @@ def plot_confusion_matrix(correct_labels, predict_labels, labels, title='Confusi
     np.set_printoptions(precision=2)
     ###fig, ax = matplotlib.figure.Figure()
 
-    fig = matplotlib.figure.Figure(figsize=(7, 7), dpi=320, facecolor='w', edgecolor='k')
+    fig = plt.Figure(figsize=(4, 4), dpi=320, facecolor='w', edgecolor='k')
     ax = fig.add_subplot(1, 1, 1)
     imcf = ax.imshow(cm, cmap='Oranges')
 
@@ -53,7 +51,7 @@ def plot_confusion_matrix(correct_labels, predict_labels, labels, title='Confusi
     ax.yaxis.tick_left()
 
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        ax.text(j, i, format(cm[i, j], 'd') if cm[i,j]!=0 else '.', horizontalalignment="center", fontsize=6, verticalalignment='center', color= "black")
+        ax.text(j, i, format(cm[i, j], 'd') if cm[i,j]!=0 else '.', horizontalalignment="center", fontsize=3, verticalalignment='center', color= "black")
     fig.set_tight_layout(True)
     return fig
 
@@ -351,6 +349,8 @@ def generateData(pathFiles,extension='png'):
             classNumber = f.split(os.path.sep)[-1]
             if extension == 'png':
                 classNumber = classNumber.split('_')[0]
+            elif classNumber[0] == 'b':
+                classNumber = classNumber[2:5]
             else:
                 classNumber = classNumber.split('_')[1]
             returnDataClass.append(int(classNumber))

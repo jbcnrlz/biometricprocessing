@@ -71,7 +71,7 @@ if __name__ == '__main__':
         #xek.saveTemplateImage()
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4])
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4],forceImage=False,typeMeasurement='Sigmoid')
 
     if (args.pathtrainingfile is not None) and (args.operation == 'fe'):
         faceVariationGenerate = { k : ['s1','s2'] for k in args.faceVariation.split('_') }

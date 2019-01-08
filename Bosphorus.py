@@ -94,15 +94,29 @@ class Bosphorus(DatabaseProcessingUtility):
         for t in self.templates:
             print("Gerando copia de "+t.rawRepr)
             for ax in axis:
-                for a in angles:
-                    print("Angulo = "+ str(a))
-                    nobj = copy.deepcopy(t)
-                    if os.path.exists(nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'):
-                        pathImages = nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'
-                        with im.open(pathImages) as currImg:
-                            nobj.image = np.asarray(currImg)
-                            nobj.rawRepr = pathImages
-                        addTemplates.append(nobj)
+                if ax == 'xy':
+                    for a in angles:
+                        for b in angles:
+                            if a == 0 or b == 0:
+                                continue
+                            print("Cross Angulo "+ str(a) + ' '+str(b))
+                            nobj = copy.deepcopy(t)
+                            if os.path.exists(nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+str(b)+'_'+ax+'_newdepth.bmp'):
+                                pathImages = nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+str(b)+'_'+ax+'_newdepth.bmp'
+                                with im.open(pathImages) as currImg:
+                                    nobj.image = np.asarray(currImg)
+                                    nobj.rawRepr = pathImages
+                                addTemplates.append(nobj)
+                else:
+                    for a in angles:
+                        print("Angulo = "+ str(a))
+                        nobj = copy.deepcopy(t)
+                        if os.path.exists(nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'):
+                            pathImages = nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'
+                            with im.open(pathImages) as currImg:
+                                nobj.image = np.asarray(currImg)
+                                nobj.rawRepr = pathImages
+                            addTemplates.append(nobj)
 
         self.templates = self.templates + addTemplates
 

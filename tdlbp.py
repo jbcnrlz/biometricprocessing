@@ -304,7 +304,7 @@ class ThreeDLBP(BiometricProcessing):
         fullImageDescriptor = []
         for i in range(0, imgCroped.shape[0], offsetx):
             for j in range(0, imgCroped.shape[1], offsety):
-                desc = None
+                desc = None 
                 if (not points is None) and (not radius is None):
                     desc = self.generateImageDescriptor(imgCroped[i:(i + offsetx), j:(j + offsety)], p=points, r=radius,typeLBP='pr')
                 else:

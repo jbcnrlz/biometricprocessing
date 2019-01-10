@@ -4,6 +4,12 @@ from PIL import Image as im
 from textwrap import wrap
 from sklearn.metrics import confusion_matrix
 
+def zFunc(t,A):
+    return 1 / (1 + np.exp(-A * np.log(2 + np.sqrt(3)) * t ))
+
+def wFunc(t,A):
+    return (1 / (zFunc(1/A,A) - 0.5)) * (zFunc(t,A) - 0.5)
+
 def plot_confusion_matrix(correct_labels, predict_labels, labels, title='Confusion matrix', tensor_name = 'MyFigure/image', normalize=False):
     '''
     Parameters:
@@ -347,7 +353,7 @@ def generateData(pathFiles,extension='png'):
         if f[-3:] == extension:
             returnDataImages.append(f)
             classNumber = f.split(os.path.sep)[-1]
-            if extension == 'png':
+            if extension in ['png','npy']:
                 classNumber = classNumber.split('_')[0]
             elif classNumber[0] == 'b':
                 classNumber = classNumber[2:5]

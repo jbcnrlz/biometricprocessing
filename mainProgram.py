@@ -20,6 +20,8 @@ if __name__ == '__main__':
     parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
     parser.add_argument('--loadSymmImages', default=False, type=bool, help='Load symmetric filling images', required=False)
     parser.add_argument('--axis', default='x_y', help='Load symmetric filling images',required=False)
+    parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
+    parser.add_argument('--quantityProcesses', default=10, help='Maximum number of processes', required=False)
     args = parser.parse_args()
 
     faceDataset = []
@@ -71,7 +73,7 @@ if __name__ == '__main__':
         #xek.saveTemplateImage()
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4],forceImage=False,typeMeasurement='Sigmoid')
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4],typeMeasurement=args.typeMeasure,procs=args.quantityProcesses)
 
     if (args.pathtrainingfile is not None) and (args.operation == 'fe'):
         faceVariationGenerate = { k : ['s1','s2'] for k in args.faceVariation.split('_') }

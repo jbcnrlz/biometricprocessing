@@ -410,10 +410,11 @@ def generateFoldsOfData(fq,imageData,classesData):
 
     return foldResult
 
-def generateImageData(paths,resize=None):
+def generateImageData(paths,resize=None,silent=False):
     returningPaths = []
     for p in paths:
-        print('Loading image '+p)
+        if not silent:
+            print('Loading image '+p)
         ni = im.open(p)
         if not resize is None:
             ni = ni.resize(resize,im.ANTIALIAS)

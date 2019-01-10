@@ -152,7 +152,7 @@ class ThreeDLBP(BiometricProcessing):
                     subraction = 7
             else:
                 signSub = -1 if subraction < 0 else 1
-                subraction = np.histogram(expit(subraction), bins=7, range=[0, 1])[0]
+                subraction = np.histogram(expit(abs(subraction)-5), bins=7, range=[0, 1])[0]
                 subraction = np.argwhere(subraction == 1)[0][0] * signSub
 
             layers[0].append(str(int(subraction >= 0)))

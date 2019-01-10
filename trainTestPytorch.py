@@ -37,6 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('--tensorBoardName', default='GioGioData', help='Teensorboard variable name', required=False)
     parser.add_argument('--startingFold', default=0, help='Teensorboard variable name', required=False, type=int)
     parser.add_argument('--fineTuningClasses', default=0, help='Fine Tuning classes number', required=False, type=int)
+    parser.add_argument('--folderSnapshots', default='trainPytorch', help='Folder for snapshots', required=False)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -47,8 +48,9 @@ if __name__ == '__main__':
     else:
         folds = loadFoldFromFolders(args.loadFromFolder)
 
-    if not os.path.exists('training_pytorch'):
-        os.makedirs('training_pytorch')
+    if os.path.exists(args.folderSnapshots):
+        shutil.rmtree(args.folderSnapshots)
+    os.makedirs(args.folderSnapshots)
 
     if args.useTensorboard:
         cc = SummaryWriter()
@@ -90,8 +92,8 @@ if __name__ == '__main__':
 
         optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
 
-        if not os.path.exists(os.path.join('training_pytorch', str(f))):
-            os.makedirs(os.path.join('training_pytorch', str(f)))
+        if not os.path.exists(os.path.join(args.folderSnapshots, str(f))):
+            os.makedirs(os.path.join(args.folderSnapshots, str(f)))
 
         if args.fineTuneWeights is not None:
             checkpoint = torch.load(args.fineTuneWeights)
@@ -145,7 +147,7 @@ if __name__ == '__main__':
 
             if bestForFold < cResult:
                 fName = '%s_best.pth.tar' % ('GioGio')
-                fName = os.path.join(args.tensorBoardName, str(f),fName)
+                fName = os.path.join(args.folderSnapshots, str(f),fName)
                 save_checkpoint({
                     'epoch': ep + 1,
                     'arch': 'GioGio',
@@ -172,7 +174,7 @@ if __name__ == '__main__':
 
             if ep % 10 == 0:
                 fName = '%s_checkpoint_%05d.pth.tar' % ('GioGio',ep)
-                fName = os.path.join(args.tensorBoardName, str(f),fName)
+                fName = os.path.join(args.folderSnapshots, str(f),fName)
                 save_checkpoint({
                     'epoch': ep + 1,
                     'arch': 'GioGio',

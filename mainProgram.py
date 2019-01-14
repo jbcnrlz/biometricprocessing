@@ -22,6 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--axis', default='x_y', help='Load symmetric filling images',required=False)
     parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
     parser.add_argument('--quantityProcesses', default=10, help='Maximum number of processes', required=False)
+    parser.add_argument('--generateMasks', default=False, help='Generate the over and underflow masks', required=False, type=bool)
     args = parser.parse_args()
 
     faceDataset = []
@@ -73,7 +74,7 @@ if __name__ == '__main__':
         #xek.saveTemplateImage()
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4],typeMeasurement=args.typeMeasure,procs=args.quantityProcesses)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4],typeMeasurement=args.typeMeasure,procs=args.quantityProcesses,masks=args.generateMasks)
 
     if (args.pathtrainingfile is not None) and (args.operation == 'fe'):
         faceVariationGenerate = { k : ['s1','s2'] for k in args.faceVariation.split('_') }

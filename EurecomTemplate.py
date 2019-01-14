@@ -133,6 +133,8 @@ class EurecomTemplate(Template):
         imageSaveDLP.convert('RGB').save(pathNImage)
 
     def saveMasks(self,folder,type):
+        if self.overFlow is None or self.underFlow is None:
+            return None
         fullPath = self.rawRepr.split(os.path.sep)
         fullPath = fullPath[-1].split('.')
         fullPath = fullPath[0]

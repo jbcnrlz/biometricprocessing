@@ -106,7 +106,7 @@ class ThreeDLBP(BiometricProcessing):
             if (not i[0].is_integer() or not i[1].is_integer()):
                 xidxs = [math.floor(i[0]), math.ceil(i[0])]
                 yidxs = [math.floor(i[1]), math.ceil(i[1])]
-                '''
+
                 imageDataBil = np.array([
                     (xidxs[0], yidxs[0], image[xidxs[0]][yidxs[0]]),
                     (xidxs[0], yidxs[1], image[xidxs[0]][yidxs[1]]),
@@ -121,6 +121,7 @@ class ThreeDLBP(BiometricProcessing):
                 top = (1 - dc) * self.get_pixel2d(image,image.shape[0]-1,image.shape[1]-1,xidxs[0],yidxs[0],0) + dc * self.get_pixel2d(image,image.shape[0],image.shape[1],xidxs[0],yidxs[1],0)
                 bottom = (1 - dc) * self.get_pixel2d(image, image.shape[0]-1, image.shape[1]-1, xidxs[1], yidxs[0],0) + dc * self.get_pixel2d(image, image.shape[0], image.shape[1],xidxs[1], yidxs[1], 0)
                 nv = (1 - dr) * top + dr * bottom
+                '''
                 subraction = nv - image[center[0]][center[1]]
             else:
                 subraction = image[int(i[0])][int(i[1])] - image[center[0]][center[1]]
@@ -157,6 +158,7 @@ class ThreeDLBP(BiometricProcessing):
                         for interpX in range(2):
                             for interpY in range(2):
                                 truncMaskPlus[xidxs[interpX]][yidxs[interpY]] += abs(subraction - 7) * distancesEachItem[place]
+                                place += 1
                     subraction = 7
             elif type == 'wFunction':
                 signSub = -1 if subraction < 0 else 1
@@ -179,11 +181,15 @@ class ThreeDLBP(BiometricProcessing):
             layers[l] = int(''.join(layers[l]), 2)
         return layers
 
-    def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None):
+    def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None,masks=False):
         returnValue = [[], [], [], []]
 
-        template.underFlow = np.zeros(image.shape)
-        template.overFlow = np.zeros(image.shape)
+        if masks:
+            template.underFlow = np.zeros(image.shape)
+            template.overFlow  = np.zeros(image.shape)
+        else:
+            template.underFlow = None
+            template.overFlow  = None
 
         for i in range(r, image.shape[0] - r):
             for j in range(r, image.shape[1] - r):
@@ -239,18 +245,18 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10):
+    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10,masks=False):
         if paralelCalling:
             poolCalling = Pool(processes=procs)
             for database in self.databases:
-                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement} for t in database.templates]
+                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks} for t in database.templates]
                 responses = poolCalling.map(unwrap_self_f_feature, zip([self] * len(dataForParCal), dataForParCal))
                 for i in range(len(responses)):
                     database.templates[i].features = responses[i][1]
         else:
             for database in self.databases:
                 for template in database.templates:
-                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement}
+                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks}
                     a, template.features = self.doFeatureExtraction(dataForParCal)
 
 
@@ -268,11 +274,11 @@ class ThreeDLBP(BiometricProcessing):
 
             if (not points is None) and (not radius is None):
                 uniArray = generateArrayUniform(points)
-                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'])
+                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'])
                 template.saveMasks('overflowMasks_pr','overflow')
                 template.saveMasks('underflowMasks_pr', 'underflow')
             else:
-                desc = self.generateImageDescriptor(imgCroped,template=template,typeMeasurement=parameters['typeMeasurement'])
+                desc = self.generateImageDescriptor(imgCroped,template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'])
                 template.saveMasks('overflowMasks','overflow')
                 template.saveMasks('underflowMasks', 'underflow')
 

@@ -1,8 +1,27 @@
-import operator, math, numpy as np, os, random, re, itertools, matplotlib.pyplot as plt
+import operator, math, numpy as np, os, random, re, itertools, matplotlib.pyplot as plt, smtplib
 from scipy.spatial.distance import euclidean
 from PIL import Image as im
 from textwrap import wrap
 from sklearn.metrics import confusion_matrix
+from email.message import EmailMessage
+from yaml import load
+
+def sendEmailMessage(subject,message):
+    config = None
+    with open("emailConfig.yaml", 'r') as stream:
+        config = load(stream)
+
+    # Create the container email message.
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = config['from']
+    msg['To'] = config['to']
+    msg.set_content(message)
+
+    server = smtplib.SMTP(config['server'],int(config['port']))
+    server.login(config['login'],config['password'])
+    server.send_message(msg)
+    server.quit()
 
 def zFunc(t,A):
     return 1 / (1 + np.exp(-A * np.log(2 + np.sqrt(3)) * t ))

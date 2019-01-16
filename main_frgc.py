@@ -14,6 +14,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--radius',type=int,default=None, help='Quantity of points', required=False)
     parser.add_argument('-s', '--steps', default=None, help='Pre-Processing steps, class names separated with _ parameters starts wth : and separated with ,', required=False)
     parser.add_argument('-gImg', '--pathImages', default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc', help='Path for image signature', required=False)
+    parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -53,7 +54,7 @@ if __name__ == '__main__':
         tdlbp.preProcessing(True,args.parcal)
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,typeMeasurement=args.typeMeasure,forceImage=False)
 
     if not args.pathtrainingfile is None:
         galeryData = gallery.generateDatabaseFile(args.pathtrainingfile)

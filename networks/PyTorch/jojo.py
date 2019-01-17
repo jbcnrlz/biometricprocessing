@@ -1,5 +1,41 @@
 import torch.nn as nn
 
+def conv8x8(in_planes, out_planes, stride=4):
+    return nn.Conv2d(in_planes, out_planes, kernel_size=8, stride=stride,padding=1, bias=False)
+
+def conv5x5(in_planes, out_planes, stride=1):
+    return nn.Conv2d(in_planes, out_planes, kernel_size=5, stride=stride,padding=1, bias=False)
+
+def conv3x3(in_planes, out_planes, stride=1):
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,padding=1, bias=False)
+
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes):
+        super(BasicBlock, self).__init__()
+        self.conv1 = conv8x8(inplanes,64)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = conv5x5(64, 128)
+        self.bn2 = nn.BatchNorm2d(128)
+
+    def forward(self, x):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        out += identity
+        out = self.relu(out)
+
+        return out
+
+
 class GioGio(nn.Module):
 
     def calculateSize(self,dim,layer,inputSize):

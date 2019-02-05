@@ -124,3 +124,30 @@ class FRGCTemplate(Template):
             pathNImage = folder+'/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath +'_'+str(idxRandomIm)+'.png'
 
         imageSaveDLP.convert('RGB').save(pathNImage)
+
+    def saveMasks(self,folder,type):
+        if self.overFlow is None or self.underFlow is None:
+            return None
+        fullPath = self.rawRepr.split(os.path.sep)
+        fullPath = fullPath[-1].split('.')
+        fullPath = fullPath[0]
+
+        imageSaveDLP = None
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        pathNImage = os.path.dirname(os.path.abspath(__file__))+'/'+folder+'/'+str(self.itemClass) + '_' + fullPath + '.bmp'
+        if type == 'overflow':
+            self.overFlow = scaleValues(0,255,self.overFlow)
+            imageSaveDLP = im.fromarray(self.overFlow)
+        else:
+            self.underFlow = scaleValues(0, 255, self.underFlow)
+            imageSaveDLP = im.fromarray(self.underFlow)
+
+        imageSaveDLP.convert('RGB').save(pathNImage)
+
+    def isFileExists(self,pathImage):
+        fullPath = self.rawRepr.split(os.path.sep)
+        fullPath = fullPath[-1].split('.')
+        fullPath = fullPath[0]
+        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + fullPath + '.png'
+        return os.path.exists(pathNImage)

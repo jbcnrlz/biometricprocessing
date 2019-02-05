@@ -1,20 +1,12 @@
 import argparse
 from FRGC import *
 from tdlbp import *
+from helper.functions import sendEmailMessage, standartParametrization
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Process and extract FRGC database')
-    parser.add_argument('-p','--pathdatabase',help='Path for the database',required=True)
-    parser.add_argument('-t', '--typeoffile',choices=['Depth', 'NewDepth', 'Range'], help='Type of files (Depth, NewDepth, Range)', required=True)
-    parser.add_argument('-op', '--operation',choices=['pp', 'fe', 'both'], default='both', help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
-    parser.add_argument('-f', '--pathtrainingfile', default=None,help='Path for the training file', required=False)
-    parser.add_argument('-c', '--parcal', default=False,type=bool, help='Should execute in parallell mode?', required=False)
-    parser.add_argument('-ap', '--points',type=int,default=None,help='Quantity of points',required=False)
-    parser.add_argument('-r', '--radius',type=int,default=None, help='Quantity of points', required=False)
-    parser.add_argument('-s', '--steps', default=None, help='Pre-Processing steps, class names separated with _ parameters starts wth : and separated with ,', required=False)
-    parser.add_argument('-gImg', '--pathImages', default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc', help='Path for image signature', required=False)
-    parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
+    parser = standartParametrization(parser)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -52,9 +44,11 @@ if __name__ == '__main__':
 
     if args.operation in ['both','pp']:
         tdlbp.preProcessing(True,args.parcal)
+        sendEmailMessage('Fim do pre-processamento', 'Terminou o pre-processamento FRGC e LBP')
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,typeMeasurement=args.typeMeasure,forceImage=False)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,procs=args.quantityProcesses,masks=args.generateMasks,forceImage=args.force)
+        sendEmailMessage('Fim dos experimentos', 'Terminou a extração de características FRGC e LBP')
 
     if not args.pathtrainingfile is None:
         galeryData = gallery.generateDatabaseFile(args.pathtrainingfile)

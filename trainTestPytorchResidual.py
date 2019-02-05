@@ -38,14 +38,12 @@ if __name__ == '__main__':
     parser.add_argument('--startingFold', default=0, help='Teensorboard variable name', required=False, type=int)
     parser.add_argument('--fineTuningClasses', default=0, help='Fine Tuning classes number', required=False, type=int)
     parser.add_argument('--folderSnapshots', default='trainPytorch', help='Folder for snapshots', required=False)
-    parser.add_argument('--extension', help='Extension from files', required=False, default='png')
+    parser.add_argument('--residualFolder', default='overflowMasks_pr__underflowMasks_pr', help='Folder with the residual information', required=False)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    in_channels = 4 if args.extension == 'png' else 3
-
     if args.loadFromFolder is None:
-        imageData, classesData = generateData(args.pathBase,extension=args.extension)
+        imageData, classesData = generateData(args.pathBase)
         folds = generateFoldsOfData(args.folds,imageData,classesData)
 
     else:
@@ -66,14 +64,13 @@ if __name__ == '__main__':
         bestForFold = -1
         epochBestForFold = None
         print('====================== Fazendo Fold =======================')
-        muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
-        print(muda)
+        muda = jojo.Joseph(args.classNumber)
         muda.to(device)
 
         foldResults.append([])
-        foldProbe = generateImageData(datas[2])
+        foldProbe = generateImageData(datas[2],loadMasks=args.residualFolder.split('__'))
         foldProbeClasses = np.array(datas[3])
-        foldGallery = generateImageData(datas[0])
+        foldGallery = generateImageData(datas[0],loadMasks=args.residualFolder.split('__'))
         foldGalleryClasses = np.array(datas[1])
 
         foldGallery = foldGallery / 255
@@ -103,13 +100,14 @@ if __name__ == '__main__':
             optimizer.load_state_dict(checkpoint['optimizer'])
             muda.load_state_dict(checkpoint['state_dict'])
             nfeats = muda.classifier[-1].in_features
-            muda.classifier[-1] = nn.Linear(nfeats, args.fineTuningClasses).to(device)
+            muda.add_module('new_softmax',nn.Linear(nfeats, args.fineTuningClasses).to(device))
+
+        print(muda)
 
         bestResult = -1
         bestEpoch = -1
 
         fTrainignTime = []
-        #muda.features[-1].register_forward_hook(saveImageLayer)
         for ep in range(args.epochs):
             muda.train()
             lossAcc = []
@@ -145,7 +143,7 @@ if __name__ == '__main__':
 
             cResult = correct / total
 
-            print('[EPOCH %d] Accuracy of the network on the %d test images: %.2f %% Loss %f' % (ep, total, 100 * cResult, sum(lossAcc) / len(lossAcc)))
+            print('[EPOCH %d] Accuracy of the network on the %d test images: %.2f %% Loss %f' % (ep,total,100 * cResult,sum(lossAcc) / len(lossAcc)))
 
             if bestForFold < cResult:
                 fName = '%s_best.pth.tar' % ('GioGio')

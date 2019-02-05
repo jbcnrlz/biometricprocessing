@@ -372,7 +372,7 @@ def generateData(pathFiles,extension='png'):
         if f[-3:] == extension:
             returnDataImages.append(f)
             classNumber = f.split(os.path.sep)[-1]
-            if extension in ['png','npy']:
+            if extension in ['png','npy','bmp']:
                 classNumber = classNumber.split('_')[0]
             elif classNumber[0] == 'b':
                 classNumber = classNumber[2:5]
@@ -411,7 +411,7 @@ def generateExperimentDataPattern(imageData,classesData,patternProbe,patternGall
     return foldGallery, foldGalleryClasses, foldProbe, foldProbeClasses
 
 
-def generateFoldsOfData(fq,imageData,classesData):
+def generateFoldsOfData(fq,imageData,classesData,stop=None):
     foldSize = int(len(imageData) / fq)
     foldResult = []
     alreadyWentFold = []
@@ -433,9 +433,14 @@ def generateFoldsOfData(fq,imageData,classesData):
 
         foldResult.append([foldGallery, foldGalleryClasses, foldProbe, foldProbeClasses])
 
+        if stop is not None and stop >= foldNumber:
+            break
+
     return foldResult
 
-def generateImageData(paths,resize=None,silent=False):
+def generateImageData(paths,resize=None,silent=False,loadMasks=None,prefix=True,averageDiv=None):
+    if (loadMasks is not None) and (resize is not None):
+        raise ValueError('You cannot put resize and load masks togheter')
     returningPaths = []
     for p in paths:
         if not silent:
@@ -445,7 +450,31 @@ def generateImageData(paths,resize=None,silent=False):
             ni = ni.resize(resize,im.ANTIALIAS)
 
         ni = np.array(ni)
-        returningPaths.append(np.array(ni))
+
+        if averageDiv is not None:
+            ni = ni / averageDiv
+
+        if loadMasks is not None:
+            newImage = np.zeros((100,100,6))
+            newImage[:,:,0:4] = ni
+            for idx, l in enumerate(loadMasks):
+                fileName = p.split(os.path.sep)[-1]
+                if prefix:
+                    if 'overflow' in l.lower():
+                        fileName = fileName[:-4] + '_overflow.bmp'
+                    else:
+                        fileName = fileName[:-4] + '_underflow.bmp'
+                else:
+                    fileName = fileName[:-4] + '.bmp'
+                if not silent:
+                    print('Loading Mask ' + os.path.join(l,fileName))
+                mask = im.open(os.path.join(l,fileName)).convert('L')
+                mask = np.array(mask)
+                newImage[:,:,4+idx] = mask
+
+            returningPaths.append(newImage)
+        else:
+            returningPaths.append(ni)
     return np.array(returningPaths)
 
 def loadFoldFromFolders(pathFolders):
@@ -474,6 +503,39 @@ def loadFoldFromFolders(pathFolders):
                     returnFolders[-1][1].append(cClass)
 
     return returnFolders
+
+def standartParametrization(parser):
+    parser.add_argument('-p', '--pathdatabase', help='Path for the database', required=True)
+    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj'],
+                        help='Type of files (Depth, NewDepth, Range, 3DObj)', required=True)
+    parser.add_argument('-op', '--operation', choices=['pp', 'fe', 'both'], default='both',
+                        help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
+    parser.add_argument('-f', '--pathtrainingfile', default=None, help='Path for the training file', required=False)
+    parser.add_argument('-c', '--parcal', default=False, type=bool, help='Should execute in parallell mode?',
+                        required=False)
+    parser.add_argument('-ap', '--points', type=int, default=None, help='Quantity of points', required=False)
+    parser.add_argument('-r', '--radius', type=int, default=None, help='Quantity of points', required=False)
+    parser.add_argument('-s', '--steps', default=None,
+                        help='Pre-Processing steps, class names separated with _ parameters starts wth : and separated with ,',
+                        required=False)
+    parser.add_argument('-gImg', '--pathImages',
+                        default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc',
+                        help='Path for image signature', required=False)
+    parser.add_argument('-v', '--faceVariation', default='Neutral', help='Type of face, separated by _', required=False)
+    parser.add_argument('--angles', default=None, help='Angles of face to load', required=False)
+    parser.add_argument('--generateImages', default=True, type=bool, help='If should generate images or not',
+                        required=False)
+    parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
+    parser.add_argument('--loadSymmImages', default=False, type=bool, help='Load symmetric filling images',
+                        required=False)
+    parser.add_argument('--axis', default='x_y', help='Load symmetric filling images', required=False)
+    parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
+    parser.add_argument('--quantityProcesses', default=10, help='Maximum number of processes', required=False)
+    parser.add_argument('--generateMasks', default=False, help='Generate the over and underflow masks', required=False,
+                        type=bool)
+    parser.add_argument('--force', default=False, help='Utilize this to force the generation of new images',
+                        required=False, type=bool)
+    return parser
 
 if __name__ == '__main__':
     print(generateArrayUniform())

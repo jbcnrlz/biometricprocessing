@@ -25,9 +25,10 @@ if __name__ == '__main__':
     parser.add_argument('--patternProbe', help='Pattern for probe files', required=False)
     parser.add_argument('--patternGallery', help='Pattern for gallery files', required=False, default=None)
     parser.add_argument('--filePattern', help='File with patterns', required=False, default=None)
+    parser.add_argument('--extension', help='Extension from files', required=False, default='png')
     args = parser.parse_args()
 
-    imageData, classesData = generateData(args.pathBase)
+    imageData, classesData = generateData(args.pathBase,extension=args.extension)
 
     if os.path.exists(args.folder):
         shutil.rmtree(args.folder)

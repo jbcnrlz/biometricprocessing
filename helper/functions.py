@@ -537,6 +537,16 @@ def standartParametrization(parser):
                         required=False, type=bool)
     return parser
 
+def generateListLayers(model,options):
+    returnValue = []
+    for c in model.named_children():
+        parametersDict = {'params': c[1].parameters()}
+        if (c[0] in options.keys()):
+            returnValue.append(dict(parametersDict, **options[c[0]]))
+        else:
+            returnValue.append(parametersDict)
+    return returnValue
+
 if __name__ == '__main__':
     print(generateArrayUniform())
 

@@ -18,6 +18,7 @@ class ThreeDLBP(BiometricProcessing):
         self.databases = database
         self.methodName = '3DLBP'
         self.generateImagesTrainig = generateImages
+        self.sigmoid_table = {}
         super().__init__()
 
     def saveDebug(self, folder, data):
@@ -162,7 +163,13 @@ class ThreeDLBP(BiometricProcessing):
                     subraction = 7
             elif type == 'wFunction':
                 signSub = -1 if subraction < 0 else 1
-                subraction = wFunc(subraction,0.222)
+                if subraction in self.sigmoid_table.keys():
+                    subraction = self.sigmoid_table[subraction]
+                else:
+                    keyTable = subraction
+                    subraction = zFunc(subraction,0.222)
+                    self.sigmoid_table[keyTable] = subraction
+
                 subraction = 0 if subraction < 0 else 1 if subraction > 1 else subraction
                 subraction = np.histogram(subraction, bins=8, range=[0, 1])[0]
                 subraction = (np.argwhere(subraction == 1)[0][0]+1) * signSub

@@ -1,11 +1,16 @@
-from helper.functions import generateData, generateFoldsOfData, generateImageData, loadFoldFromFolders, scaleValues, plot_confusion_matrix
+from torchvision import transforms
+from helper.functions import plot_confusion_matrix, saveStatePytorch
+from datasetClass.structures import loadFoldsDatasets, loadDatasetFromFolder
+import networks.PyTorch.vgg_face_dag as vgg
 import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
 import torch.utils.data, shutil, os, time, torchvision.utils as vutils
 from tensorboardX import SummaryWriter
 import torch.nn as nn
-from sklearn.metrics import confusion_matrix
 
 imagesForTensorboard = []
+
+def shortenNetwork(network,desiredLayers):
+    return [network[i] for i in desiredLayers]
 
 def save_checkpoint(state,is_best,filename='checkpoint.pth.tar'):
     torch.save(state, filename)
@@ -39,17 +44,29 @@ if __name__ == '__main__':
     parser.add_argument('--fineTuningClasses', default=0, help='Fine Tuning classes number', required=False, type=int)
     parser.add_argument('--folderSnapshots', default='trainPytorch', help='Folder for snapshots', required=False)
     parser.add_argument('--extension', help='Extension from files', required=False, default='png')
+    parser.add_argument('--arc', help='Network', required=False, default='giogio')
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    dataTransform = None
+    if args.arc.lower() == 'vgg':
+        dataTransform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.562454871481894, 0.8208898956471341, 0.395364053852456],
+                                 std=[0.43727472598867456, 0.31812502566122625, 0.3796120355707891])
+        ])
+
 
     in_channels = 4 if args.extension == 'png' else 3
 
     if args.loadFromFolder is None:
-        imageData, classesData = generateData(args.pathBase,extension=args.extension)
-        folds = generateFoldsOfData(args.folds,imageData,classesData)
+        folds = [loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)]
+        #imageData, classesData = generateData(args.pathBase,extension=args.extension)
+        #folds = generateFoldsOfData(args.folds,imageData,classesData)
 
     else:
-        folds = loadFoldFromFolders(args.loadFromFolder)
+        folds = loadFoldsDatasets(args.loadFromFolder,dataTransform)
+        #folds = loadFoldFromFolders(args.loadFromFolder)
 
     if os.path.exists(args.folderSnapshots):
         shutil.rmtree(args.folderSnapshots)
@@ -64,46 +81,38 @@ if __name__ == '__main__':
     trainTimeFolds = []
     for f, datas in enumerate(folds):
         bestForFold = -1
+        bestLossForFold =10000000
         epochBestForFold = None
         print('====================== Fazendo Fold =======================')
-        muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
+        if args.arc.lower() == 'vgg':
+            muda = vgg.vgg_face_dag_load(weights_path=args.fineTuneWeights)
+            muda = vgg.vgg_smaller(muda)
+            shortenedList = shortenNetwork(
+                list(muda.convolutional.children()),
+                [0, 1, 4, 5, 6, 9, 10, 11, 16]
+            )
+            muda.convolutional = nn.Sequential(*shortenedList)
+            muda.fullyConnected.add_module('7', nn.Linear(in_features=2622, out_features=args.fineTuningClasses))
+        else:
+            muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
+            if args.fineTuneWeights is not None:
+                checkpoint = torch.load(args.fineTuneWeights)
+                #optimizer.load_state_dict(checkpoint['optimizer'])
+                muda.load_state_dict(checkpoint['state_dict'])
+                nfeats = muda.classifier[-1].in_features
+                muda.classifier[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+
         print(muda)
         muda.to(device)
 
         foldResults.append([])
-        foldProbe = generateImageData(datas[2])
-        foldProbeClasses = np.array(datas[3])
-        foldGallery = generateImageData(datas[0])
-        foldGalleryClasses = np.array(datas[1])
-
-        foldGallery = foldGallery / 255
-        foldProbe = foldProbe / 255
-        if np.amin(foldGalleryClasses) == 1:
-            foldGalleryClasses = foldGalleryClasses - 1
-            foldProbeClasses = foldProbeClasses - 1
-
-        qntBatches = foldGallery.shape[0] / args.batch
-        foldGallery = torch.from_numpy(np.rollaxis(foldGallery, 3, 1)).float()
-        foldGalleryClasses = torch.from_numpy(foldGalleryClasses).to(device)
-        tdata = torch.utils.data.TensorDataset(foldGallery, foldGalleryClasses)
-        train_loader = torch.utils.data.DataLoader(tdata, batch_size=args.batch, shuffle=True)
-
-        foldProbe = torch.from_numpy(np.rollaxis(foldProbe, 3, 1)).float()
-        foldProbeClasses = torch.from_numpy(foldProbeClasses)
-        pdata = torch.utils.data.TensorDataset(foldProbe, foldProbeClasses)
-        test_loader = torch.utils.data.DataLoader(pdata, batch_size=args.batch, shuffle=False)
+        train_loader = torch.utils.data.DataLoader(datas[0], batch_size=args.batch, shuffle=True)
+        test_loader = torch.utils.data.DataLoader(datas[1], batch_size=args.batch, shuffle=False)
 
         optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
 
         if not os.path.exists(os.path.join(args.folderSnapshots, str(f))):
             os.makedirs(os.path.join(args.folderSnapshots, str(f)))
-
-        if args.fineTuneWeights is not None:
-            checkpoint = torch.load(args.fineTuneWeights)
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            muda.load_state_dict(checkpoint['state_dict'])
-            nfeats = muda.classifier[-1].in_features
-            muda.classifier[-1] = nn.Linear(nfeats, args.fineTuningClasses).to(device)
 
         bestResult = -1
         bestEpoch = -1
@@ -144,28 +153,25 @@ if __name__ == '__main__':
                     labelsData[1] = labelsData[1] + np.array(predicted).tolist()
 
             cResult = correct / total
+            lossAvg = sum(lossAcc) / len(lossAcc)
+            print('[EPOCH %d] Accuracy of the network on the %d test images: %.2f %% Loss %f' % (ep, total, 100 * cResult, lossAvg))
 
-            print('[EPOCH %d] Accuracy of the network on the %d test images: %.2f %% Loss %f' % (ep, total, 100 * cResult, sum(lossAcc) / len(lossAcc)))
+            state_dict = muda.state_dict()
+            opt_dict = optimizer.state_dict()
 
             if bestForFold < cResult:
-                fName = '%s_best.pth.tar' % ('GioGio')
+                print('Salvando melhor rank')
+                fName = '%s_best_rank.pth.tar' % ('GioGio')
                 fName = os.path.join(args.folderSnapshots, str(f),fName)
-                save_checkpoint({
-                    'epoch': ep + 1,
-                    'arch': 'GioGio',
-                    'state_dict': muda.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                }, False, fName)
-
+                saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
                 bestForFold = cResult
-                with open('scores_fold_' + str(f) + '.txt', 'w') as ofs:
-                    for ddv in scores:
-                        ofs.write(' '.join(list(map(str,ddv))) + '\n')
 
-                with open('labels_fold_' + str(f) + '.txt', 'w') as ofs:
-                    for ddv in labelsData[0]:
-                        ofs.write(str(ddv) + '\n')
-
+            if bestLossForFold > lossAvg:
+                print('Salvando melhor Loss')
+                fName = '%s_best_loss.pth.tar' % ('vgg')
+                fName = os.path.join(args.folderSnapshots, str(f),fName)
+                saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+                bestLossForFold = lossAvg
 
             if args.useTensorboard:
                 cc.add_scalar(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/accuracy', cResult, ep)

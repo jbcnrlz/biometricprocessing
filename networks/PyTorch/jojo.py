@@ -10,7 +10,6 @@ def conv3x3(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,padding=1, bias=False)
 
 class BasicBlock(nn.Module):
-    expansion = 1
 
     def __init__(self, inplanes):
         super(BasicBlock, self).__init__()
@@ -20,15 +19,18 @@ class BasicBlock(nn.Module):
         self.conv2 = conv5x5(64, 128)
         self.bn2 = nn.BatchNorm2d(128)
 
-    def addResidualInformation(self,out,residualOv,residualUn):
-        max_redux = nn.MaxPool2d(4,stride=4)
+    def addResidualInformation(self,out,residualOv,residualUn,resize=True):
+        residualSum =None
+        if resize:
+            max_redux = nn.MaxPool2d(4,stride=4)
+            identityOv = max_redux(residualOv)[:,1:23,1:23]
+            identityUnd = max_redux(residualUn)[:,1:23,1:23]
 
-        identityOv = max_redux(residualOv)[:,1:23,1:23]
-        identityUnd = max_redux(residualUn)[:,1:23,1:23]
+            residualSum = identityOv+identityUnd
+        else:
+            residualSum = residualOv + residualUn
 
-        residualSum = identityOv+identityUnd
-
-        for i in range(128):
+        for i in range(out.shape[1]):
             out[:,i,:,:] += residualSum
 
         return out
@@ -37,14 +39,13 @@ class BasicBlock(nn.Module):
         identityOv = x[:, 4,:,:]
         identityUnd = x[:, 5, :, :]
         data = x[:, 0:4, :, :]
+        data= self.addResidualInformation(data, identityOv, identityUnd,False)
         out = self.conv1(data)
         out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
-
-        out = self.addResidualInformation(out,identityOv,identityUnd)
 
         out = self.relu(out)
         out = nn.AvgPool2d(kernel_size=3, stride=2)(out)

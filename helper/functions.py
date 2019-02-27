@@ -1,10 +1,24 @@
-import operator, math, numpy as np, os, random, re, itertools, matplotlib.pyplot as plt, smtplib
+import operator, math, numpy as np, os, re, itertools, matplotlib.pyplot as plt, smtplib
+import torch, random
 from scipy.spatial.distance import euclidean
 from PIL import Image as im
 from textwrap import wrap
 from sklearn.metrics import confusion_matrix
 from email.message import EmailMessage
 from yaml import load
+
+def generateColorCombination(number):
+    generatedColor = []
+    for n in range(number):
+        nRandom = random.randrange(0,16777216)
+        if nRandom not in generatedColor:
+            generatedColor.append(nRandom)
+
+    for i in range(len(generatedColor)):
+        generatedColor[i] = 'f%06x' % generatedColor[i]
+
+    return generatedColor
+
 
 def sendEmailMessage(subject,message):
     config = None
@@ -364,11 +378,14 @@ def getFilesInPath(path,onlyFiles=True):
     else:
         return [os.path.join(path,f) for f in os.listdir(path)]
 
-def generateData(pathFiles,extension='png'):
+def generateData(pathFiles,extension='png',regularExpression=None):
     returnDataImages = []
     returnDataClass = []
     filesOnPath = getFilesInPath(pathFiles)
     for f in filesOnPath:
+        if regularExpression is not None and not re.match(regularExpression, f):
+            continue
+
         if f[-3:] == extension:
             returnDataImages.append(f)
             classNumber = f.split(os.path.sep)[-1]
@@ -410,7 +427,6 @@ def generateExperimentDataPattern(imageData,classesData,patternProbe,patternGall
 
     return foldGallery, foldGalleryClasses, foldProbe, foldProbeClasses
 
-
 def generateFoldsOfData(fq,imageData,classesData,stop=None):
     foldSize = int(len(imageData) / fq)
     foldResult = []
@@ -445,7 +461,7 @@ def generateImageData(paths,resize=None,silent=False,loadMasks=None,prefix=True,
     for p in paths:
         if not silent:
             print('Loading image '+p)
-        ni = im.open(p)
+        ni = im.open(p).convert('RGB')
         if not resize is None:
             ni = ni.resize(resize,im.ANTIALIAS)
 
@@ -506,8 +522,8 @@ def loadFoldFromFolders(pathFolders):
 
 def standartParametrization(parser):
     parser.add_argument('-p', '--pathdatabase', help='Path for the database', required=True)
-    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj'],
-                        help='Type of files (Depth, NewDepth, Range, 3DObj)', required=True)
+    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj','Matlab'],
+                        help='Type of files (Depth, NewDepth, Range, 3DObj, Matlab)', required=True)
     parser.add_argument('-op', '--operation', choices=['pp', 'fe', 'both'], default='both',
                         help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
     parser.add_argument('-f', '--pathtrainingfile', default=None, help='Path for the training file', required=False)
@@ -535,6 +551,7 @@ def standartParametrization(parser):
                         type=bool)
     parser.add_argument('--force', default=False, help='Utilize this to force the generation of new images',
                         required=False, type=bool)
+    parser.add_argument('--loadImages', default=None, help='Images to load', required=False)
     return parser
 
 def generateListLayers(model,options):
@@ -546,6 +563,81 @@ def generateListLayers(model,options):
         else:
             returnValue.append(parametersDict)
     return returnValue
+
+def loadPatternFromFiles(fileWithPattern):
+    filesPattern = []
+    with open(fileWithPattern,'r') as fwp:
+        for cLine in fwp:
+            cLine = cLine.strip()
+            if cLine == 'fold':
+                filesPattern.append([])
+            else:
+                filesPattern[-1].append(cLine)
+
+    return filesPattern
+
+def saveStatePytorch(fName,stateDict,optmizerStateDict,epoch,arch='VGG'):
+    torch.save({
+        'epoch': epoch,
+        'arch': arch,
+        'state_dict':stateDict,
+        'optimizer': optmizerStateDict,
+    }, fName)
+
+def shortenNetwork(network,desiredLayers,batchNorm=False):
+    if batchNorm:
+        newNetork = []
+        for i in desiredLayers:
+            newNetork.append(network[i])
+            if type(network[i]) is torch.nn.modules.conv.Conv2d:
+                newNetork.append(torch.nn.BatchNorm2d(network[i].out_channels))
+
+        return newNetork
+    else:
+        return [network[i] for i in desiredLayers]
+
+def plotFeaturesCenterloss(features, labels, num_classes):
+    """Plot features on 2D plane.
+    Args:
+        features: (num_instances, num_features).
+        labels: (num_instances).
+    """
+    fig = plt.Figure(figsize=(4, 4), dpi=320, facecolor='w', edgecolor='k')
+    c = ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff',
+         '#ff00ff', '#990000', '#999900', '#009900', '#009999']
+    ax = fig.add_subplot(1, 1, 1)
+
+    for label_idx in range(num_classes):
+        if num_classes > 10:
+            ax.scatter(
+                features[labels==label_idx, 0],
+                features[labels==label_idx, 1],
+                s=1
+            )
+        else:
+            ax.scatter(
+                features[labels==label_idx, 0],
+                features[labels==label_idx, 1],
+                s=1,
+                c=c[label_idx]
+            )
+
+    if num_classes <= 10:
+        ax.legend(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], loc='upper right')
+
+    #plt.legend(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], loc='upper right')
+    '''
+    dirname = os.path.join(save_dir, prefix)
+    if not os.path.exists(dirname):
+        try:
+            os.makedirs(dirname)
+        except:
+            raise Exception('Oh no')
+    save_name = os.path.join(dirname, 'epoch_' + str(epoch+1) + '.png')
+    plt.savefig(save_name, bbox_inches='tight')
+    plt.close()
+    '''
+    return fig
 
 if __name__ == '__main__':
     print(generateArrayUniform())

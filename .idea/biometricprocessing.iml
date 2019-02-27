@@ -37,6 +37,7 @@
       <excludeFolder url="file://$MODULE_DIR$/training_full_pytorch_sigmoid_fused" />
       <excludeFolder url="file://$MODULE_DIR$/training_full_pytorch_twosteps" />
       <excludeFolder url="file://$MODULE_DIR$/training_pytorch" />
+      <excludeFolder url="file://$MODULE_DIR$/vgg_original_weights" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -1,22 +1,10 @@
-from helper.functions import generateData, generateExperimentDataPattern
+from helper.functions import generateData, generateExperimentDataPattern, loadPatternFromFiles
 import argparse, shutil, os
 
 def copyFilesToFolder(datas,folder):
     for d in datas:
         fName = d.split(os.path.sep)[-1]
         shutil.copy(d,os.path.join(folder,fName))
-
-def loadFromFiles(fileWithPattern):
-    filesPattern = []
-    with open(fileWithPattern,'r') as fwp:
-        for cLine in fwp:
-            cLine = cLine.strip()
-            if cLine == 'fold':
-                filesPattern.append([])
-            else:
-                filesPattern[-1].append(cLine)
-
-    return filesPattern
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate experiment')
@@ -36,7 +24,7 @@ if __name__ == '__main__':
     os.makedirs(args.folder)
 
     if args.filePattern is not None:
-        folds = loadFromFiles(args.filePattern)
+        folds = loadPatternFromFiles(args.filePattern)
         for i,f in enumerate(folds):
             os.makedirs(os.path.join(args.folder, str(i+1), 'gallery'))
             os.makedirs(os.path.join(args.folder, str(i+1), 'probe'))

@@ -1,9 +1,11 @@
-from helper.functions import generateData, generateFoldsOfData, generateImageData, loadFoldFromFolders
-import networks.PyTorch.vgg_face_dag as vgg, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
+from torchvision import transforms
+from datasetClass.structures import loadDatasetFromFolder
+import networks.PyTorch.vgg_face_dag as vgg, argparse, numpy as np, torch, torch.optim as optim
 import torch.utils.data, shutil, os
 from tensorboardX import SummaryWriter
-from PyTorchLayers.center_loss import CenterLoss
+from helper.functions import saveStatePytorch, shortenNetwork, plotFeaturesCenterloss
 import torch.nn as nn
+from PyTorchLayers.center_loss import compute_center_loss, get_center_delta, CenterLoss
 
 def save_checkpoint(state,is_best,filename='checkpoint.pth.tar'):
     torch.save(state, filename)
@@ -17,215 +19,148 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--epochs', type=int, default=10, help='Epochs to be run', required=False)
     parser.add_argument('--fineTuneWeights', help='Do fine tuning with weights', required=True)
     parser.add_argument('--output', default=None, help='Output Folder', required=True)
+    parser.add_argument('--extension', help='Extension from files', required=False, default='png')
+    parser.add_argument('--classes', help='Quantity of classes', required=False, default=458, type=int)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print('Carregando dados')
-    imageData, classesData = generateData(args.pathBase)
-    folds = generateFoldsOfData(10, imageData, classesData,0)
 
-    imageData = folds[0][0]
-    classesData = folds[0][1]
+    dataTransform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.562454871481894, 0.8208898956471341, 0.395364053852456],
+                             std=[0.43727472598867456, 0.31812502566122625, 0.3796120355707891])
+    ])
+
+    folds = loadDatasetFromFolder(args.pathBase,validationSize='auto',transforms=dataTransform)
+
+    gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=False)
+    pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
 
     if os.path.exists(args.output):
         shutil.rmtree(args.output)
 
     print('Criando diretorio')
     os.makedirs(args.output)
-    muda = vgg.vgg_face_dag_load(weights_path=args.fineTuneWeights)
-    muda.conv1_1 = nn.Conv2d(4, 64, kernel_size=[3, 3], stride=(1, 1), padding=(1, 1))
+    muda = vgg.vgg_face_dag_load()
+    muda = vgg.vgg_smaller(muda,args.classes)
+    shortenedList = shortenNetwork(
+        list(muda.convolutional.children()),
+        [0, 1, 4, 5, 6, 9, 10, 11, 16, 17, 18, 23],True
+    )
+    muda.convolutional = nn.Sequential(*shortenedList)
+    muda.fullyConnected = nn.Sequential(
+        nn.Linear(in_features=18432, out_features=4096),
+        *list(muda.fullyConnected.children())[1:]
+    )
     muda.to(device)
-
-    qntBatches = len(imageData) / args.batch
-
-    '''
-    if args.centerLoss:
-        center_loss_l = CenterLoss(num_classes=args.classNumber)
-        optimizer_celoss = optim.SGD(center_loss_l.parameters(), lr=0.01, momentum=0.5)
-    '''
-    foldProbe = generateImageData(folds[0][2],resize=(224,224),averageDiv=255.0)
-    foldProbeClasses = np.array(folds[0][3]) - 1
-
-    foldProbe = torch.from_numpy(np.rollaxis(foldProbe, 3, 1)).float()
-    foldProbeClasses = torch.from_numpy(foldProbeClasses)
-    pdata = torch.utils.data.TensorDataset(foldProbe, foldProbeClasses)
-    test_loader = torch.utils.data.DataLoader(pdata, batch_size=args.batch, shuffle=False)
+    print(muda)
 
     print('Criando otimizadores')
-    optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
-
+    closs = CenterLoss(args.classes,2622).to(device)
+    optim_closs = optim.SGD(closs.parameters(), lr=0.5)
+    alpha = 0.5
+    optimizer = optim.SGD(muda.parameters(),lr=0.001,momentum=0.9, weight_decay=0.0005)
+    scheduler = optim.lr_scheduler.StepLR(optimizer,20,gamma=0.8)
+    criterion = nn.CrossEntropyLoss().to(device)
     print('Iniciando treino')
 
     cc = SummaryWriter()
-    bestForFold = -1
-
-    for ep in range(args.epochs):
+    bestForFold = 500000
+    bestRankForFold = -1
+    ep = 0
+    while True:
+        muda.train()
+        scheduler.step()
         lossAcc = []
-        for i in range(0,len(imageData),3000):
-            print('Criando tensores')
-            dataBatch = np.array(generateImageData(imageData[i:i+3000],resize=(224,224),averageDiv=255.0, silent=True))
-            classesBatch = np.array(classesData[i:i+3000]) - 1
+        galleryFeatures = []
+        galleryClasses = []
 
-            dataBatch = torch.from_numpy(np.rollaxis(dataBatch, 3, 1)).float()
-            classesBatch = torch.from_numpy(classesBatch)
-            tdata = torch.utils.data.TensorDataset(dataBatch, classesBatch)
-            train_loader = torch.utils.data.DataLoader(tdata, batch_size=args.batch, shuffle=True)
+        for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
 
-            for bIdx, (currBatch, currTargetBatch) in enumerate(train_loader):
-                optimizer.zero_grad()
-                output = muda(currBatch.to(device))
-                loss = F.cross_entropy(output, currTargetBatch.to(device))
-                loss.backward()
-                optimizer.step()
-                lossAcc.append(loss.item())
+            currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
+            features, output = muda(currBatch)
 
-                cc.add_scalar('VGG/fullData/loss', sum(lossAcc) / len(lossAcc), ep)
+            loss = criterion(output, currTargetBatch)
+            loss = loss + (alpha * closs(currTargetBatch,features))
 
-        muda.eval()
-        total = 0
-        correct = 0
-        labelsData = [[],[]]
-        scores = []
-        with torch.no_grad():
-            for data in test_loader:
-                images, labels = data
-                outputs = muda(images.to(device))
-                scores = scores + np.array(outputs.data).tolist()
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels.to(device) ).sum().item()
-                labelsData[0] = labelsData[0] + np.array(labels).tolist()
-                labelsData[1] = labelsData[1] + np.array(predicted).tolist()
-
-        cResult = correct / total
-
-        cc.add_scalar('VGG/fullData/accuracy', cResult, ep)
-
-        print('[EPOCH %d] Accuracy of the network on the %d test images: %d %% Loss %f' % (ep,total,100 * cResult,sum(lossAcc) / len(lossAcc)))
-
-        if bestForFold < cResult:
-            fName = '%s_best.pth.tar' % ('GioGio')
-            fName = os.path.join(args.output, fName)
-            save_checkpoint({
-                'epoch': ep + 1,
-                'arch': 'GioGio',
-                'state_dict': muda.state_dict(),
-                'optimizer': optimizer.state_dict(),
-            }, False, fName)
-
-            bestForFold = cResult
-
-    print('Terminou')
-
-'''
-def save_checkpoint(state,is_best,filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
-    if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train Deep Models')
-    parser.add_argument('-p', '--pathBase', default='generated_images_lbp_frgc', help='Path for faces', required=False)
-    parser.add_argument('-b', '--batch', type=int, default=500, help='Size of the batch', required=False)
-    parser.add_argument('-e', '--epochs', type=int, default=10, help='Epochs to be run', required=False)
-    parser.add_argument('--fineTuneWeights', help='Do fine tuning with weights', required=True)
-    parser.add_argument('--output', default=None, help='Output Folder', required=True)
-    args = parser.parse_args()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    imageData, classesData = generateData(args.pathBase)
-    folds = generateFoldsOfData(10, imageData, classesData,0)
-    imageData = folds[0][0]
-    classesData = folds[0][1]
-    print('Carregando dados')
-    imageData = generateImageData(imageData,resize=(224,224),averageDiv=255.0)
-    classesData = np.array(classesData) - 1
-
-    foldProbe = generateImageData(folds[0][2],resize=(224,224),averageDiv=255.0)
-    foldProbeClasses = np.array(folds[0][3]) - 1
-
-    if os.path.exists(args.output):
-        shutil.rmtree(args.output)
-
-    print('Criando diretorio')
-    os.makedirs(args.output)
-    muda = vgg.vgg_face_dag(weights_path=args.fineTuneWeights)
-    muda.conv1_1 = nn.Conv2d(4, 64, kernel_size=[3, 3], stride=(1, 1), padding=(1, 1))
-    muda.to(device)
-
-    qntBatches = imageData.shape[0] / args.batch
-
-    if np.amin(classesData) == 1:
-        foldGalleryClasses = classesData - 1
-
-    print('Criando tensores')
-    imageData = torch.from_numpy(np.rollaxis(imageData, 3, 1)).float()
-    classesData = torch.from_numpy(classesData)
-    tdata = torch.utils.data.TensorDataset(imageData, classesData)
-    train_loader = torch.utils.data.DataLoader(tdata, batch_size=args.batch, shuffle=True)
-
-    foldProbe = torch.from_numpy(np.rollaxis(foldProbe, 3, 1)).float()
-    foldProbeClasses = torch.from_numpy(foldProbeClasses)
-    pdata = torch.utils.data.TensorDataset(foldProbe, foldProbeClasses)
-    test_loader = torch.utils.data.DataLoader(pdata, batch_size=args.batch, shuffle=False)
-
-    print('Criando otimizadores')
-    optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
-
-    print('Iniciando treino')
-
-    cc = SummaryWriter()
-    bestForFold = -1
-
-    for ep in range(args.epochs):
-        lossAcc = []
-        bestResult = -1
-        bestEpoch = -1
-        for bIdx, (currBatch, currTargetBatch) in enumerate(train_loader):
             optimizer.zero_grad()
-            output = muda(currBatch.to(device))
-            loss = F.cross_entropy(output, currTargetBatch.to(device))
+            optim_closs.zero_grad()
+
             loss.backward()
+
             optimizer.step()
+            optim_closs.step()
+
+            galleryFeatures.append(features.data.cpu().numpy())
+            galleryClasses.append(currTargetBatch.data.cpu().numpy())
             lossAcc.append(loss.item())
 
+        lossAvg = sum(lossAcc) / len(lossAcc)
+        cc.add_scalar('VGG/loss', lossAvg, ep)
 
-        cc.add_scalar('Finetuning_vgg/fullData/loss', sum(lossAcc) / len(lossAcc), ep)
+        featurescloss = plotFeaturesCenterloss(np.concatenate(galleryFeatures,0),np.concatenate(galleryClasses,0),args.classes)
+        cc.add_figure('VGG/features/train', featurescloss, ep)
 
         muda.eval()
         total = 0
         correct = 0
         labelsData = [[],[]]
-        scores = []
+        lossV = []
+        probeFeatures = []
+        probeClasses = []
+
         with torch.no_grad():
-            for data in test_loader:
+            for data in pro_loader:
                 images, labels = data
-                outputs = muda(images.to(device))
-                scores = scores + np.array(outputs.data).tolist()
+                fs, outputs = muda(images.to(device))
                 _, predicted = torch.max(outputs.data, 1)
+
                 total += labels.size(0)
                 correct += (predicted == labels.to(device) ).sum().item()
                 labelsData[0] = labelsData[0] + np.array(labels).tolist()
                 labelsData[1] = labelsData[1] + np.array(predicted).tolist()
+    
+            probeFeatures.append(fs.data.cpu().numpy())
+            probeClasses.append(labels.data.cpu().numpy())
+
 
         cResult = correct / total
+        featurescloss = plotFeaturesCenterloss(np.concatenate(probeFeatures,0),np.concatenate(probeClasses,0),args.classes)
+        cc.add_figure('VGG/features/test', featurescloss, ep)
 
-        cc.add_scalar('Finetuning_vgg/fullData/accuracy', cResult, ep)
+        cc.add_scalar('VGG/accuracy', cResult, ep)
 
-        print('[EPOCH %d] Accuracy of the network on the %d test images: %d %% Loss %f' % (ep,total,100 * cResult,sum(lossAcc) / len(lossAcc)))
+        print('[EPOCH %d] Accuracy of the network on the %d test images: %.2f%% Loss %f' % (ep,total,100 * cResult,lossAvg))
+        
+        print('Salvando epoch atual')
+        state_dict = muda.state_dict()
+        opt_dict = optimizer.state_dict()
+        fName = '%s_current.pth.tar' % ('vgg')
+        fName = os.path.join(args.output, fName)
+        saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
 
-        if bestForFold < cResult:
-            fName = '%s_best.pth.tar' % ('VGG')
+        if bestRankForFold < cResult:
+            print('Salvando melhor rank')
+            fName = '%s_best_rank.pth.tar' % ('vgg')
             fName = os.path.join(args.output, fName)
-            save_checkpoint({
-                'epoch': ep + 1,
-                'arch': 'VGG',
-                'state_dict': muda.state_dict(),
-                'optimizer': optimizer.state_dict(),
-            }, False, fName)
+            saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+            bestRankForFold = cResult
 
-            bestForFold = cResult
+        if bestForFold > lossAvg:
+            print('Salvando melhor Loss')
+            fName = '%s_best_loss.pth.tar' % ('vgg')
+            fName = os.path.join(args.output, fName)
+            saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+            bestForFold = lossAvg
+
+        ep += 1
+        if args.epochs < 0:
+            if lossAvg < 0.0001:
+                break
+        else:
+            args.epochs -= 1
+            if args.epochs < 0:
+                break
 
     print('Terminou')
-
-'''

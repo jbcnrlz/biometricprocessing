@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainWithFullDataPytorch.py" />
-    <option name="PARAMETERS" value="-c=1000 -p=fused_training_sig -e=200 -b=100 --output=training_full_pytorch_sigmoid_fused" />
+    <option name="PARAMETERS" value="-c=1000 -p=generated_images_frgc_wfunc -e=200 -b=100 --output=training_full_pytorch_wfunc" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

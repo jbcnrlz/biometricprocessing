@@ -90,17 +90,24 @@ if __name__ == '__main__':
         pdata = torch.utils.data.TensorDataset(foldProbe, foldProbeClasses)
         test_loader = torch.utils.data.DataLoader(pdata, batch_size=args.batch, shuffle=False)
 
-        optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
-
         if not os.path.exists(os.path.join(args.folderSnapshots, str(f))):
             os.makedirs(os.path.join(args.folderSnapshots, str(f)))
 
         if args.fineTuneWeights is not None:
+            print('Preparando para Finetuning')
             checkpoint = torch.load(args.fineTuneWeights)
-            optimizer.load_state_dict(checkpoint['optimizer'])
+            #optimizer.load_state_dict(checkpoint['optimizer'])
             muda.load_state_dict(checkpoint['state_dict'])
-            nfeats = muda.classifier[-1].in_features
-            muda.add_module('new_softmax',nn.Linear(nfeats, args.fineTuningClasses).to(device))
+            muda.add_module('new_softmax',nn.Linear(args.classNumber, args.fineTuningClasses).to(device))
+
+        optimizer = optim.Adam([
+            {'params' : muda.features.parameters()},
+            {'params' : muda.classifier.parameters()},
+            {'params' : muda.new_softmax.parameters(), 'lr' : 0.01}
+
+        ], lr=0.001)
+        #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+        criterion = nn.CrossEntropyLoss().to(device)
 
         print(muda)
 
@@ -115,7 +122,7 @@ if __name__ == '__main__':
             for bIdx, (currBatch,currTargetBatch) in enumerate(train_loader):
                 optimizer.zero_grad()
                 output = muda(currBatch.to(device))
-                loss = F.cross_entropy(output, currTargetBatch.to(device))
+                loss = criterion(output, currTargetBatch.to(device))
                 loss.backward()
                 optimizer.step()
                 lossAcc.append(loss.item())

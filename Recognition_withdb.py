@@ -1,5 +1,20 @@
-import random, numpy as np, sys, cv2, argparse
+import random, numpy as np, sys, cv2, argparse, os
+import re
+
 from sklearn.metrics.pairwise import cosine_similarity
+from helper.functions import loadPatternFromFiles
+
+def loadFileFeatures(pathFile):
+    dataFile = None
+    with open(pathFile,'r') as f:
+        dataFile = f.readlines()
+
+    returnFeatures = []
+    for d in dataFile:
+        d = d.split(' ')
+        returnFeatures.append([float(x) for x in d[:-2]] + [int(d[-2])] + [d[-1].strip()])
+
+    return returnFeatures
 
 def generateDatabase(pathFile):
     dataFile = None
@@ -31,50 +46,86 @@ def gerarEspacoFace(faces):
     espaco = espaco - faceMedia
     return espaco, faceMedia
 
+def generateFolds(data,pattern):
+    experiment = []
+    for f in pattern:
+        probe = []
+        gallery = []
+        probePattern = f[1].split('__')
+        galleryPattern = f[0].split('__')
+        for d in data:
+            features = d[:-1]
+            fileName = d[-1]
+            for p in probePattern:
+                if re.match(p,fileName):
+                    probe.append(features)
+
+            for g in galleryPattern:
+                if re.match(g,fileName):
+                    gallery.append(features)
+
+        experiment.append((gallery,probe))
+
+    return experiment
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run recognition with db')
-    parser.add_argument('-p', '--pathdatabase', help='Path for the database', required=True)
-    parser.add_argument('--PCA',
-        help='Apply PCA to the data. The PCA is computed using the gallery and the probe characteristics are projeted into its space',
-        required=False,
-        default=False,
-        type=bool
-    )
+    parser.add_argument('--path', help='Path for features file', required=True)
+    parser.add_argument('--folds', help='Path for folds file', required=True)
     args = parser.parse_args()
 
+    features = loadFileFeatures(args.path)
+    patterns = loadPatternFromFiles(args.folds)
 
-    avg = []
-    for foldNumber in range(10):
-        pb, gl = generateDatabase(args.pathdatabase)
+    experiments = generateFolds(features,patterns)
 
-        if args.PCA:
-            #espaco, faceMedia = gerarEspacoFace(gl)
-            mean, eigenvector = cv2.PCACompute(gl,np.mean(gl,axis=0).reshape(1,-1))
-            espaco = espaco * eigenvector
+    for fnum, e in enumerate(experiments):
+        print('Doing fold ' + str(fnum))
+        resultado = np.zeros(2)
+        for snum, p in enumerate(e[1]):
+            p = np.array(p)
+            pdone = (snum / len(e[1])) * 100
+            cClass = p[-1]
+            p = p[0:-1]
+            temp_max = -10
+            temp_index = 0
+            temp_max = -1000
+            for gnum, j in enumerate(e[0]):
+                j = np.array(j)
+                print('\r [%.2f Completed] --- Checking subject %d from class %d against gallery subject %d from class %d' % (pdone, snum, cClass, gnum, j[-1]), end='\r', flush=True)
+                temp_similarity = cosine_similarity(p.reshape(1, -1), j[:-1].reshape(1, -1))
+                if temp_max < temp_similarity:
+                    temp_max = temp_similarity
+                    temp_index = j[-1]
 
-            novoEspaco, faceMedia = gerarEspacoFace(pb)
-            novoEspaco = novoEspaco * eigenvector
+            resultado[int(temp_index == cClass)] += 1
+        resultado = resultado / len(e[1])
+        print("\nAcertos %.2f Erro %.2f" % (resultado[1] * 100, resultado[0] * 100))
 
-        else:
-            resultado =np.zeros(2)
-            for p in pb:
-                cClass = p[-1]
-                p = p[0:-1]
+    print('opa')
+    '''
+    folds = getDirectoriesInPath(args.path)
 
-                temp_max = -10
-                temp_index = 0
-                temp_max = -1000
-                for j in gl:
-                    temp_similarity = cosine_similarity(p.reshape(1,-1), j[0:-1].reshape(1,-1))
-                    if temp_max < temp_similarity:
-                        temp_max = temp_similarity
-                        temp_index = j[-1]
+    for f in folds:
+        gl = loadFileFeatures(os.path.join(args.path,f,'gallery.txt'))
+        pb = loadFileFeatures(os.path.join(args.path,f,'probe.txt'))
+        print('Doing fold '+f)
+        resultado = np.zeros(2)
+        for snum, p in enumerate(pb):
+            pdone = (snum/len(pb))*100
+            cClass = p[-1]
+            p = p[0:-1]
+            temp_max = -10
+            temp_index = 0
+            temp_max = -1000
+            for gnum, j in enumerate(gl):
+                print('\r [%.2f Completed] --- Checking subject %d from class %d against gallery subject %d from class %d' % (pdone,snum,cClass,gnum,j[-1]), end='\r',flush=True)
+                temp_similarity = cosine_similarity(p.reshape(1, -1), j[:-1].reshape(1, -1))
+                if temp_max < temp_similarity:
+                    temp_max = temp_similarity
+                    temp_index = j[-1]
 
-                resultado[int(temp_index == cClass)] += 1
-
-            resultado = resultado / len(pb)
-            print("Acertos %.2f Erro %.2f" % (resultado[1] * 100,resultado[0] * 100))
-            avg.append(resultado[1])
-
-    print("Media %.2f Desvio Padrao %.2f" % (np.average(avg)*100,np.std(avg)*100))
+            resultado[int(temp_index == cClass)] += 1
+        resultado = resultado / len(pb)
+        print("\nAcertos %.2f Erro %.2f" % (resultado[1] * 100, resultado[0] * 100))
+    '''

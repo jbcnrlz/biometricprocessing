@@ -1,6 +1,7 @@
 from helper.functions import generateData, generateFoldsOfData, generateImageData, loadFoldFromFolders
 import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
 import torch.utils.data, shutil, os, re
+from networks.PyTorch.vgg_face_dag import *
 
 features = []
 
@@ -48,12 +49,16 @@ if __name__ == '__main__':
     if np.amin(classesData) == 1:
         classesData = classesData - 1
 
-    muda = jojo.GioGio(1000)
+    muda = vgg_face_dag()
+    muda.conv3_1 = nn.Conv2d(4, 256, kernel_size=[3, 3], stride=(1, 1), padding=(1, 1))
+    muda.fc6 = nn.Linear(in_features=256 * 12 * 12, out_features=4096, bias=True)
+    muda = vgg_smaller(muda)
+    muda.fullyConnected.add_module('new_softmax', nn.Linear(2622, 458))
+    state_dict = torch.load(args.weights)
+    muda.load_state_dict(state_dict['state_dict'])
     muda.to(device)
 
-    checkpoint = torch.load(args.weights)
-    muda.load_state_dict(checkpoint['state_dict'])
-    muda.classifier[-3].register_forward_hook(printnorm)
+    muda.fullyConnected[-2].register_forward_hook(printnorm)
 
     foldGallery = torch.from_numpy(np.rollaxis(imageData, 3, 1)).float()
     foldGalleryClasses = torch.from_numpy(classesData)

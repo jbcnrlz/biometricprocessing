@@ -4,29 +4,31 @@ from helper.functions import shortenNetwork
 
 class vgg_smaller(nn.Module):
 
-    def __init__(self,fullVgg,numClasses=None,features=2622):
+    def __init__(self,fullVgg,numClasses=None,features=4096,bufferCenters=False):
         super(vgg_smaller, self).__init__()
         self.sizeReduction = nn.Sequential(
             nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0, dilation=1, ceil_mode=False),
             nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0, dilation=1, ceil_mode=False)
         )
         self.convolutional = nn.Sequential(*list(fullVgg.children())[:-7])
-        self.fullyConnected = nn.Sequential(*list(fullVgg.children())[-7:])
+        self.fullyConnected = nn.Sequential(*list(fullVgg.children())[-7:-3])
         self.softmax = None
 
-        if numClasses is not None:
+        if bufferCenters:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.register_buffer('centers', (torch.rand(numClasses, features).to(torch.device(device)) - 0.5) * 2)
+
+        if numClasses is not None:
             self.softmax = nn.Linear(in_features=features, out_features=numClasses,bias=False)
 
     def forward(self, x0):
         x0 = self.convolutional(x0)
         x0 = x0.view(x0.size(0), -1)
         x0 = self.fullyConnected(x0)
-        y = None
         if self.softmax is not None:
-            y = self.softmax(x0)
-        return x0, y
+            return x0, self.softmax(x0)
+        else:
+            return x0, None
 
 class vgg_face_dag(nn.Module):
 
@@ -215,20 +217,20 @@ def medium_vgg_face_dag_load(weights_path=None, **kwargs):
     model = vgg_smaller(model)
     shortenedList = shortenNetwork(
         list(model.convolutional.children()),
-        [0, 1, 4, 5, 6, 9, 10, 11, 16, 17, 18, 23]
+        [0, 1, 4, 5, 6, 9, 10, 11, 16, 17, 18, 23],True
     )
     model.convolutional = nn.Sequential(*shortenedList)
 
     if weights_path:
         state_dict = torch.load(weights_path)
+
         model.fullyConnected = nn.Sequential(
             nn.Linear(in_features=state_dict['state_dict']['fullyConnected.0.weight'].shape[1], out_features=4096, bias=True),
-            *list(model.fullyConnected.children())[1:],
-            nn.Linear(in_features=2622, out_features=state_dict['state_dict']['fullyConnected.7.weight'].shape[0])
+            *list(model.fullyConnected.children())[1:]
         )
-        #model.fullyConnected.add_module('7', nn.Linear(in_features=2622, out_features=state_dict['state_dict']['fullyConnected.7.weight'].shape[0]))
+
+        model.softmax = nn.Linear(in_features=state_dict['state_dict']['softmax.weight'].shape[1], out_features=state_dict['state_dict']['softmax.weight'].shape[0],bias=False)
         model.load_state_dict(state_dict['state_dict'])
-        model.fullyConnected = nn.Sequential(*list(model.fullyConnected.children())[:-1])
 
     return model
 
@@ -239,21 +241,24 @@ def centerloss_vgg_face_dag_load(weights_path=None, **kwargs):
     Args:
         weights_path (str): If set, loads model weights from the given path
     """
+    state_dict = torch.load(weights_path)
     model = vgg_face_dag()
-    model = vgg_smaller(model)
+    model = vgg_smaller(model,state_dict['state_dict']['softmax.weight'].shape[0],bufferCenters=True)
     shortenedList = shortenNetwork(
         list(model.convolutional.children()),
-        [0, 1, 4, 5, 6, 9, 10, 11, 16, 17, 18, 23]
+        [0, 1, 4, 5, 6, 9, 10, 11, 16, 17, 18, 23], True
     )
     model.convolutional = nn.Sequential(*shortenedList)
+    model.fullyConnected = nn.Sequential(
+        nn.Linear(in_features=18432, out_features=4096),
+        *list(model.fullyConnected.children())[1:]
+    )
 
-    if weights_path:
-        state_dict = torch.load(weights_path)
-        model.fullyConnected = nn.Sequential(
-            nn.Linear(in_features=state_dict['state_dict']['fullyConnected.0.weight'].shape[1], out_features=4096, bias=True),
-            *list(model.fullyConnected.children())[1:]
-        )
-        model.softmax = nn.Linear(in_features=2622, out_features=state_dict['state_dict']['softmax.weight'].shape[0])
-        model.load_state_dict(state_dict['state_dict'])
+    model.fullyConnected = nn.Sequential(
+        nn.Linear(in_features=state_dict['state_dict']['fullyConnected.0.weight'].shape[1], out_features=4096, bias=True),
+        *list(model.fullyConnected.children())[1:]
+    )
+    #model.softmax = nn.Linear(in_features=2622, out_features=state_dict['state_dict']['softmax.weight'].shape[0])
+    model.load_state_dict(state_dict['state_dict'])
 
     return model

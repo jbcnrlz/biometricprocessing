@@ -3,9 +3,8 @@ from datasetClass.structures import loadDatasetFromFolder
 import networks.PyTorch.vgg_face_dag as vgg, argparse, numpy as np, torch, torch.optim as optim
 import torch.utils.data, shutil, os
 from tensorboardX import SummaryWriter
-from helper.functions import saveStatePytorch, shortenNetwork, plotFeaturesCenterloss
+from helper.functions import saveStatePytorch, shortenNetwork, generateRandomColors
 import torch.nn as nn
-from PyTorchLayers.center_loss import compute_center_loss, get_center_delta, CenterLoss
 
 def save_checkpoint(state,is_best,filename='checkpoint.pth.tar'):
     torch.save(state, filename)
@@ -27,14 +26,12 @@ if __name__ == '__main__':
     print('Carregando dados')
 
     dataTransform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.562454871481894, 0.8208898956471341, 0.395364053852456],
-                             std=[0.43727472598867456, 0.31812502566122625, 0.3796120355707891])
+        transforms.ToTensor()
     ])
 
     folds = loadDatasetFromFolder(args.pathBase,validationSize='auto',transforms=dataTransform)
 
-    gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=False)
+    gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=True)
     pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
 
     if os.path.exists(args.output):
@@ -42,7 +39,7 @@ if __name__ == '__main__':
 
     print('Criando diretorio')
     os.makedirs(args.output)
-    muda = vgg.vgg_face_dag_load()
+    muda = vgg.vgg_face_dag_load(weights_path=args.fineTuneWeights)
     muda = vgg.vgg_smaller(muda,args.classes)
     shortenedList = shortenNetwork(
         list(muda.convolutional.children()),
@@ -57,19 +54,20 @@ if __name__ == '__main__':
     print(muda)
 
     print('Criando otimizadores')
-    closs = CenterLoss(args.classes,2622).to(device)
-    optim_closs = optim.SGD(closs.parameters(), lr=0.5)
-    alpha = 0.5
+    alpha = 1
     optimizer = optim.SGD(muda.parameters(),lr=0.001,momentum=0.9, weight_decay=0.0005)
     scheduler = optim.lr_scheduler.StepLR(optimizer,20,gamma=0.8)
     criterion = nn.CrossEntropyLoss().to(device)
+
     print('Iniciando treino')
 
     cc = SummaryWriter()
     bestForFold = 500000
     bestRankForFold = -1
     ep = 0
+    colors = generateRandomColors(args.classes)
     while True:
+        ibl = ibr = ' '
         muda.train()
         scheduler.step()
         lossAcc = []
@@ -77,20 +75,16 @@ if __name__ == '__main__':
         galleryClasses = []
 
         for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
-
             currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
             features, output = muda(currBatch)
 
             loss = criterion(output, currTargetBatch)
-            loss = loss + (alpha * closs(currTargetBatch,features))
 
             optimizer.zero_grad()
-            optim_closs.zero_grad()
 
             loss.backward()
 
             optimizer.step()
-            optim_closs.step()
 
             galleryFeatures.append(features.data.cpu().numpy())
             galleryClasses.append(currTargetBatch.data.cpu().numpy())
@@ -99,9 +93,6 @@ if __name__ == '__main__':
         lossAvg = sum(lossAcc) / len(lossAcc)
         cc.add_scalar('VGG/loss', lossAvg, ep)
 
-        featurescloss = plotFeaturesCenterloss(np.concatenate(galleryFeatures,0),np.concatenate(galleryClasses,0),args.classes)
-        cc.add_figure('VGG/features/train', featurescloss, ep)
-
         muda.eval()
         total = 0
         correct = 0
@@ -109,31 +100,28 @@ if __name__ == '__main__':
         lossV = []
         probeFeatures = []
         probeClasses = []
-
+        loss_val = []
         with torch.no_grad():
             for data in pro_loader:
                 images, labels = data
                 fs, outputs = muda(images.to(device))
                 _, predicted = torch.max(outputs.data, 1)
 
+                loss = criterion(outputs, labels.to(device))
+                loss_val.append(loss)
+
                 total += labels.size(0)
                 correct += (predicted == labels.to(device) ).sum().item()
-                labelsData[0] = labelsData[0] + np.array(labels).tolist()
-                labelsData[1] = labelsData[1] + np.array(predicted).tolist()
+                labelsData[0] = labelsData[0] + np.array(labels.cpu()).tolist()
+                labelsData[1] = labelsData[1] + np.array(predicted.cpu()).tolist()
     
-            probeFeatures.append(fs.data.cpu().numpy())
-            probeClasses.append(labels.data.cpu().numpy())
+                probeFeatures.append(fs.data.cpu().numpy())
+                probeClasses.append(labels.data.cpu().numpy())
 
 
         cResult = correct / total
-        featurescloss = plotFeaturesCenterloss(np.concatenate(probeFeatures,0),np.concatenate(probeClasses,0),args.classes)
-        cc.add_figure('VGG/features/test', featurescloss, ep)
-
+        tLoss = sum(loss_val) / len(loss_val)
         cc.add_scalar('VGG/accuracy', cResult, ep)
-
-        print('[EPOCH %d] Accuracy of the network on the %d test images: %.2f%% Loss %f' % (ep,total,100 * cResult,lossAvg))
-        
-        print('Salvando epoch atual')
         state_dict = muda.state_dict()
         opt_dict = optimizer.state_dict()
         fName = '%s_current.pth.tar' % ('vgg')
@@ -141,18 +129,21 @@ if __name__ == '__main__':
         saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
 
         if bestRankForFold < cResult:
-            print('Salvando melhor rank')
+            ibr = 'X'
             fName = '%s_best_rank.pth.tar' % ('vgg')
             fName = os.path.join(args.output, fName)
             saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
             bestRankForFold = cResult
 
         if bestForFold > lossAvg:
-            print('Salvando melhor Loss')
+            ibl = 'X'
             fName = '%s_best_loss.pth.tar' % ('vgg')
             fName = os.path.join(args.output, fName)
             saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
             bestForFold = lossAvg
+
+        print('[EPOCH %03d] Accuracy of the network on the %d validating images: %03.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss, ibl, ibr))
+        cc.add_scalar('VGG/validation_loss', tLoss, ep)
 
         ep += 1
         if args.epochs < 0:

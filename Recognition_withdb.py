@@ -80,7 +80,7 @@ if __name__ == '__main__':
     experiments = generateFolds(features,patterns)
 
     for fnum, e in enumerate(experiments):
-        print('Doing fold ' + str(fnum))
+        print('Doing fold %d with %d fold subjects' % (fnum,len(e[1])))
         resultado = np.zeros(2)
         for snum, p in enumerate(e[1]):
             p = np.array(p)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
             temp_max = -1000
             for gnum, j in enumerate(e[0]):
                 j = np.array(j)
-                print('\r [%.2f Completed] --- Checking subject %d from class %d against gallery subject %d from class %d' % (pdone, snum, cClass, gnum, j[-1]), end='\r', flush=True)
+                print('\r[%.2f Completed] --- Checking subject %d from class %d against gallery subject %d from class %d' % (pdone, snum, cClass, gnum, j[-1]), end='\r', flush=True)
                 temp_similarity = cosine_similarity(p.reshape(1, -1), j[:-1].reshape(1, -1))
                 if temp_max < temp_similarity:
                     temp_max = temp_similarity
@@ -100,32 +100,4 @@ if __name__ == '__main__':
 
             resultado[int(temp_index == cClass)] += 1
         resultado = resultado / len(e[1])
-        print("\nAcertos %.2f Erro %.2f" % (resultado[1] * 100, resultado[0] * 100))
-
-    print('opa')
-    '''
-    folds = getDirectoriesInPath(args.path)
-
-    for f in folds:
-        gl = loadFileFeatures(os.path.join(args.path,f,'gallery.txt'))
-        pb = loadFileFeatures(os.path.join(args.path,f,'probe.txt'))
-        print('Doing fold '+f)
-        resultado = np.zeros(2)
-        for snum, p in enumerate(pb):
-            pdone = (snum/len(pb))*100
-            cClass = p[-1]
-            p = p[0:-1]
-            temp_max = -10
-            temp_index = 0
-            temp_max = -1000
-            for gnum, j in enumerate(gl):
-                print('\r [%.2f Completed] --- Checking subject %d from class %d against gallery subject %d from class %d' % (pdone,snum,cClass,gnum,j[-1]), end='\r',flush=True)
-                temp_similarity = cosine_similarity(p.reshape(1, -1), j[:-1].reshape(1, -1))
-                if temp_max < temp_similarity:
-                    temp_max = temp_similarity
-                    temp_index = j[-1]
-
-            resultado[int(temp_index == cClass)] += 1
-        resultado = resultado / len(pb)
-        print("\nAcertos %.2f Erro %.2f" % (resultado[1] * 100, resultado[0] * 100))
-    '''
+        print("\nRight %.2f Wrong %.2f" % (resultado[1] * 100, resultado[0] * 100))

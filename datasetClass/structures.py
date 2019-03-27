@@ -24,7 +24,7 @@ def loadDatasetFromFolder(pathFold,validationSize = 0,transforms=None):
     valFiles = [[],[],[]]
     for f in files:
         fileName = f.split(os.path.sep)[-1]
-        className = fileName.split('_')[0]
+        className = int(''.join([lt for lt in fileName.split('_')[0] if not lt.isalpha()]))
         if validationSize > 0 and (className not in valFiles[1] or valFiles[1].count(className) < trainFiles[1].count(className)) and 'rotate' not in fileName:
             valFiles[0].append(f)
             valFiles[1].append(className)
@@ -62,13 +62,31 @@ def pil_loader(path,mode='RGB'):
         img = im.open(f)
         return img.convert(mode)
 
+def mat_loader(path,mode):
+    import h5py
+    arrays = {}
+    image = None
+    try:
+        with h5py.File(path) as fPy:
+            for k, v in fPy.items():
+                arrays[k] = np.array(v)
+    except:
+        import scipy.io as sio
+        arrays = sio.loadmat(path)
+
+    image = arrays['defShape'].T
+    return image
+
 class Folds(Dataset):
 
     def __init__(self, files, classes, transform=None, target_transform=None):
         self.classes = list(map(int,classes))
         self.samples = files
 
-        self.loader = pil_loader
+        if files[0][-3:] == 'mat':
+            self.loader = mat_loader
+        else:
+            self.loader = pil_loader
 
         self.transform = transform
         self.target_transform = target_transform
@@ -87,11 +105,11 @@ class Folds(Dataset):
 
     def __getitem__(self, index):
         mode = 'RGBA' if self.samples[index][-3:].lower() == 'png' else 'RGB'
-        sample = np.array(self.loader(self.samples[index],mode)) / 255
+        sample = self.loader(self.samples[index],mode)
         target = self.classes[index]
         if self.transform is not None:
             sample = self.transform(sample)
         if self.target_transform is not None:
             target = self.target_transform(self.classes[index])
 
-        return sample.float(), target
+        return sample.float() / 255, target

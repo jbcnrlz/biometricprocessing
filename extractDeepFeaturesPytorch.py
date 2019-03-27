@@ -1,80 +1,55 @@
-from helper.functions import generateData, generateFoldsOfData, generateImageData, loadFoldFromFolders
-import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
-import torch.utils.data, shutil, os, re
-from networks.PyTorch.vgg_face_dag import *
-
-features = []
-
-def printnorm(self, input, output):
-    # input is a tuple of packed inputs
-    # output is a Tensor. output.data is the Tensor we are interested
-    if output.device.type == 'cuda':
-        features.append(output.data.cpu().numpy())
-    else:
-        features.append(output.data.numpy())
-
-def filterFiles(pathFiles, classes, regularExpression):
-    returnFileData = []
-    returnImageClasses = []
-    for i, f in enumerate(pathFiles):
-        fileName = f.split(os.path.sep)[-1]
-        for rep in regularExpression:
-            if re.match(rep,fileName):
-                returnFileData.append(f)
-                returnImageClasses.append(classes[i])
-                break
-
-    return returnFileData, returnImageClasses
+from torchvision.transforms import transforms
+from datasetClass.structures import loadFolder
+from helper.functions import getFilesInPath
+import argparse, networks.PyTorch.jojo as jojo
+import torch
+import torch.utils.data, os, numpy as np
+from sklearn.decomposition import PCA
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Extract Deep Features utilizing GioGio Network')
-    parser.add_argument('-p','--pathdatabase',help='Path for the database',required=True)
-    parser.add_argument('-w', '--weights', help='File for weights', required=True)
-    parser.add_argument('-o', '--output', help='Output for features', default='out.txt')
-    parser.add_argument('-g', '--gallery', help='Gallery', default='gallery.txt')
-    parser.add_argument('-r', '--probe', help='Probe', default='probe.txt')
-    parser.add_argument('-f', '--folds', help='Quantity of folds', default=None, type=int)
-    parser.add_argument('--exp', help='Regular expression', default=None)
+    parser.add_argument('--loadFromFolder', default=None, help='Load folds from folders', required=True)
+    parser.add_argument('--fineTuneWeights', default=None, help='Do fine tuning with weights', required=True)
+    parser.add_argument('--output', default=None, help='Features output files', required=True)
+    parser.add_argument('--network', help='Joestar network to use', required=False, default='giogio')
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    imageData, classesData = generateData(args.pathdatabase)
-    if args.exp is not None:
-        imageData, classesData = filterFiles(imageData, classesData, args.exp.split('__'))
-        
-    imageData = generateImageData(imageData) / 255.0
-    classesData = np.array(classesData)
 
-    if np.amin(classesData) == 1:
-        classesData = classesData - 1
+    dataTransform = transforms.Compose([
+        transforms.ToTensor()
+    ])
 
-    muda = vgg_face_dag()
-    muda.conv3_1 = nn.Conv2d(4, 256, kernel_size=[3, 3], stride=(1, 1), padding=(1, 1))
-    muda.fc6 = nn.Linear(in_features=256 * 12 * 12, out_features=4096, bias=True)
-    muda = vgg_smaller(muda)
-    muda.fullyConnected.add_module('new_softmax', nn.Linear(2622, 458))
-    state_dict = torch.load(args.weights)
-    muda.load_state_dict(state_dict['state_dict'])
-    muda.to(device)
+    paths = getFilesInPath(args.loadFromFolder)
+    foldFile = loadFolder(args.loadFromFolder, dataTransform)
+    gal_loader = torch.utils.data.DataLoader(foldFile, batch_size=100, shuffle=False)
 
-    muda.fullyConnected[-2].register_forward_hook(printnorm)
+    checkpoint = torch.load(args.fineTuneWeights)
+    if args.network == 'giogio':
+        muda = jojo.GioGio(checkpoint['state_dict']['softmax.1.weight'].shape[0],in_channels=checkpoint['state_dict']['features.0.weight'].shape[1]).to(device)
+    elif args.network == 'jolyne':
+        muda = jojo.Jolyne(checkpoint['state_dict']['softmax.1.weight'].shape[0],
+                           in_channels=checkpoint['state_dict']['features.0.weight'].shape[1]).to(device)
+    muda.load_state_dict(checkpoint['state_dict'])
 
-    foldGallery = torch.from_numpy(np.rollaxis(imageData, 3, 1)).float()
-    foldGalleryClasses = torch.from_numpy(classesData)
-    tdata = torch.utils.data.TensorDataset(foldGallery, foldGalleryClasses)
-    train_loader = torch.utils.data.DataLoader(tdata, batch_size=100, shuffle=False)
-
+    muda.eval()
+    galleryFeatures = []
+    galleryClasses = []
     with torch.no_grad():
-        for i, data in enumerate(train_loader):
-            images, labels = data
-            pred = muda(images.to(device))
+        for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
+            print("Extracting features from batch %d"%(bIdx))
+            output, whatever = muda(currBatch.to(device))
+            galleryFeatures = galleryFeatures + whatever.tolist()
+            galleryClasses = galleryClasses + currTargetBatch.tolist()
 
-    with open(args.output,'w') as dk:
-        classIdx = 0
-        for i, data in enumerate(features):
-            for d in data:
-                dk.write(' '.join(list(map(str,d))) + ' ' + str(classesData[classIdx]) + '\n')
-                classIdx += 1
-
-    print(features)
+    pca = PCA(n_components=0.99,svd_solver='full')
+    galleryFeatures=np.array(galleryFeatures)
+    pca.fit(galleryFeatures)
+    galleryFeatures=pca.transform(galleryFeatures).tolist()
+    print("Quantidade de características: %d" % (len(galleryFeatures[0])))
+    print('Writing feature file')
+    with open(args.output, 'w') as dk:
+        for i, data in enumerate(galleryFeatures):
+            filesName = paths[i].split(os.path.sep)[-1]
+            dk.write(' '.join(list(map(str, data))) + ' ' + str(galleryClasses[i]) + ' ' + filesName +'\n')

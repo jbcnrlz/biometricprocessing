@@ -7,19 +7,6 @@ from sklearn.metrics import confusion_matrix
 from email.message import EmailMessage
 from yaml import load
 
-def generateColorCombination(number):
-    generatedColor = []
-    for n in range(number):
-        nRandom = random.randrange(0,16777216)
-        if nRandom not in generatedColor:
-            generatedColor.append(nRandom)
-
-    for i in range(len(generatedColor)):
-        generatedColor[i] = 'f%06x' % generatedColor[i]
-
-    return generatedColor
-
-
 def sendEmailMessage(subject,message):
     config = None
     with open("emailConfig.yaml", 'r') as stream:
@@ -93,7 +80,6 @@ def plot_confusion_matrix(correct_labels, predict_labels, labels, title='Confusi
         ax.text(j, i, format(cm[i, j], 'd') if cm[i,j]!=0 else '.', horizontalalignment="center", fontsize=3, verticalalignment='center', color= "black")
     fig.set_tight_layout(True)
     return fig
-
 
 def bilinear_interpolation(x, y, points):
     '''Interpolate (x,y) from values associated with four points.
@@ -390,12 +376,16 @@ def generateData(pathFiles,extension='png',regularExpression=None):
             returnDataImages.append(f)
             classNumber = f.split(os.path.sep)[-1]
             if extension in ['png','npy','bmp']:
-                classNumber = classNumber.split('_')[0]
+                cnum = classNumber.split('_')[0]
+                if cnum == 'depth':
+                    classNumber = classNumber.split('_')[1]
+                else:
+                    classNumber = cnum
             elif classNumber[0] == 'b':
                 classNumber = classNumber[2:5]
             else:
                 classNumber = classNumber.split('_')[1]
-            returnDataClass.append(int(classNumber))
+            returnDataClass.append(int(''.join([lt for lt in classNumber.split('_')[0] if not lt.isalpha()])))
 
 
     return returnDataImages, returnDataClass
@@ -509,8 +499,8 @@ def loadFoldFromFolders(pathFolders):
             filesForFold = getFilesInPath(os.path.join(pathFolders,inF,t))
             for ffolder in filesForFold:
                 currFile = ffolder.split(os.path.sep)[-1]
-
-                cClass = int(currFile.split('_')[0])
+                curreFileName = currFile.split('_')[1] if currFile.split('_')[0] == 'depth' else currFile.split('_')[0]
+                cClass = int(''.join([lt for lt in curreFileName if not lt.isalpha()]))
                 if t == 'probe':
                     returnFolders[-1][2].append(ffolder)
                     returnFolders[-1][3].append(cClass)
@@ -522,7 +512,7 @@ def loadFoldFromFolders(pathFolders):
 
 def standartParametrization(parser):
     parser.add_argument('-p', '--pathdatabase', help='Path for the database', required=True)
-    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj','Matlab'],
+    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj','Matlab','VRML'],
                         help='Type of files (Depth, NewDepth, Range, 3DObj, Matlab)', required=True)
     parser.add_argument('-op', '--operation', choices=['pp', 'fe', 'both'], default='both',
                         help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
@@ -596,47 +586,38 @@ def shortenNetwork(network,desiredLayers,batchNorm=False):
     else:
         return [network[i] for i in desiredLayers]
 
-def plotFeaturesCenterloss(features, labels, num_classes):
+def generateRandomColors(number):
+    alreadyWent = []
+    r = lambda: random.randint(0, 255)
+    for i in range(number):
+        color = '#%02X%02X%02X' % (r(),r(),r())
+        while color in alreadyWent:
+            color = '#%02X%02X%02X' % (r(),r(),r())
+
+        alreadyWent.append(color)
+
+    return alreadyWent
+
+def plotFeaturesCenterloss(features, labels, colors, dirname=None, epoch=None, classNumber=10):
     """Plot features on 2D plane.
     Args:
         features: (num_instances, num_features).
         labels: (num_instances).
     """
-    fig = plt.Figure(figsize=(4, 4), dpi=320, facecolor='w', edgecolor='k')
-    c = ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff',
-         '#ff00ff', '#990000', '#999900', '#009900', '#009999']
+    fig = plt.figure(figsize=(4, 4), dpi=320, facecolor='w', edgecolor='k')
+
     ax = fig.add_subplot(1, 1, 1)
+    for label_idx in range(classNumber):
+        ax.scatter(
+            features[labels==label_idx, 0],
+            features[labels==label_idx, 1],
+            s=1,
+            c=colors[label_idx]
+        )
 
-    for label_idx in range(num_classes):
-        if num_classes > 10:
-            ax.scatter(
-                features[labels==label_idx, 0],
-                features[labels==label_idx, 1],
-                s=1
-            )
-        else:
-            ax.scatter(
-                features[labels==label_idx, 0],
-                features[labels==label_idx, 1],
-                s=1,
-                c=c[label_idx]
-            )
-
-    if num_classes <= 10:
-        ax.legend(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], loc='upper right')
-
-    #plt.legend(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], loc='upper right')
-    '''
-    dirname = os.path.join(save_dir, prefix)
-    if not os.path.exists(dirname):
-        try:
-            os.makedirs(dirname)
-        except:
-            raise Exception('Oh no')
-    save_name = os.path.join(dirname, 'epoch_' + str(epoch+1) + '.png')
-    plt.savefig(save_name, bbox_inches='tight')
-    plt.close()
-    '''
+    if dirname is not None:
+        save_name = os.path.join(dirname, 'epoch_' + str(epoch + 1) + '.png')
+        fig.savefig(save_name, bbox_inches='tight')
     return fig
 
 if __name__ == '__main__':

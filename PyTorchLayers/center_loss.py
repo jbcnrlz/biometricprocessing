@@ -2,6 +2,57 @@ import torch
 import torch.nn as nn
 from torch.autograd.function import Function
 
+def testFuckingloss(centers,labels):
+    centerDist = centers.new_empty(centers.size()[0])
+    for i in range(centers.size()[0]):
+        for j in range(centers.size()[0]):
+            if i != j:
+                centerDist[i] += torch.dist(centers[j],centers[i])**2
+
+        centerDist[i] = torch.sum(centerDist[i]) / (centers.size()[0] - 1)
+    return (centerDist.mean() / centers.std()) / labels.size(0)
+
+class DensityLoss(nn.Module):
+    def __init__(self):
+        super(DensityLoss, self).__init__()
+        self.densitylossfunc = DensityLossFunc.apply
+
+    def forward(self, centers, features, label):
+        loss = self.densitylossfunc(centers, features, label)
+        return loss
+
+
+class DensityLossFunc(Function):
+    @staticmethod
+    def forward(ctx, centers, features, labels):
+        ctx.save_for_backward(centers, features, labels)
+        centerDist = centers.new_empty(centers.size()[0])
+        for i in range(centers.size()[0]):
+            for j in range(centers.size()[0]):
+                if i != j:
+                    centerDist[i] += (centers[j] - centers[i]).pow(2).sum()
+
+            centerDist[i] = torch.sum(centerDist[i]) / (centers.size(0) - 1)
+        return (centerDist.sum() / centers.size(0)) / centerDist.var() / labels.size(0)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+
+        centers, features, labels  = ctx.saved_tensors
+        labels = labels.long()
+        gradients = features.new_zeros(features.size())
+        average_centers = centers.new_zeros(centers.size())
+        for i in range(centers.size(0)):
+            for j in range(centers.size(0)):
+                average_centers[i] += 2*(centers[j] - centers[i])
+
+        avCenter = centers.mean()
+        for i in range(features.size(0)):
+            gradients[i] = ((2 * (centers[labels[i]] - avCenter) * (features[i] - centers[labels[i]])) / 2 * (centers.size(0))) * average_centers[labels[i]]
+
+        return None, 0.0001*(-grad_output * gradients) / labels.size(0) , None
+
+
 class CenterLoss(nn.Module):
     def __init__(self, num_classes, feat_dim, size_average=True):
         super(CenterLoss, self).__init__()
@@ -45,41 +96,46 @@ class CenterlossFunc(Function):
         return - grad_output * diff / batch_size, None, grad_centers / batch_size, None
 
 
-def compute_center_loss(features, centers, targets):
-    features = features.view(features.size(0), -1)
-    target_centers = centers[targets]
-    criterion = torch.nn.MSELoss()
-    center_loss = criterion(features, target_centers)
-    return center_loss
+class ICenterLoss(nn.Module):
+    def __init__(self,num_classes,features):
+        super(ICenterLoss, self).__init__()
+        self.icenters = nn.Parameter(torch.randn(num_classes,features))
+        self.icenterlossfunc = ICenterLossFunc.apply
 
-def get_center_delta(features, centers, targets, alpha, device):
-    # implementation equation (4) in the center-loss paper
-    features = features.view(features.size(0), -1)
-    targets, indices = torch.sort(targets)
-    target_centers = centers[targets]
-    features = features[indices]
+    def forward(self, centers, features, label):
+        loss = self.icenterlossfunc(centers, label, features, self.icenters)
+        return loss
 
-    delta_centers = target_centers - features
-    uni_targets, indices = torch.unique(
-            targets.cpu(), sorted=True, return_inverse=True)
+class ICenterLossFunc(Function):
+    @staticmethod
+    def forward(ctx, centers, labels, features, icenters):
+        ckEucNorm = 0.2 * torch.sum(icenters.pow(2).sum(dim=1)) / icenters.size(0)
+        cys = centers.norm(p=2)**2
+        newCenters = ckEucNorm - cys
+        ctx.save_for_backward(centers, labels,features, icenters)
+        return newCenters**2 / labels.size(0)
 
-    uni_targets = uni_targets.to(device)
-    indices = indices.to(device)
+    @staticmethod
+    def backward(ctx, grad_output):
 
-    delta_centers = torch.zeros(
-        uni_targets.size(0), delta_centers.size(1)
-    ).to(device).index_add_(0, indices, delta_centers)
+        centers, labels,features, icenters = ctx.saved_tensors
+        batchSize = labels.size(0)
+        newCenters = icenters.new_zeros(icenters.size())
 
-    targets_repeat_num = uni_targets.size()[0]
-    uni_targets_repeat_num = targets.size()[0]
-    targets_repeat = targets.repeat(
-            targets_repeat_num).view(targets_repeat_num, -1)
-    uni_targets_repeat = uni_targets.unsqueeze(1).repeat(
-            1, uni_targets_repeat_num)
-    same_class_feature_count = torch.sum(
-            targets_repeat == uni_targets_repeat, dim=1).float().unsqueeze(1)
+        #calculating center dispersion
+        ones = centers.new_ones(labels.size(0))
+        counts = centers.new_zeros(centers.size(0))
+        counts = counts.scatter_add_(0, labels.long(), ones)
+        counts[counts == 0] = 1
+        newCenters.scatter_add(0, labels.unsqueeze(1).expand(features.size()), features)
+        newCenters = newCenters / counts.view(-1, 1)
 
-    delta_centers = delta_centers / (same_class_feature_count + 1.0) * alpha
-    result = torch.zeros_like(centers)
-    result[uni_targets, :] = delta_centers
-    return result
+        # calculating gradient
+        bcount = labels.bincount(minlength=centers.size(0)).index_select(0, labels.long())
+        centers_batch = centers.index_select(0, labels.long())
+        ckEucNorm = torch.sum(icenters.pow(2).sum(dim=1)) / icenters.size(0)
+        cys = centers_batch.pow(2).sum(dim=1)
+        gradients = (1/bcount.float()).view(-1,1) * (0.2 * ckEucNorm - cys.view(-1,1)) * ((4*0.2/centers.size(0)) - 4)*centers_batch
+
+        return None, None, -grad_output * gradients / batchSize, newCenters / batchSize
+

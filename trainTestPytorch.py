@@ -6,6 +6,7 @@ import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim 
 import torch.utils.data, shutil, os, time, torchvision.utils as vutils
 from tensorboardX import SummaryWriter
 import torch.nn as nn
+from PyTorchLayers.center_loss import CenterLoss
 
 imagesForTensorboard = []
 
@@ -55,6 +56,10 @@ if __name__ == '__main__':
             transforms.Normalize(mean=[0.562454871481894, 0.8208898956471341, 0.395364053852456],
                                  std=[0.43727472598867456, 0.31812502566122625, 0.3796120355707891])
         ])
+    else:
+        dataTransform = transforms.Compose([
+            transforms.ToTensor()
+        ])
 
 
     in_channels = 4 if args.extension == 'png' else 3
@@ -99,8 +104,8 @@ if __name__ == '__main__':
                 checkpoint = torch.load(args.fineTuneWeights)
                 #optimizer.load_state_dict(checkpoint['optimizer'])
                 muda.load_state_dict(checkpoint['state_dict'])
-                nfeats = muda.classifier[-1].in_features
-                muda.classifier[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+                nfeats = muda.softmax[-1].in_features
+                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
 
         print(muda)
         muda.to(device)
@@ -110,6 +115,10 @@ if __name__ == '__main__':
         test_loader = torch.utils.data.DataLoader(datas[1], batch_size=args.batch, shuffle=False)
 
         optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
+        closs = CenterLoss(args.fineTuningClasses, 4096).to(device)
+        optim_closs = optim.SGD(closs.parameters(), lr=0.6)
+        criterion = nn.CrossEntropyLoss().to(device)
+        alpha = 0.003
 
         if not os.path.exists(os.path.join(args.folderSnapshots, str(f))):
             os.makedirs(os.path.join(args.folderSnapshots, str(f)))
@@ -120,16 +129,26 @@ if __name__ == '__main__':
         fTrainignTime = []
         #muda.features[-1].register_forward_hook(saveImageLayer)
         for ep in range(args.epochs):
+            ibl = ibr = ' '
             muda.train()
             lossAcc = []
             start_time = time.time()
             for bIdx, (currBatch,currTargetBatch) in enumerate(train_loader):
+                currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
+
+                output, features = muda(currBatch)
+
+                loss = criterion(output, currTargetBatch)
+                #loss = loss + (alpha * closs(currTargetBatch, features))
+
                 optimizer.zero_grad()
-                output = muda(currBatch.to(device))
-                loss = F.cross_entropy(output, currTargetBatch.to(device))
+                #optim_closs.zero_grad()
                 loss.backward()
                 optimizer.step()
+                #optim_closs.step()
+
                 lossAcc.append(loss.item())
+
             finishTime = time.time() - start_time
             fTrainignTime.append(finishTime)
 
@@ -141,34 +160,41 @@ if __name__ == '__main__':
             correct = 0
             labelsData = [[],[]]
             scores = []
+            loss_val = []
             with torch.no_grad():
                 for data in test_loader:
                     images, labels = data
-                    outputs = muda(images.to(device))
-                    scores = scores + np.array(outputs.data).tolist()
+                    outputs, fs = muda(images.to(device))
                     _, predicted = torch.max(outputs.data, 1)
+
+                    loss = criterion(outputs, labels.to(device))
+                    loss_val.append(loss)
+
                     total += labels.size(0)
-                    correct += (predicted == labels.to(device) ).sum().item()
-                    labelsData[0] = labelsData[0] + np.array(labels).tolist()
-                    labelsData[1] = labelsData[1] + np.array(predicted).tolist()
+                    correct += (predicted == labels.to(device)).sum().item()
+                    labelsData[0] = labelsData[0] + np.array(labels.cpu()).tolist()
+                    labelsData[1] = labelsData[1] + np.array(predicted.cpu()).tolist()
 
             cResult = correct / total
             lossAvg = sum(lossAcc) / len(lossAcc)
-            print('[EPOCH %d] Accuracy of the network on the %d test images: %.2f %% Loss %f' % (ep, total, 100 * cResult, lossAvg))
+            tLoss = sum(loss_val) / len(loss_val)
+
+            if args.useTensorboard:
+                cc.add_scalar(args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/Validation_loss', tLoss, ep)
 
             state_dict = muda.state_dict()
             opt_dict = optimizer.state_dict()
 
             if bestForFold < cResult:
-                print('Salvando melhor rank')
+                ibr = 'X'
                 fName = '%s_best_rank.pth.tar' % ('GioGio')
                 fName = os.path.join(args.folderSnapshots, str(f),fName)
                 saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
                 bestForFold = cResult
 
             if bestLossForFold > lossAvg:
-                print('Salvando melhor Loss')
-                fName = '%s_best_loss.pth.tar' % ('vgg')
+                ibl = 'X'
+                fName = '%s_best_loss.pth.tar' % ('GioGio')
                 fName = os.path.join(args.folderSnapshots, str(f),fName)
                 saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
                 bestLossForFold = lossAvg
@@ -195,9 +221,6 @@ if __name__ == '__main__':
                 cc.add_figure(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/confMatrix', confMat,ep)
 
 
+            print('[EPOCH %03d] Accuracy of the network on the %d validating images: %03.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss, ibl, ibr))
         trainTimeFolds.append(sum(fTrainignTime))
         print('Best result %2.6f Epoch %d' % (bestResult*100,bestEpoch))
-
-
-    print(foldResults)
-    print(trainTimeFolds)

@@ -99,3 +99,7 @@ class Template:
         self.typeTemplate = typeTemplate
         self.dataset = dataset
         #self.modelDatabase = self.getModel()
+
+
+    def saveMasks(self,folder,type):
+        pass

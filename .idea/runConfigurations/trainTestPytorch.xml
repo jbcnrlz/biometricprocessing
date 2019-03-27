@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorch.py" />
-    <option name="PARAMETERS" value="-c=52 -e=100 --runOnTest=True -b=10 --loadFromFolder=eurecom_wfunc_3layers_folds --tensorBoardName=GioGioEurecom --fineTuningClasses=52 --extension=bmp --fineTuneWeights=vgg_original_weights/vgg_face_dag.pth --arc=vgg" />
+    <option name="PARAMETERS" value="-c=105 -e=200 --runOnTest=True -b=100 --loadFromFolder=bosphorus_folds_experiment_paper --tensorBoardName=giogioNewlayer --extension=png --folderSnapshots=giogionewlayer" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

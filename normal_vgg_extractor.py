@@ -2,8 +2,8 @@ from torchvision.transforms import transforms
 from datasetClass.structures import loadFolder
 from helper.functions import getFilesInPath
 import argparse, networks.PyTorch.vgg_face_dag as vgg
-import torch
-import torch.utils.data, os
+import torch, torch.utils.data, os, numpy as np
+from sklearn.decomposition import PCA
 
 def doFeatureExtration(model,loader,currFile,device,filePaths):
     galleryFeatures = []
@@ -16,6 +16,11 @@ def doFeatureExtration(model,loader,currFile,device,filePaths):
             galleryFeatures = galleryFeatures + output.tolist()
             galleryClasses = galleryClasses + currTargetBatch.tolist()
 
+    pca = PCA(n_components=0.99,svd_solver='full')
+    galleryFeatures=np.array(galleryFeatures)
+    pca.fit(galleryFeatures)
+    galleryFeatures=pca.transform(galleryFeatures).tolist()
+    print("Quantidade de características: %d" % (len(galleryFeatures[0])))
     print('Writing feature file')
     with open(currFile, 'w') as dk:
         for i, data in enumerate(galleryFeatures):
@@ -49,9 +54,7 @@ if __name__ == '__main__':
         muda = vgg.centerloss_vgg_face_dag_load(weights_path=args.fineTuneWeights).to(device)
 
     dataTransform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.562454871481894, 0.8208898956471341, 0.395364053852456],
-                             std=[0.43727472598867456, 0.31812502566122625, 0.3796120355707891])
+        transforms.ToTensor()
     ])
 
     print(muda)

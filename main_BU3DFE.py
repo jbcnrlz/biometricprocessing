@@ -1,25 +1,12 @@
 import argparse
 from BU3DFE import *
 from tdlbp import *
+from helper.functions import standartParametrization, sendEmailMessage
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Process and extract BU3DFE database')
-    parser.add_argument('-p','--pathdatabase',help='Path for the database',required=True)
-    parser.add_argument('-t', '--typeoffile',choices=['Depth', 'NewDepth', 'Range','Matlab','VRML'], help='Type of files (Depth, NewDepth, Range, Matlab. VRML)', required=True)
-    parser.add_argument('-op', '--operation',choices=['pp', 'fe', 'both'], default='both', help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
-    parser.add_argument('-f', '--pathtrainingfile', default=None,help='Path for the training file', required=False)
-    parser.add_argument('-c', '--parcal', default=False,type=bool, help='Should execute in parallell mode?', required=False)
-    parser.add_argument('-ap', '--points',type=int,default=None,help='Quantity of points',required=False)
-    parser.add_argument('-r', '--radius',type=int,default=None, help='Size of radius', required=False)
-    parser.add_argument('-s', '--steps', default=None, help='Pre-Processing steps, class names separated with _ parameters starts wth : and separated with ,', required=False)
-    parser.add_argument('-v', '--faceVariation', default=['AN'], help='Type of face, separated by _', required=False)
-    parser.add_argument('-gImg', '--pathImages', default='/home/joaocardia/PycharmProjects/biometricprocessing/generated_images_lbp_frgc', help='Path for image signature', required=False)
-    parser.add_argument('--loadNewDepth', default=False, type=bool, help='Load new depth faces', required=False)
-    parser.add_argument('--angles', default=None, help='Angles of face to load', required=False)
-    parser.add_argument('--forceImage', default=False, help='Force Image regeneration', required=False, type=bool)
-    parser.add_argument('--loadImages', default=None, help='Images to load', required=False)
-    parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
+    parser = standartParametrization(parser)
     args = parser.parse_args()
 
     print('Iniciando...')
@@ -69,9 +56,11 @@ if __name__ == '__main__':
 
         tdlbp.preProcessing(True,args.parcal)
         #gallery.saveNewDepthImages()
+        sendEmailMessage('Fim do pre-processamento', 'Terminou o pre-processamento BU e ' + args.typeMeasure)
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,forceImage=args.forceImage,typeMeasurement=args.typeMeasure)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,forceImage=args.force,typeMeasurement=args.typeMeasure,procs=args.quantityProcesses)
+        sendEmailMessage('Fim do pre-processamento', 'Terminou a extração de características BU e ' + args.typeMeasure)
 
     if not args.pathtrainingfile is None:
         galeryData = gallery.generateDatabaseFile(args.pathtrainingfile)

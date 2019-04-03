@@ -74,30 +74,32 @@ class Jolyne(nn.Module):
         self.imageInput = imageInput
         super(Jolyne,self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(in_channels, 128, kernel_size=8, stride=4),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 256, kernel_size=4,stride=2),
+            nn.Conv2d(in_channels, 256, kernel_size=8, stride=4),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
-            #nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(256, 512, kernel_size=2, stride=1),
+            nn.Conv2d(256, 512, kernel_size=4,stride=2),
             nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            #nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(512, 1024, kernel_size=2, stride=1),
+            nn.BatchNorm2d(1024),
             nn.ReLU(inplace=True),
             #nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(512*10*10, 2622),
+            nn.Linear(1024*10*10, 2048),
             nn.ReLU(inplace=True),
+            MaxoutDynamic(1024, 2048),
             nn.Dropout(),
-            nn.Linear(2622, 2622),
+            nn.Linear(2048, 2048),
         )
 
         self.softmax = nn.Sequential(
             nn.ReLU(inplace=True),
-            nn.Linear(2622, classes)
+            MaxoutDynamic(1024, 2048),
+            nn.Linear(2048, classes)
         )
 
     def forward(self, x):

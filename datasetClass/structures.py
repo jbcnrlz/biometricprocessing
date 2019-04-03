@@ -58,9 +58,14 @@ def loadFolder(pathFold,transforms=None):
 
 def pil_loader(path,mode='RGB'):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
-        img = im.open(f)
-        return img.convert(mode)
+    try:
+        with open(path, 'rb') as f:
+            img = im.open(f)
+            return img.convert(mode)
+    except:
+        print(path)
+        print('erro')
+        input()
 
 def mat_loader(path,mode):
     import h5py

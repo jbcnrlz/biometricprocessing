@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainWithFullDataPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -p=generated_images_frgc_wfunc_3layers -e=200 -b=400 --output=jolywFun3layers --extension=bmp --network=jolyne" />
+    <option name="PARAMETERS" value="-c=558 -p=fused_3dlbp -e=200 -b=50 --output=jolyne3dlbp --extension=png --network=jolyne" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

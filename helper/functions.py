@@ -1,11 +1,33 @@
 import operator, math, numpy as np, os, re, itertools, matplotlib.pyplot as plt, smtplib
-import torch, random
+import torch, random, scipy
 from scipy.spatial.distance import euclidean
 from PIL import Image as im
 from textwrap import wrap
 from sklearn.metrics import confusion_matrix
 from email.message import EmailMessage
 from yaml import load
+
+def fitPlane(points):
+    #md = np.mean(points, axis=0)
+    #r = points - md
+    #D, V = np.linalg.eig(np.dot(r.T,r))
+    #return V[:, 0]
+
+    # regular grid covering the domain of the data
+    # best-fit linear plane
+    A = np.c_[points[:, 0], points[:, 1], np.ones(points.shape[0])]
+    C, M, _, _ = scipy.linalg.lstsq(A, points[:, 2])  # coefficients
+
+    # evaluate it on grid
+    Z = C[0] * points[:,0] + C[1] * points[:,1] + C[2]
+    return C, Z
+
+
+def calculateQuiver(points):
+    u = np.sin(np.pi * points[0]) * np.cos(np.pi * points[1]) * np.cos(np.pi * points[2])
+    v = -np.cos(np.pi * points[0]) * np.sin(np.pi * points[1]) * np.cos(np.pi * points[2])
+    w = (np.sqrt(2 / 3) * np.cos(np.pi * points[0]) * np.cos(np.pi * points[1]) * np.sin(np.pi * points[2]))
+    return u,v,w
 
 def sendEmailMessage(subject,message):
     config = None
@@ -24,13 +46,16 @@ def sendEmailMessage(subject,message):
     server.send_message(msg)
     server.quit()
 
-def zFunc(t,A):
-    return 1 / (1 + np.exp(-A * np.log(2 + np.sqrt(3)) * t ))
+def zFunc(t,A,logValue=None):
+    if logValue is None:
+        logValue = np.log(2 + np.sqrt(3))
+
+    return 1 / (1 + np.exp(-A * logValue * t ))
 
 def wFunc(t,A):
     return (1 / (zFunc(1/A,A) - 0.5)) * (zFunc(t,A) - 0.5)
 
-def plot_confusion_matrix(correct_labels, predict_labels, labels, title='Confusion matrix', tensor_name = 'MyFigure/image', normalize=False):
+def plot_confusion_matrix(correct_labels, predict_labels, labels, normalize=False):
     '''
     Parameters:
         correct_labels                  : These are your true classification categories.
@@ -358,11 +383,16 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 def getDirectoriesInPath(path):
     return [f for f in os.listdir(path) if not os.path.isfile(os.path.join(path, f))]
 
-def getFilesInPath(path,onlyFiles=True):
-    if onlyFiles:
-        return [os.path.join(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+def getFilesInPath(path,onlyFiles=True,fullPath=True):
+    if fullPath:
+        joinFunc = lambda p, fn : os.path.join(p,fn)
     else:
-        return [os.path.join(path,f) for f in os.listdir(path)]
+        joinFunc = lambda p, fn : fn
+
+    if onlyFiles:
+        return [joinFunc(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    else:
+        return [joinFunc(path,f) for f in os.listdir(path)]
 
 def generateData(pathFiles,extension='png',regularExpression=None):
     returnDataImages = []
@@ -542,6 +572,7 @@ def standartParametrization(parser):
     parser.add_argument('--force', default=False, help='Utilize this to force the generation of new images',
                         required=False, type=bool)
     parser.add_argument('--loadImages', default=None, help='Images to load', required=False)
+    parser.add_argument('--firstLayer', default='lbp', help='Images to load', required=False)
     return parser
 
 def generateListLayers(model,options):

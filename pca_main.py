@@ -1,29 +1,29 @@
-from LFW                     import *
+from Eurecom import *
 from pca                     import *
-from GeneratePCDLFW          import *
-from RotateFaceLFW           import *
-from GenerateNewDepthMapsLFW import *
-from SymmetricFilling        import *
-from SegmentFace             import *
+import argparse
+from helper.functions import standartParametrization
 
 if __name__ == '__main__':
 
-    gallery = LFW('/home/joaocardia/Dropbox/pesquisas/unrestricted/feitas')    
+    parser = argparse.ArgumentParser(description='Process and extract EURECOM with PCA')
+    parser = standartParametrization(parser)
+    args = parser.parse_args()
 
-    gallery.feedTemplates(True,'jpg',[str(i) for i in range(12)],'face')
-    #gallery.loadRotatedFaces([10,20,30,-10,-20,-30])
-    tdlbp = PCAImpl(3,14,[gallery])
+    faceDataset = []
+    sets = ['s1','s2']
+    for s in sets:
+        ek = EurecomKinect(args.pathdatabase,s,args.typeoffile,args.faceVariation.split('_'))
+        ek.feedTemplates()
 
-    paths = tdlbp.featureExtraction()
-    
-    galeryData = gallery.generateDatabaseFile(
-        '/home/joaocardia/Dropbox/pesquisas/classificador/SVMTorch_linux/test_data/gallery_pca_lfw_12_rotate_traditional.txt'
-    )
-    '''
-    pathFaces = '/home/joaocardia/Dropbox/pesquisas/classificador/SVMTorch_linux/test_data/gallery_lbp_lfw_12_rotate_traditional.txt'
-    f = open(pathFaces,'w')
-    for t in paths:
-        f.write(t + '\n')
-    f.close()
-    '''
-    
+        if args.loadNewDepth:
+            ek.loadNewDepthImage()
+        elif args.loadSymmImages:
+            ek.loadSymmFilledImages()
+
+        if args.angles:
+            ek.loadRotatedFaces(args.angles.split('_'),args.axis.split('_'))
+
+        faceDataset.append(ek)
+
+    pcaFeature = PCAImpl(faceDataset,args.pathImages)
+    pcaFeature.featureExtraction()

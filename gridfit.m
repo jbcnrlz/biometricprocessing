@@ -300,7 +300,7 @@ params.maxiter = [];
 params.extend = 'warning';
 params.tilesize = inf;
 params.overlap = 0.20;
-params.mask = []; 
+params.mask = [];
 params.autoscale = 'on';
 params.xscale = 1;
 params.yscale = 1;
@@ -372,7 +372,7 @@ if (params.tilesize < max(nx,ny))
   zgrid = tiled_gridfit(x,y,z,xnodes,ynodes,params);
 else
   % its a single tile.
-  
+
   % mask must be either an empty array, or a boolean
   % aray of the same size as the final grid.
   nmask = size(params.mask);
@@ -453,7 +453,7 @@ else
         error(['Some y (',num2str(ymax),') falls above ynodes(end) by: ',num2str(ymax-ynodes(end))])
     end
   end
-  
+
   % determine which cell in the array each point lies in
   [junk,indx] = histc(x,xnodes); %#ok
   [junk,indy] = histc(y,ynodes); %#ok
@@ -464,7 +464,7 @@ else
   k=(indy==ny);
   indy(k)=indy(k)-1;
   ind = indy + ny*(indx-1);
-  
+
   % Do we have a mask to apply?
   if params.maskflag
     % if we do, then we need to ensure that every
@@ -475,7 +475,7 @@ else
     params.mask(ind+ny) = 1;
     params.mask(ind+ny+1) = 1;
   end
-  
+
   % interpolation equations for each point
   tx = min(1,max(0,(x - xnodes(indx))./dx(indx)));
   ty = min(1,max(0,(y - ynodes(indy))./dy(indy)));
@@ -486,26 +486,26 @@ else
       k = (tx > ty);
       L = ones(n,1);
       L(k) = ny;
-      
+
       t1 = min(tx,ty);
       t2 = max(tx,ty);
       A = sparse(repmat((1:n)',1,3),[ind,ind+ny+1,ind+L], ...
         [1-t2,t1,t2-t1],n,ngrid);
-      
+
     case 'nearest'
       % nearest neighbor interpolation in a cell
       k = round(1-ty) + round(1-tx)*ny;
       A = sparse((1:n)',ind+k,ones(n,1),n,ngrid);
-      
+
     case 'bilinear'
       % bilinear interpolation in a cell
       A = sparse(repmat((1:n)',1,4),[ind,ind+1,ind+ny,ind+ny+1], ...
         [(1-tx).*(1-ty), (1-tx).*ty, tx.*(1-ty), tx.*ty], ...
         n,ngrid);
-      
+
   end
   rhs = z;
-  
+
   % do we have relative smoothing parameters?
   if numel(params.smoothness) == 1
     % it was scalar, so treat both dimensions equally
@@ -517,7 +517,7 @@ else
     smoothparam = sqrt(prod(params.smoothness));
     xyRelativeStiffness = params.smoothness(:)./smoothparam;
   end
-  
+
   % Build regularizer. Add del^4 regularizer one day.
   switch params.regularizer
     case 'springs'
@@ -529,46 +529,46 @@ else
       Areg = sparse(repmat((1:m)',1,2),[ind,ind+1], ...
         xyRelativeStiffness(2)*stiffness(j(:))*[-1 1], ...
         m,ngrid);
-      
+
       [i,j] = meshgrid(1:(nx-1),1:ny);
       ind = j(:) + ny*(i(:)-1);
       m = (nx-1)*ny;
       stiffness = 1./(dx/params.xscale);
       Areg = [Areg;sparse(repmat((1:m)',1,2),[ind,ind+ny], ...
         xyRelativeStiffness(1)*stiffness(i(:))*[-1 1],m,ngrid)];
-      
+
       [i,j] = meshgrid(1:(nx-1),1:(ny-1));
       ind = j(:) + ny*(i(:)-1);
       m = (nx-1)*(ny-1);
       stiffness = 1./sqrt((dx(i(:))/params.xscale/xyRelativeStiffness(1)).^2 + ...
         (dy(j(:))/params.yscale/xyRelativeStiffness(2)).^2);
-      
+
       Areg = [Areg;sparse(repmat((1:m)',1,2),[ind,ind+ny+1], ...
         stiffness*[-1 1],m,ngrid)];
-      
+
       Areg = [Areg;sparse(repmat((1:m)',1,2),[ind+1,ind+ny], ...
         stiffness*[-1 1],m,ngrid)];
-      
+
     case {'diffusion' 'laplacian'}
       % thermal diffusion using Laplacian (del^2)
       [i,j] = meshgrid(1:nx,2:(ny-1));
       ind = j(:) + ny*(i(:)-1);
       dy1 = dy(j(:)-1)/params.yscale;
       dy2 = dy(j(:))/params.yscale;
-      
+
       Areg = sparse(repmat(ind,1,3),[ind-1,ind,ind+1], ...
         xyRelativeStiffness(2)*[-2./(dy1.*(dy1+dy2)), ...
         2./(dy1.*dy2), -2./(dy2.*(dy1+dy2))],ngrid,ngrid);
-      
+
       [i,j] = meshgrid(2:(nx-1),1:ny);
       ind = j(:) + ny*(i(:)-1);
       dx1 = dx(i(:)-1)/params.xscale;
       dx2 = dx(i(:))/params.xscale;
-      
+
       Areg = Areg + sparse(repmat(ind,1,3),[ind-ny,ind,ind+ny], ...
         xyRelativeStiffness(1)*[-2./(dx1.*(dx1+dx2)), ...
         2./(dx1.*dx2), -2./(dx2.*(dx1+dx2))],ngrid,ngrid);
-      
+
     case 'gradient'
       % Subtly different from the Laplacian. A point for future
       % enhancement is to do it better for the triangle interpolation
@@ -577,23 +577,23 @@ else
       ind = j(:) + ny*(i(:)-1);
       dy1 = dy(j(:)-1)/params.yscale;
       dy2 = dy(j(:))/params.yscale;
-      
+
       Areg = sparse(repmat(ind,1,3),[ind-1,ind,ind+1], ...
         xyRelativeStiffness(2)*[-2./(dy1.*(dy1+dy2)), ...
         2./(dy1.*dy2), -2./(dy2.*(dy1+dy2))],ngrid,ngrid);
-      
+
       [i,j] = meshgrid(2:(nx-1),1:ny);
       ind = j(:) + ny*(i(:)-1);
       dx1 = dx(i(:)-1)/params.xscale;
       dx2 = dx(i(:))/params.xscale;
-      
+
       Areg = [Areg;sparse(repmat(ind,1,3),[ind-ny,ind,ind+ny], ...
         xyRelativeStiffness(1)*[-2./(dx1.*(dx1+dx2)), ...
         2./(dx1.*dx2), -2./(dx2.*(dx1+dx2))],ngrid,ngrid)];
-      
+
   end
   nreg = size(Areg,1);
-  
+
   % Append the regularizer to the interpolation equations,
   % scaling the problem first. Use the 1-norm for speed.
   NA = norm(A,1);
@@ -615,7 +615,7 @@ else
         % no mask
         zgrid = reshape(A\rhs,ny,nx);
       end
-      
+
     case 'normal'
       % The normal equations, solved with \. Can be faster
       % for huge numbers of data points, but reasonably
@@ -630,7 +630,7 @@ else
       else
         zgrid = reshape((A'*A)\(A'*rhs),ny,nx);
       end
-      
+
     case 'symmlq'
       % iterative solver - symmlq - requires a symmetric matrix,
       % so use it to solve the normal equations. No preconditioner.
@@ -659,7 +659,7 @@ else
           warning('GRIDFIT:solver',['One of the scalar quantities calculated in',...
             ' symmlq was too small or too large to continue computing.'])
       end
-      
+
     case 'lsqr'
       % iterative solver - lsqr. No preconditioner here.
       tol = abs(max(z)-min(z))*1.e-13;
@@ -671,7 +671,7 @@ else
         [zgrid,flag] = lsqr(A,rhs,tol,params.maxiter);
         zgrid = reshape(zgrid,ny,nx);
       end
-      
+
       % display a warning if convergence problems
       switch flag
         case 0
@@ -687,9 +687,9 @@ else
           warning('GRIDFIT:solver',['One of the scalar quantities calculated in',...
             ' LSQR was too small or too large to continue computing.'])
       end
-      
+
   end  % switch params.solver
-  
+
 end  % if params.tilesize...
 
 % only generate xgrid and ygrid if requested.
@@ -750,7 +750,7 @@ function params=parse_pv_pairs(params,pv_pairs)
 %
 %   examplefun(rand(10),'vis',10,'pie',3,'Description','Hello world')
 %
-% params = 
+% params =
 %     Viscosity: 10
 %        Volume: 1
 %           Pie: 3
@@ -781,7 +781,7 @@ lpropnames = lower(propnames);
 for i=1:n
   p_i = lower(pv_pairs{2*i-1});
   v_i = pv_pairs{2*i};
-  
+
   ind = strmatch(p_i,lpropnames,'exact');
   if isempty(ind)
     ind = find(strncmp(p_i,lpropnames,length(p_i)));
@@ -792,10 +792,10 @@ for i=1:n
     end
   end
   p_i = propnames{ind};
-  
+
   % override the corresponding default in params
   params = setfield(params,p_i,v_i); %#ok
-  
+
 end
 
 
@@ -887,7 +887,7 @@ end
 % subfunction - tiled_gridfit
 % ============================================
 function zgrid=tiled_gridfit(x,y,z,xnodes,ynodes,params)
-% tiled_gridfit: a tiled version of gridfit, continuous across tile boundaries 
+% tiled_gridfit: a tiled version of gridfit, continuous across tile boundaries
 % usage: [zgrid,xgrid,ygrid]=tiled_gridfit(x,y,z,xnodes,ynodes,params)
 %
 % Tiled_gridfit is used when the total grid is far too large
@@ -932,7 +932,7 @@ h = waitbar(0,'Relax and have a cup of JAVA. Its my treat.');
 warncount = 0;
 xtind = 1:min(nx,tilesize);
 while ~isempty(xtind) && (xtind(1)<=nx)
-  
+
   xinterp = ones(1,length(xtind));
   if (xtind(1) ~= 1)
     xinterp(1:overlap) = rampfun(xnodes(xtind(1:overlap)));
@@ -940,12 +940,12 @@ while ~isempty(xtind) && (xtind(1)<=nx)
   if (xtind(end) ~= nx)
     xinterp((end-overlap+1):end) = 1-rampfun(xnodes(xtind((end-overlap+1):end)));
   end
-  
+
   ytind = 1:min(ny,tilesize);
   while ~isempty(ytind) && (ytind(1)<=ny)
     % update the waitbar
     waitbar((xtind(end)-tilesize)/nx + tilesize*ytind(end)/ny/nx)
-    
+
     yinterp = ones(length(ytind),1);
     if (ytind(1) ~= 1)
       yinterp(1:overlap) = rampfun(ynodes(ytind(1:overlap)));
@@ -953,39 +953,39 @@ while ~isempty(xtind) && (xtind(1)<=nx)
     if (ytind(end) ~= ny)
       yinterp((end-overlap+1):end) = 1-rampfun(ynodes(ytind((end-overlap+1):end)));
     end
-    
+
     % was a mask supplied?
     if ~isempty(params.mask)
       submask = params.mask(ytind,xtind);
       Tparams.mask = submask;
     end
-    
+
     % extract data that lies in this grid tile
     k = (x>=xnodes(xtind(1))) & (x<=xnodes(xtind(end))) & ...
         (y>=ynodes(ytind(1))) & (y<=ynodes(ytind(end)));
     k = find(k);
-    
+
     if length(k)<4
       if warncount == 0
         warning('GRIDFIT:tiling','A tile was too underpopulated to model. Filled with NaNs.')
       end
       warncount = warncount + 1;
-      
+
       % fill this part of the grid with NaNs
       zgrid(ytind,xtind) = NaN;
-      
+
     else
       % build this tile
       zgtile = gridfit(x(k),y(k),z(k),xnodes(xtind),ynodes(ytind),Tparams);
-      
+
       % bilinear interpolation (using an outer product)
       interp_coef = yinterp*xinterp;
-      
+
       % accumulate the tile into the complete grid
       zgrid(ytind,xtind) = zgrid(ytind,xtind) + zgtile.*interp_coef;
-      
+
     end
-    
+
     % step to the next tile in y
     if ytind(end)<ny
       ytind = ytind + tilesize - overlap;
@@ -997,9 +997,9 @@ while ~isempty(xtind) && (xtind(1)<=nx)
     else
       ytind = ny+1;
     end
-    
+
   end % while loop over y
-  
+
   % step to the next tile in x
   if xtind(end)<nx
     xtind = xtind + tilesize - overlap;
@@ -1020,6 +1020,3 @@ close(h)
 if warncount>0
   warning('GRIDFIT:tiling',[num2str(warncount),' tiles were underpopulated & filled with NaNs'])
 end
-
-
-

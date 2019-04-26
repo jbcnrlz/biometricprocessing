@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="extractDeepFeaturesPytorch" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="main_angular_eurecom" type="PythonConfigurationType" factoryName="Python">
     <module name="biometricprocessing" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -11,8 +11,8 @@
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/extractDeepFeaturesPytorch.py" />
-    <option name="PARAMETERS" value="--loadFromFolder=facedata/depth_fused_wfunc_eurecom --fineTuneWeights=jolyne3dlbp_moreaug/jolyne_best_loss.pth.tar --output=features/jolyne_eurecom_wfunc_stacked_depth.txt --network=jolyne --pca=1" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_angular_eurecom.py" />
+    <option name="PARAMETERS" value="-p=$USER_HOME$/local_mount/EURECOM_Kinect_Face_Dataset -t=Depth --loadNewDepth=True --angles=-30_-20_-10_10_20_30 -op=fe --pathImages=generated_images_eurecom_angle --faceVariation=Neutral_LightOn_OcclusionEyes_OcclusionMouth_OcclusionPaper_OpenMouth_Smile --parcal=True -ap=16 -r=1" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

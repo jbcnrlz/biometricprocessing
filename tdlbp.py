@@ -7,7 +7,7 @@ from BosphorusTemplate import *
 from baseClasses.BiometricProcessing import *
 from scipy.spatial.distance import euclidean
 from scipy.interpolate import interp2d
-from helper.functions import generateHistogram, generateHistogramUniform, generateArrayUniform, zFunc, wFunc
+from helper.functions import generateHistogram, generateHistogramUniform, generateArrayUniform, zFunc, fitPlane
 
 
 class ThreeDLBP(BiometricProcessing):
@@ -25,7 +25,7 @@ class ThreeDLBP(BiometricProcessing):
         with open(folder + '/subtraction.txt', 'a') as rty:
             rty.write(str(data) + '\n')
 
-    def generateCode(self, image, center, typeOp='Normal',truncMaskPlus=None,truncMaskMinus=None):
+    def generateCode(self, image, center, typeOp='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp'):
         idxs = [
             (center[0] - 1, center[1] - 1),
             (center[0] - 1, center[1]),
@@ -37,10 +37,12 @@ class ThreeDLBP(BiometricProcessing):
             (center[0], center[1] - 1)
         ]
         layers = [[], [], [], []]
+        points = []
         for i in idxs:
             subraction = 0
             if typeOp == 'Normal':
                 try:
+                    points.append([i[0], i[1], image[i[0]][i[1]]])
                     subraction = int(round(image[i[0]][i[1]] - image[center[0]][center[1]]))
                 except:
                     print(image[i[0]][i[1]])
@@ -66,6 +68,11 @@ class ThreeDLBP(BiometricProcessing):
             layers[3].append(bin[2])
         for l in range(len(layers)):
             layers[l] = int(''.join(layers[l]), 2)
+
+        if firstLayer == 'angle':
+            angle = self.getAnglePlaneAxis(np.array(points))
+            layers[0] = np.histogram(angle, bins=255, range=[0, 2*np.pi])[0]
+
         return layers
 
     '''
@@ -92,15 +99,28 @@ class ThreeDLBP(BiometricProcessing):
         else:
             return image[r][c]
 
-    def generateCodePR(self, image, center, P, R, type='Normal',truncMaskPlus=None,truncMaskMinus=None):
+    def getAnglePlaneAxis(self,x):
+        if type(x) is not np.ndarray:
+            x = np.array(x)
+
+        c, z = fitPlane(x)
+        normals = []
+        for i in range(len(x) - 2):
+            v1 = x[-1] - np.array(x[i,:2].tolist() + [z[i]])
+            v2 = x[-1] - np.array(x[i+1,:2].tolist() + [z[i+1]])
+            normals.append(np.cross(v1,v2))
+
+        finalNormal = np.mean(np.array(normals),axis=0)
+        cosAngle = np.dot(finalNormal,np.array([0,0,1]))
+        return np.degrees(np.arccos(cosAngle))
+
+    def generateCodePR(self, image, center, xPositions, yPositions, type='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp'):
         image = np.ascontiguousarray(image, dtype=np.double)
-        xPositions = np.round(- R * np.sin(2 * np.pi * np.arange(P, dtype=np.double) / P),5) + center[0]
-        yPositions = np.round(R * np.cos(2 * np.pi * np.arange(P, dtype=np.double) / P),5) + center[1]
+        xPositions = xPositions + center[0]
+        yPositions = yPositions + center[1]
         idxs = np.array([x for x in zip(xPositions,yPositions)])
         idxs = idxs[-3:].tolist() + idxs[0:-3].tolist()
-
-        #currImage = self.generateImagePoints(image,(R,R))
-
+        points = []
         layers = [[], [], [], []]
         for i in idxs:
             subraction = 0
@@ -116,21 +136,13 @@ class ThreeDLBP(BiometricProcessing):
                 ])
                 nFunc = interp2d(imageDataBil[:,0],imageDataBil[:,1],imageDataBil[:,2])
                 nv = nFunc(i[0], i[1])[0]
-                '''
-                dr = i[0] - xidxs[0]
-                dc = i[1] - yidxs[0]
-                top = (1 - dc) * self.get_pixel2d(image,image.shape[0]-1,image.shape[1]-1,xidxs[0],yidxs[0],0) + dc * self.get_pixel2d(image,image.shape[0],image.shape[1],xidxs[0],yidxs[1],0)
-                bottom = (1 - dc) * self.get_pixel2d(image, image.shape[0]-1, image.shape[1]-1, xidxs[1], yidxs[0],0) + dc * self.get_pixel2d(image, image.shape[0], image.shape[1],xidxs[1], yidxs[1], 0)
-                nv = (1 - dr) * top + dr * bottom
-                '''
+                points.append([i[0], i[1], nv])
                 subraction = nv - image[center[0]][center[1]]
             else:
+                points.append([i[0], i[1], image[int(i[0])][int(i[1])]])
                 subraction = image[int(i[0])][int(i[1])] - image[center[0]][center[1]]
 
             if type == 'Normal':
-                #subraction = int(round(subraction))
-
-                # self.saveDebug('debug_subs',subraction)
 
                 if subraction < -7:
                     if truncMaskMinus is not None and i[0].is_integer() and i[1].is_integer():
@@ -173,24 +185,36 @@ class ThreeDLBP(BiometricProcessing):
                 subraction = 0 if subraction < 0 else 1 if subraction > 1 else subraction
                 subraction = np.histogram(subraction, bins=8, range=[0, 1])[0]
                 subraction = (np.argwhere(subraction == 1)[0][0]+1) * signSub
-            else:
+            elif type == 'sigmoid':
                 signSub = -1 if subraction < 0 else 1
-                subraction = np.histogram(expit(abs(subraction)-5), bins=8, range=[0, 1])[0]
+                subraction = np.histogram(expit(subraction), bins=8, range=[0, 1])[0]
                 subraction = np.argwhere(subraction == 1)[0][0] * signSub
 
-            layers[0].append(str(int(subraction >= 0)))
+            if firstLayer != 'angle':
+                layers[0].append(str(int(subraction >= 0)))
 
-            bin = '{0:03b}'.format(abs(int(round(subraction))))
-            layers[1].append(bin[0])
-            layers[2].append(bin[1])
-            layers[3].append(bin[2])
-        for l in range(len(layers)):
-            layers[l] = int(''.join(layers[l]), 2)
+                bin = '{0:03b}'.format(abs(int(round(subraction))))
+                layers[1].append(bin[0])
+                layers[2].append(bin[1])
+                layers[3].append(bin[2])
+            else:
+                bin = '{0:03b}'.format(abs(int(round(subraction))))
+                layers[0].append(bin[0])
+                layers[1].append(bin[1])
+                layers[2].append(bin[2])
+
+            for l in range(len(layers)):
+                if len(layers[l]) > 0:
+                    layers[l] = int(''.join(layers[l]), 2)
+
+            if firstLayer == 'angle':
+                angle = round(self.getAnglePlaneAxis(np.array(points + [[center[0],center[1],image[center[0]][center[1]]]])))
+                layers[3] = angle
+
         return layers
 
-    def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None,masks=False):
+    def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None,masks=False,firstLayer='lbp'):
         returnValue = [[], [], [], []]
-
         if masks:
             template.underFlow = np.zeros(image.shape)
             template.overFlow  = np.zeros(image.shape)
@@ -198,23 +222,27 @@ class ThreeDLBP(BiometricProcessing):
             template.underFlow = None
             template.overFlow  = None
 
+        if typeLBP == 'pr':
+            xPositions = np.round(- r * np.sin(2 * np.pi * np.arange(p, dtype=np.double) / p),5)
+            yPositions = np.round(r * np.cos(2 * np.pi * np.arange(p, dtype=np.double) / p),5)
+
+
         for i in range(r, image.shape[0] - r):
             for j in range(r, image.shape[1] - r):
                 resultCode = None
                 if typeLBP == 'original':
                     if template.underFlow is None or template.overFlow is None:
-                        resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]),typeMeasurement)
+                        resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]),typeMeasurement,firstLayer=firstLayer)
                     else:
-                        resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2])
+                        resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2],firstLayer=firstLayer)
                 elif typeLBP == 'pr':
                     if template.underFlow is None or template.overFlow is None:
-                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),p, r, typeMeasurement)
+                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement,firstLayer=firstLayer)
                     else:
-                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), p,r, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)])
+                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), xPositions,yPositions, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)],firstLayer=firstLayer)
 
                 if not template is None:
-                    for chan in range(template.layersChar.shape[2]):
-                        template.layersChar[i][j][chan] = resultCode[chan]
+                    template.layersChar[i][j] = resultCode
 
                 returnValue[0].append(resultCode[0])
                 returnValue[1].append(resultCode[1])
@@ -252,26 +280,29 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10,masks=False):
+    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10,masks=False,firstLayer='lbp'):
+        self.quantityItensProcessing = sum([len(d.templates) for d in self.databases])
+        self.feitos = 0
         if paralelCalling:
             poolCalling = Pool(processes=procs)
             for database in self.databases:
-                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks} for t in database.templates]
+                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks,'firstLayer' : firstLayer} for t in database.templates]
                 responses = poolCalling.map(unwrap_self_f_feature, zip([self] * len(dataForParCal), dataForParCal))
                 for i in range(len(responses)):
                     database.templates[i].features = responses[i][1]
         else:
             for database in self.databases:
                 for template in database.templates:
-                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks}
+                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks,'firstLayer' : firstLayer}
                     a, template.features = self.doFeatureExtraction(dataForParCal)
 
+    def progessNumber(self):
+        self.feitos += 1
+        print("%d completed from %d" % (self.feitos,self.quantityItensProcessing))
 
     def localcall(self,parameters):
-        print("Iniciando feature extraction")
         template = parameters['template']
         if parameters['forceImage'] or not template.isFileExists(self.fullPathGallFile):
-            print(template.rawRepr)
             points = parameters['points']
             radius = parameters['radius']
             imgCroped = np.asarray(template.image).astype(np.int64)
@@ -281,11 +312,11 @@ class ThreeDLBP(BiometricProcessing):
 
             if (not points is None) and (not radius is None):
                 uniArray = generateArrayUniform(points)
-                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'])
+                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'])
                 template.saveMasks('overflowMasks_pr','overflow')
                 template.saveMasks('underflowMasks_pr', 'underflow')
             else:
-                desc = self.generateImageDescriptor(imgCroped,template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'])
+                desc = self.generateImageDescriptor(imgCroped,template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'])
                 template.saveMasks('overflowMasks','overflow')
                 template.saveMasks('underflowMasks', 'underflow')
 
@@ -310,35 +341,8 @@ class ThreeDLBP(BiometricProcessing):
                         else:
                             fullImageDescriptor += generateHistogramUniform(reshapedWindow[idxLayer - 1], points,uniArray)
 
+            self.progessNumber()
             return saving, fullImageDescriptor
         else:
+            self.progessNumber()
             return None, None
-
-    '''
-    def localcall(self, parameters):
-        np.seterr(all='raise')
-        print("Iniciando feature extraction")
-        template = parameters['template']
-        points = parameters['points']
-        radius = parameters['radius']
-        imgCroped = np.asarray(template.image).astype(np.int64)
-
-        if template.layersChar is None:
-            template.layersChar = np.full((imgCroped.shape[0], imgCroped.shape[1], 4),255)
-
-        offsetx = int(math.ceil(imgCroped.shape[0] / float(self.windowSize)))
-        offsety = int(math.ceil(imgCroped.shape[1] / float(self.windowSize)))
-        fullImageDescriptor = []
-        for i in range(0, imgCroped.shape[0], offsetx):
-            for j in range(0, imgCroped.shape[1], offsety):
-                desc = None 
-                if (not points is None) and (not radius is None):
-                    desc = self.generateImageDescriptor(imgCroped[i:(i + offsetx), j:(j + offsety)], p=points, r=radius,typeLBP='pr')
-                else:
-                    desc = self.generateImageDescriptor(imgCroped[i:(i + offsetx), j:(j + offsety)])
-                template.layersChar[i + 1:(i + offsetx - 1), j + 1:(j + offsety - 1), :] = mergeArraysDiff(template.layersChar[i + 1:(i + offsetx - 1), j + 1:(j + offsety - 1), :], desc)
-                fullImageDescriptor += generateHistogram(desc[0], self.binsize) + generateHistogram(desc[1], self.binsize) + generateHistogram(desc[2], self.binsize) + generateHistogram(desc[3], self.binsize)
-        template.features = fullImageDescriptor
-        saving = template.saveImageTraining(False, self.fullPathGallFile)
-        return saving, fullImageDescriptor
-    '''

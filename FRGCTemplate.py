@@ -105,8 +105,17 @@ class FRGCTemplate(Template):
         fullPath = self.rawRepr.split(os.path.sep)
         fullPath = fullPath[-1].split('.')
         fullPath = fullPath[0]
+        if len(self.layersChar.shape) > 2:
+            for i in range(self.layersChar.shape[2]):
+                if (self.layersChar[:,:,i] > 255).any():
+                    self.layersChar[:,:,i] = scaleValues(0,255,self.layersChar[:,:,i])
+        else:
+            if (self.layersChar > 255).any():
+                self.layersChar = scaleValues(0, 255, self.layersChar)
+
         imageSaveDLP = im.fromarray(np.uint8(self.layersChar))
-        pathNImage = pathImage+'/'+str(self.itemClass) + '_' + fullPath +'.png'
+        extensions = ['bmp','png']
+        pathNImage = pathImage+'/'+str(self.itemClass) + '_' + fullPath +'.'+extensions[len(self.layersChar.shape) > 3]
 
         imageSaveDLP.save(pathNImage)
 
@@ -145,9 +154,9 @@ class FRGCTemplate(Template):
 
         imageSaveDLP.convert('RGB').save(pathNImage)
 
-    def isFileExists(self,pathImage):
+    def isFileExists(self,pathImage,extensions='png'):
         fullPath = self.rawRepr.split(os.path.sep)
         fullPath = fullPath[-1].split('.')
         fullPath = fullPath[0]
-        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + fullPath + '.png'
+        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + fullPath + '.' + extensions
         return os.path.exists(pathNImage)

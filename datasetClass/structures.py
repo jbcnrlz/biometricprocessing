@@ -16,7 +16,7 @@ def loadFoldsDatasets(pathFolds,transforms=None):
         returnDataFolds.append((galDataLoader,proDataLoader))
     return returnDataFolds
 
-def loadDatasetFromFolder(pathFold,validationSize = 0,transforms=None):
+def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None):
     files = getFilesInPath(pathFold)
     if validationSize == 'auto':
         validationSize = int(len(files) / 10)
@@ -82,6 +82,9 @@ def mat_loader(path,mode):
     image = arrays['defShape'].T
     return image
 
+def npy_loader(path,mode):
+    return np.load(path)
+
 class Folds(Dataset):
 
     def __init__(self, files, classes, transform=None, target_transform=None):
@@ -90,6 +93,8 @@ class Folds(Dataset):
 
         if files[0][-3:] == 'mat':
             self.loader = mat_loader
+        elif files[0][-3:] == 'npy':
+            self.loader = npy_loader
         else:
             self.loader = pil_loader
 

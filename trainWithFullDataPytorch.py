@@ -17,6 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', default=None, help='Output Folder', required=False)
     parser.add_argument('--extension', help='Extension from files', required=False, default='png')
     parser.add_argument('--network', help='Joestar network to use', required=False, default='giogio')
+    parser.add_argument('--layers', help='Quantitye of layers', required=False, default=None)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -33,7 +34,11 @@ if __name__ == '__main__':
         shutil.rmtree(args.output)
 
     print('Criando diretorio')
-    in_channels = 4 if args.extension == 'png' else 3
+    if args.layers is None:
+        in_channels = 4 if args.extension == 'png' else 3
+    else:
+        in_channels = int(args.layers)
+
     os.makedirs(args.output)
     if args.network == 'giogio':
         muda = jojo.GioGio(args.classNumber,in_channels=in_channels)

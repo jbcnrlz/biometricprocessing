@@ -47,7 +47,16 @@ if __name__ == '__main__':
         sendEmailMessage('Fim do pre-processamento', 'Terminou o pre-processamento FRGC e LBP')
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,procs=args.quantityProcesses,masks=args.generateMasks,forceImage=args.force,typeMeasurement=args.typeMeasure)
+        tdlbp.featureExtraction(
+            args.points,
+            args.radius,
+            args.parcal,
+            procs=args.quantityProcesses,
+            masks=args.generateMasks,
+            forceImage=args.force,
+            typeMeasurement=args.typeMeasure,
+            firstLayer=args.firstLayer
+        )
         sendEmailMessage('Fim dos experimentos', 'Terminou a extração de características FRGC e LBP')
 
     if not args.pathtrainingfile is None:

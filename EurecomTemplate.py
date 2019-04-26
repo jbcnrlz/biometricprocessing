@@ -132,7 +132,7 @@ class EurecomTemplate(Template):
 
         imageSaveDLP.convert('RGB').save(pathNImage)
 
-    def saveMasks(self,folder,type):
+    def saveMasks(self,folder,filetype):
         if self.overFlow is None or self.underFlow is None:
             return None
         fullPath = self.rawRepr.split(os.path.sep)
@@ -141,8 +141,8 @@ class EurecomTemplate(Template):
         imageSaveDLP = None
         if not os.path.exists(folder):
             os.makedirs(folder)
-        pathNImage = folder+'/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath + '_' + type + '.bmp'
-        if type == 'overflow':
+        pathNImage = folder+'/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath + '_' + filetype + '.bmp'
+        if filetype == 'overflow':
             self.overFlow = scaleValues(0,255,self.overFlow)
             imageSaveDLP = im.fromarray(self.overFlow)
         else:
@@ -151,9 +151,9 @@ class EurecomTemplate(Template):
 
         imageSaveDLP.convert('RGB').save(pathNImage)
 
-    def isFileExists(self,pathImage):
+    def isFileExists(self,pathImage,filetype='png'):
         fullPath = self.rawRepr.split(os.path.sep)
         fullPath = fullPath[-1].split('.')
         fullPath = fullPath[0]
-        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath + '.png'
+        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath + '.' +filetype
         return os.path.exists(pathNImage)

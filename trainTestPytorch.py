@@ -98,6 +98,13 @@ if __name__ == '__main__':
             )
             muda.convolutional = nn.Sequential(*shortenedList)
             muda.fullyConnected.add_module('7', nn.Linear(in_features=2622, out_features=args.fineTuningClasses))
+        elif args.arc.lower() == 'jolyne':
+            muda = jojo.Jolyne(args.classNumber,in_channels=in_channels)
+            if args.fineTuneWeights is not None:
+                muda.load_state_dict(torch.load(args.fineTuneWeights)['state_dict'])
+                nfeats = muda.softmax[-1].in_features
+                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+
         else:
             muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
             if args.fineTuneWeights is not None:
@@ -115,8 +122,6 @@ if __name__ == '__main__':
         test_loader = torch.utils.data.DataLoader(datas[1], batch_size=args.batch, shuffle=False)
 
         optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
-        closs = CenterLoss(args.fineTuningClasses, 4096).to(device)
-        optim_closs = optim.SGD(closs.parameters(), lr=0.6)
         criterion = nn.CrossEntropyLoss().to(device)
         alpha = 0.003
 
@@ -127,7 +132,6 @@ if __name__ == '__main__':
         bestEpoch = -1
 
         fTrainignTime = []
-        #muda.features[-1].register_forward_hook(saveImageLayer)
         for ep in range(args.epochs):
             ibl = ibr = ' '
             muda.train()
@@ -139,13 +143,10 @@ if __name__ == '__main__':
                 output, features = muda(currBatch)
 
                 loss = criterion(output, currTargetBatch)
-                #loss = loss + (alpha * closs(currTargetBatch, features))
 
                 optimizer.zero_grad()
-                #optim_closs.zero_grad()
                 loss.backward()
                 optimizer.step()
-                #optim_closs.step()
 
                 lossAcc.append(loss.item())
 

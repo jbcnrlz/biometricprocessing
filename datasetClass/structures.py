@@ -42,7 +42,7 @@ def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None):
     proDataLoader = Folds(valFiles[0],valFiles[1],transforms)
     return (galDataLoader,proDataLoader)
 
-def loadFolder(pathFold,transforms=None):
+def loadFolder(pathFold,mode,transforms=None):
     files = getFilesInPath(pathFold)
     filesFold = [[],[]]
     for f in files:
@@ -54,7 +54,7 @@ def loadFolder(pathFold,transforms=None):
     if min(filesFold[1]) == 1:
         filesFold[1] = [int(t) - 1 for t in filesFold[1]]
 
-    return Folds(filesFold[0],filesFold[1],transforms)
+    return Folds(filesFold[0],filesFold[1],transform=transforms,modeFile=mode)
 
 def pil_loader(path,mode='RGB'):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
@@ -87,7 +87,7 @@ def npy_loader(path,mode):
 
 class Folds(Dataset):
 
-    def __init__(self, files, classes, transform=None, target_transform=None):
+    def __init__(self, files, classes, transform=None, target_transform=None, modeFile='auto'):
         self.classes = list(map(int,classes))
         self.samples = files
 
@@ -100,6 +100,7 @@ class Folds(Dataset):
 
         self.transform = transform
         self.target_transform = target_transform
+        self.modeFile = modeFile
 
     def __len__(self):
         return len(self.samples)
@@ -114,7 +115,10 @@ class Folds(Dataset):
         return fmt_str
 
     def __getitem__(self, index):
-        mode = 'RGBA' if self.samples[index][-3:].lower() == 'png' else 'RGB'
+        if self.modeFile == 'auto':
+            mode = 'RGBA' if self.samples[index][-3:].lower() == 'png' else 'RGB'
+        else:
+            mode = self.modeFile
         sample = self.loader(self.samples[index],mode)
         target = self.classes[index]
         if self.transform is not None:

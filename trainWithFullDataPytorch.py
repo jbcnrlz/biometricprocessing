@@ -18,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--extension', help='Extension from files', required=False, default='png')
     parser.add_argument('--network', help='Joestar network to use', required=False, default='giogio')
     parser.add_argument('--layers', help='Quantitye of layers', required=False, default=None)
+    parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.001, type=float)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -44,10 +45,12 @@ if __name__ == '__main__':
         muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
     elif args.network == 'jolyne':
         muda = jojo.Jolyne(args.classNumber, in_channels=in_channels)
+    elif args.network == 'octjolyne':
+        muda = jojo.OctJolyne(args.classNumber, in_channels=in_channels)
     muda.to(device)
 
     print('Criando otimizadores')
-    optimizer = optim.SGD(muda.parameters(),lr=0.01,momentum=0.5)
+    optimizer = optim.SGD(muda.parameters(),lr=args.learningRate)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.8)
     criterion = nn.CrossEntropyLoss().to(device)
 

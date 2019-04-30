@@ -1,5 +1,6 @@
 import torch.nn as nn
 from PyTorchLayers.maxout_dynamic import *
+from PyTorchLayers.octoconv import *
 import torch.nn.functional as F
 
 def conv8x8(in_planes, out_planes, stride=4):
@@ -67,6 +68,44 @@ class Joseph(nn.Module):
         out = out.view(out.size(0), 128*10*10)
         out = self.classifier(out)
         return out
+
+class OctJolyne(nn.Module):
+
+    def __init__(self,classes,imageInput=(100,100),in_channels=4):
+        self.imageInput = imageInput
+        super(OctJolyne,self).__init__()
+        self.features = nn.Sequential(
+            OctConv(in_channels, 256, kernel_size=8, stride=4,alphas=[0,0.5]),
+            nn.ReLU(inplace=True),
+            OctConv(256, 512, kernel_size=4,stride=2),
+            nn.ReLU(inplace=True),
+            #nn.MaxPool2d(kernel_size=3, stride=2),
+            OctConv(512, 1024, kernel_size=2, stride=1,alphas=[0.5,0]),
+            nn.ReLU(inplace=True),
+            #nn.MaxPool2d(kernel_size=3, stride=2)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(1024*10*10, 2048),
+            nn.ReLU(inplace=True),
+            MaxoutDynamic(1024, 2048),
+            nn.Dropout(),
+            nn.Linear(2048, 2048),
+        )
+
+        self.softmax = nn.Sequential(
+            nn.ReLU(inplace=True),
+            MaxoutDynamic(1024, 2048),
+            nn.Linear(2048, classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return  self.softmax(x), x
+
 
 class Jolyne(nn.Module):
 

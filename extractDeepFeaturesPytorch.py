@@ -3,7 +3,7 @@ from datasetClass.structures import loadFolder
 from helper.functions import getFilesInPath
 import argparse, networks.PyTorch.jojo as jojo
 import torch.utils.data, os, numpy as np
-from sklearn.decomposition import PCA
+from joblib import load
 
 if __name__ == '__main__':
 
@@ -12,7 +12,8 @@ if __name__ == '__main__':
     parser.add_argument('--fineTuneWeights', default=None, help='Do fine tuning with weights', required=True)
     parser.add_argument('--output', default=None, help='Features output files', required=True)
     parser.add_argument('--network', help='Joestar network to use', required=False, default='giogio')
-    parser.add_argument('--pca', help='PCA', required=False, default=False, type=bool)
+    parser.add_argument('--pca', help='PCA', required=False, default=False)
+    parser.add_argument('--modeLoadFile', help='Mode to load', required=False, default='auto')
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -22,7 +23,7 @@ if __name__ == '__main__':
     ])
 
     paths = getFilesInPath(args.loadFromFolder)
-    foldFile = loadFolder(args.loadFromFolder, dataTransform)
+    foldFile = loadFolder(args.loadFromFolder, args.modeLoadFile, dataTransform)
     gal_loader = torch.utils.data.DataLoader(foldFile, batch_size=100, shuffle=False)
 
     checkpoint = torch.load(args.fineTuneWeights)
@@ -44,9 +45,8 @@ if __name__ == '__main__':
             galleryClasses = galleryClasses + currTargetBatch.tolist()
 
     if args.pca:
-        pca = PCA(n_components=0.99,svd_solver='full')
+        pca = load(args.pca)
         galleryFeatures=np.array(galleryFeatures)
-        pca.fit(galleryFeatures)
         galleryFeatures=pca.transform(galleryFeatures).tolist()
     print("Quantidade de características: %d" % (len(galleryFeatures[0])))
     print('Writing feature file')

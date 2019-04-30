@@ -651,6 +651,18 @@ def plotFeaturesCenterloss(features, labels, colors, dirname=None, epoch=None, c
         fig.savefig(save_name, bbox_inches='tight')
     return fig
 
+def loadFileFeatures(pathFile):
+    dataFile = None
+    with open(pathFile,'r') as f:
+        dataFile = f.readlines()
+
+    returnFeatures = []
+    for d in dataFile:
+        d = d.split(' ')
+        returnFeatures.append([float(x) for x in d[:-2]] + [int(d[-2])] + [d[-1].strip()])
+
+    return returnFeatures
+
 if __name__ == '__main__':
     print(generateArrayUniform())
 

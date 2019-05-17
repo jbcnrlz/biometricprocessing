@@ -26,6 +26,9 @@ class Template:
     def isFileExists(self,pathImage):
         pass
 
+    def existsPreProcessingFile(self):
+        pass
+
     def loadImageData(self):
         if (self.__rawRepr[-3:] == 'obj'):
             self.imageLoaded = True

@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/extractDeepFeaturesPytorch.py" />
-    <option name="PARAMETERS" value="--loadFromFolder=generated_images_eurecom_wfunc --fineTuneWeights=jolyneWFunc/jolyne_best_loss.pth.tar --output=features/jolyne_eurecom_wfunc_4layers.txt --network=jolyne" />
+    <option name="PARAMETERS" value="--loadFromFolder=generated_images_eurecom_angle --fineTuneWeights=jolyneonlyangle/jolyne_best_loss.pth.tar --output=features/jolyne_eurecom_onlyangle.txt --network=jolyne --modeLoadFile=RGB" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

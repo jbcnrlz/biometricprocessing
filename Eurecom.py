@@ -58,6 +58,7 @@ class EurecomKinect(DatabaseProcessingUtility):
                 directories = []
                 for f in self.filePose:
                     directories += self.getFilesFromDirectory(os.path.join(self.databasePath,subject,self.folderTemplate,self.imageType),f)
+
                 for d in directories:
                     euTemp = EurecomTemplate(os.path.join(self.databasePath,subject,self.folderTemplate,self.imageType,d),self.getTemplateType(d),lazy)
                     euTemp.itemClass = subject

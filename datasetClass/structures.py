@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 from helper.functions import loadFoldFromFolders, getFilesInPath
-import os, numpy as np
+import os, numpy as np, torch
 from PIL import Image as im
 
 def loadFoldsDatasets(pathFolds,transforms=None):
@@ -15,6 +15,48 @@ def loadFoldsDatasets(pathFolds,transforms=None):
         proDataLoader = Folds(f[2],f[3],transforms)
         returnDataFolds.append((galDataLoader,proDataLoader))
     return returnDataFolds
+
+def getSameFileFromFolders(fileName,folders):
+    fileName = fileName[fileName.index('_')+1:fileName.index('.')]
+    returnPaths = []
+    for files in folders:
+        for fn in files:
+            simFilename = fn.split(os.path.sep)[-1]
+            simFilename = simFilename[simFilename.index('_')+1:simFilename.index('.')]
+            if simFilename == fileName:
+                returnPaths.append(fn)
+                break
+
+    return returnPaths
+
+def loadSiameseDatasetFromFolder(pathFold,otherFolds,validationSize=0,transforms=None):
+    files = getFilesInPath(pathFold)
+    otherFoldsFiles = [getFilesInPath(of) for of in otherFolds]
+    if validationSize == 'auto':
+        validationSize = int(len(files) / 10)
+    trainFiles = [[],[]]
+    valFiles = [[],[],[]]
+    for f in files:
+        fileName = f.split(os.path.sep)[-1]
+        className = int(''.join([lt for lt in fileName.split('_')[0] if not lt.isalpha()]))
+        siblings = getSameFileFromFolders(fileName,otherFoldsFiles)
+        siblings.append(f)
+        if validationSize > 0 and (className not in valFiles[1] or valFiles[1].count(className) < trainFiles[1].count(className)) and 'rotate' not in fileName:
+            valFiles[0].append(siblings)
+            valFiles[1].append(className)
+            valFiles[2].append('_'.join(fileName.split('_')[:-4]))
+            validationSize -= 1
+        elif '_'.join(fileName.split('_')[:-4]) not in valFiles[2]:
+            trainFiles[0].append(siblings)
+            trainFiles[1].append(className)
+
+    if int(min(trainFiles[1])) == 1:
+        trainFiles[1] = [int(t) - 1 for t in trainFiles[1]]
+        valFiles[1] = [int(t) -1 for t in valFiles[1]]
+
+    galDataLoader = SiameseFolds(trainFiles[0],trainFiles[1],transforms)
+    proDataLoader = SiameseFolds(valFiles[0],valFiles[1],transforms)
+    return (galDataLoader,proDataLoader)
 
 def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None):
     files = getFilesInPath(pathFold)
@@ -84,6 +126,53 @@ def mat_loader(path,mode):
 
 def npy_loader(path,mode):
     return np.load(path)
+
+class SiameseFolds(Dataset):
+    def __init__(self, files, classes, transform=None, target_transform=None, modeFile='auto'):
+        self.classes = list(map(int,classes))
+        self.samples = files
+        self.transform = transform
+        self.target_transform = target_transform
+        self.modeFile = modeFile
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __repr__(self):
+        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
+        tmp = '    Transforms (if any): '
+        fmt_str += '{0}{1}\n'.format(tmp, self.transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+        tmp = '    Target Transforms (if any): '
+        fmt_str += '{0}{1}'.format(tmp, self.target_transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+        return fmt_str
+
+    def __getitem__(self, index):
+        finalImageLoaded = []
+        for idx, fName in enumerate(self.samples[index]):
+            if type(self.modeFile) is list:
+                if self.modeFile[idx] == 'auto':
+                    mode = 'RGBA' if fName[-3:].lower() == 'png' else 'RGB'
+                else:
+                    mode = self.modeFile
+            else:
+                if self.modeFile == 'auto':
+                    mode = 'RGBA' if fName[-3:].lower() == 'png' else 'RGB'
+                else:
+                    mode = self.modeFile
+
+            lImage = pil_loader(fName,mode)
+            finalImageLoaded.append(lImage)
+
+        if self.target_transform is not None:
+            self.classes[index] = self.target_transform(self.classes[index])
+        #finalImageLoaded = np.array(finalImageLoaded)
+        if self.transform is not None:
+            for i in range(len(finalImageLoaded)):
+                finalImageLoaded[i] = self.transform(finalImageLoaded[i]) / 255
+
+
+        return finalImageLoaded, self.classes[index]
 
 class Folds(Dataset):
 

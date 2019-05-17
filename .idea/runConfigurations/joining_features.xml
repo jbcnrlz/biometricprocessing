@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="trainWithFullDataPytorch" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="joining_features" type="PythonConfigurationType" factoryName="Python">
     <module name="biometricprocessing" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -11,8 +11,8 @@
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainWithFullDataPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -p=generated_images_frgc_angle -e=52 -b=50 --output=jolyne_generate_tb --extension=bmp --network=jolyne" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/joining_features.py" />
+    <option name="PARAMETERS" value="--files=features/jolyne_eurecom_depth.txt__features/jolyne_eurecom_wfunc_4layers.txt__features/jolyne_eurecom_onlyangle.txt --modelOutput=features/jolyne_eurecom_wfuncdepth_fuse.txt --typeJoin=conc --pca=features/jolyne_frgc_depth.txt__features/jolyne_frgc_wfunc.txt__features/jolyne_frgc_angle.txt" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

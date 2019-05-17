@@ -1,4 +1,4 @@
-import random, numpy as np, argparse, re
+import random, numpy as np, argparse, re, os
 from sklearn.metrics.pairwise import cosine_similarity
 from helper.functions import loadPatternFromFiles, loadFileFeatures
 from sklearn.decomposition import PCA
@@ -60,6 +60,7 @@ if __name__ == '__main__':
     parser.add_argument('--path', help='Path for features file', required=True)
     parser.add_argument('--folds', help='Path for folds file', required=True)
     parser.add_argument('--pca', help='Learn an apply PCA to the data', required=False, default=None)
+    parser.add_argument('--saveScores', help='Path to save scores', required=False, default=None)
     args = parser.parse_args()
 
     features = loadFileFeatures(args.path)
@@ -89,9 +90,12 @@ if __name__ == '__main__':
                 print('Final feature size = %d' % (len(gallery[0])))
         print('Doing fold %d with %d fold subjects' % (fnum,len(e[1])))
         resultado = np.zeros(2)
+        scoresCurrFold = np.zeros((len(probe), len(gallery)))
+        labelsWhatever = np.zeros((len(probe), 1)).flatten()
         for snum, p in enumerate(probe):
             pdone = (snum / len(probe)) * 100
             cClass = p[-1]
+            labelsWhatever[snum] = int(cClass)
             p = p[0:-1]
             temp_max = -10
             temp_index = 0
@@ -99,10 +103,19 @@ if __name__ == '__main__':
             for gnum, j in enumerate(gallery):
                 print('\r[%.2f Completed] --- Checking subject %d from class %d against gallery subject %d from class %d' % (pdone, snum, cClass, gnum, j[-1]), end='\r', flush=True)
                 temp_similarity = cosine_similarity(p.reshape(1, -1), j[:-1].reshape(1, -1))
+                scoresCurrFold[snum,gnum] = temp_similarity
                 if temp_max < temp_similarity:
                     temp_max = temp_similarity
                     temp_index = j[-1]
 
             resultado[int(temp_index == cClass)] += 1
+
+        if args.saveScores is not None:
+            if not os.path.exists(os.path.join(args.saveScores,str(fnum))):
+                os.makedirs(os.path.join(args.saveScores,str(fnum)))
+
+            np.save(os.path.join(args.saveScores,str(fnum),'scores'),scoresCurrFold)
+            np.save(os.path.join(args.saveScores, str(fnum), 'labels'), labelsWhatever)
+
         resultado = resultado / len(e[1])
         print("\nRight %.2f Wrong %.2f" % (resultado[1] * 100, resultado[0] * 100))

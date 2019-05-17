@@ -50,19 +50,20 @@ class BiometricProcessing:
 
     preProcessingSteps = property(getPreProcessingSteps,setPreProcessingSteps)
 
-    def applyPreProcessing(self,template,verbose=True):
+    def applyPreProcessing(self,template,verbose=True,forceImage=False):
         template = self.setupTemplate(template)
-        if verbose:
-            print(str(template.itemClass))
-        
-        try:
-            for p in self.preProcessingSteps:
-                if verbose:
-                    print(p)
-                template = p.doPreProcessing(template)
-        except Exception as e:
-            traceback.print_exc()
-        template = self.cleanupTemplate(template)
+        if forceImage or not template.existsPreProcessingFile():
+            if verbose:
+                print(str(template.itemClass))
+
+            try:
+                for p in self.preProcessingSteps:
+                    if verbose:
+                        print(p)
+                    template = p.doPreProcessing(template)
+            except Exception as e:
+                traceback.print_exc()
+            template = self.cleanupTemplate(template)
 
     def preProcessing(self,verbose=False,paralelCalling=True,procs=10):
         if paralelCalling:

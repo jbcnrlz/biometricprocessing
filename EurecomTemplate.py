@@ -44,6 +44,18 @@ class EurecomTemplate(Template):
             else:
                 self.image.save(self.rawRepr[0:-4] + '_newdepth.bmp')
 
+    def existsPreProcessingFile(self):
+        fullImgPath = ''
+        pathCImg = self.rawRepr.split(os.path.sep)
+        if pathCImg.index('EURECOM_Kinect_Face_Dataset') >= 0:
+            fileName = pathCImg[-1]
+            pathCImg = os.path.sep.join(pathCImg[0:-2])
+            fullImgPath = os.path.join(pathCImg, 'Depth', 'DepthBMP',
+                                         fileName[0:-4] + '_newdepth.bmp')
+        else:
+            fullImgPath = self.rawRepr[0:-4] + '_newdepth.bmp'
+
+        return os.path.exists(fullImgPath)
 
     def outputMarks(self,saveOnPath=False,typeTemplate='Depth'):
         if (not saveOnPath):
@@ -77,7 +89,7 @@ class EurecomTemplate(Template):
             filesPath = os.path.join('/'.join(filesPath[:-3]),'Mark','Mark3DObj','depth_'+fileName[1]+'_'+filesPath[:-3][len(filesPath) - 4]+'_'+fileName[3]+'_Points_OBJ.txt')
         elif typeTemplate.lower() == 'newdepth':
             filesPath = os.path.join('/'.join(filesPath[:-3]),'Mark','MarkRGB','rgb_'+fileName[1]+'_'+filesPath[:-3][len(filesPath) - 4]+'_'+fileName[3]+'_Points_newdepth.txt')
-        self.faceMarks = []        
+        self.faceMarks = []
         if (os.path.exists(filesPath)):
             fileMark = open(filesPath,'r')
             for p in fileMark:
@@ -108,7 +120,7 @@ class EurecomTemplate(Template):
                     avImage[i,j] = self.layersChar[i,j,0] + self.layersChar[i,j,1] + self.layersChar[i,j,2] + self.layersChar[i,j,3]
                     avImage[i,j] = avImage[i,j] / 4
             avImage = im.fromarray(np.uint8(avImage))
-            avImage.save(pathImage+'/averageImage/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath +'.jpg')
+            #avImage.save(pathImage+'/averageImage/'+str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath +'.jpg')
         
         fullPath = self.rawRepr.split(os.path.sep)
         fullPath = fullPath[-1].split('.')

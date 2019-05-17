@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Recognition_withdb.py" />
-    <option name="PARAMETERS" value="--path=features/jolyne_eurecom_3dlbp.txt --folds=folds_file.txt --pca=True" />
+    <option name="PARAMETERS" value="--path=features/jolyne_eurecom_wfuncdepth_fuse.txt --folds=folds_file.txt" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

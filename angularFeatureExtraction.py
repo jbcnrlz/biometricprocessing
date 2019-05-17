@@ -143,7 +143,7 @@ class AngularFeatureExtraction(BiometricProcessing):
 
     def localcall(self,parameters):
         template = parameters['template']
-        if parameters['forceImage'] or not template.isFileExists(self.fullPathGallFile,'bmp'):
+        if parameters['forceImage'] or not template.isFileExists(self.fullPathGallFile,'png'):
             print(template.rawRepr)
             points = parameters['points']
             radius = parameters['radius']

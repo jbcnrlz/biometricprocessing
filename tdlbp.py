@@ -203,13 +203,13 @@ class ThreeDLBP(BiometricProcessing):
                 layers[1].append(bin[1])
                 layers[2].append(bin[2])
 
-            for l in range(len(layers)):
-                if len(layers[l]) > 0:
-                    layers[l] = int(''.join(layers[l]), 2)
+        for l in range(len(layers)):
+            if len(layers[l]) > 0:
+                layers[l] = int(''.join(layers[l]), 2)
 
-            if firstLayer == 'angle':
-                angle = round(self.getAnglePlaneAxis(np.array(points + [[center[0],center[1],image[center[0]][center[1]]]])))
-                layers[3] = angle
+        if firstLayer == 'angle':
+            angle = round(self.getAnglePlaneAxis(np.array(points + [[center[0],center[1],image[center[0]][center[1]]]])))
+            layers[3] = angle
 
         return layers
 

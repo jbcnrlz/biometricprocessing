@@ -26,7 +26,10 @@ if __name__ == '__main__':
 
     fusedFiles = []
     for i in range(len(files[0])):
-        currFile = np.array(im.open(os.path.join(folders[0],files[0][i])))
+        if files[0][i][-3:] == 'bmp':
+            currFile = np.array(im.open(os.path.join(folders[0], files[0][i])).convert('RGB'))
+        else:
+            currFile = np.array(im.open(os.path.join(folders[0],files[0][i])))
         if (len(currFile.shape) < 3):
             currFile = currFile.reshape((100,100,1))
         for j in range(1,len(files)):

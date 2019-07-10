@@ -2,30 +2,27 @@ import networks.PyTorch.jojo as jojo, argparse, torch.optim as optim
 import torch.utils.data, shutil, os
 from helper.functions import saveStatePytorch
 from tensorboardX import SummaryWriter
-from datasetClass.structures import loadSiameseDatasetFromFolder
+from datasetClass.structures import loadFeaturesFromText
 from torchvision import transforms
 import torch.nn as nn
 
-def getActivation(model,input,outpu):
-    print('oh nooo')
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train Deep Models')
-    parser.add_argument('-p', '--pathBase', default='generated_images_lbp_frgc', help='Path for faces', required=False)
-    parser.add_argument('--others', help='Path other siamese data', required=True)
+def main():
+    parser = argparse.ArgumentParser(description='Train Fuse layers')
+    parser.add_argument('--pathBase', help='Path for feature files (separated by __)', required=True)
     parser.add_argument('-b', '--batch', type=int, default=500, help='Size of the batch', required=False)
     parser.add_argument('-c', '--classNumber', type=int, default=466, help='Quantity of classes', required=False)
     parser.add_argument('-e', '--epochs', type=int, default=10, help='Epochs to be run', required=False)
-    parser.add_argument('--fineTuneWeights', default=None, help='Do fine tuning with weights', required=False)
     parser.add_argument('--output', default=None, help='Output Folder', required=False)
-    parser.add_argument('--extension', help='Extension from files', required=False, default='png')
-    parser.add_argument('--layers', help='Quantitye of layers', required=False, default=None)
     parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.001, type=float)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    dataTransform = transforms.Compose([
+        transforms.ToTensor()
+    ])
+
     print('Carregando dados')
-    folds = loadSiameseDatasetFromFolder(args.pathBase, otherFolds=args.others.split('__'), validationSize='auto')
+    folds = loadFeaturesFromText(args.pathBase, validationSize='auto', transforms=dataTransform)
     gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=True)
     pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
 
@@ -34,7 +31,7 @@ if __name__ == '__main__':
 
     print('Criando diretorio')
     os.makedirs(args.output)
-    muda = jojo.SyameseJolyne(args.classNumber)
+    muda = jojo.FusingNetwork(2048,args.classNumber)
     muda.to(device)
 
     print('Criando otimizadores')
@@ -43,11 +40,6 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss().to(device)
 
     print('Iniciando treino')
-    if args.fineTuneWeights is not None:
-        print('Loading Pre-trained')
-        checkpoint = torch.load(args.fineTuneWeights)
-        #optimizer.load_state_dict(checkpoint['optimizer'])
-        muda.load_state_dict(checkpoint['state_dict'])
 
     cc = SummaryWriter()
     bestForFold = bestForFoldTLoss = 500000
@@ -128,3 +120,6 @@ if __name__ == '__main__':
         print(
             '[EPOCH %03d] Accuracy of the network on the %d validating images: %.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c] [%c]' % (
             ep, total, 100 * cResult, lossAvg, tLoss, ibl, ibtl, ibr))
+
+if __name__ == '__main__':
+    main()

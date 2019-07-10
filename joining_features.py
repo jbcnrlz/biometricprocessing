@@ -102,6 +102,8 @@ if __name__ == '__main__':
         else:
             newDatabase = []
             for idx, f in enumerate(featuresSame):
+                if len(filesLoad) != len(featuresSame[f]):
+                    continue
                 newFeature = []
                 for j in range(len(featuresSame[f])):
                     newFeature = newFeature + featuresSame[f][j]

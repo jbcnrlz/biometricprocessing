@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/stackLayers.py" />
-    <option name="PARAMETERS" value="--original=generated_images_eurecom_angle__generated_images_eurecom_wfunc_3layers --stacked=facedata/eurecom_angle_stacked --outputFileType=png" />
+    <option name="PARAMETERS" value="--original=depth_rebuild_eurecom__generated_images_eurecom__generated_images_eurecom_wfunc --stacked=facedata/eurecom_d3w_stacked --outputFileType=npy" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

@@ -1,9 +1,8 @@
-import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
+import networks.PyTorch.jojo as jojo, argparse, torch.optim as optim
 import torch.utils.data, shutil, os
 from helper.functions import saveStatePytorch
 from tensorboardX import SummaryWriter
-from PyTorchLayers.center_loss import CenterLoss, ICenterLoss
-from datasetClass.structures import loadDatasetFromFolder
+from datasetClass.structures import loadDatasetFromFolder, loadFoldsDatasets
 from torchvision import transforms
 import torch.nn as nn
 
@@ -19,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--network', help='Joestar network to use', required=False, default='giogio')
     parser.add_argument('--layers', help='Quantitye of layers', required=False, default=None)
     parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.001, type=float)
+    parser.add_argument('--tensorboardname', help='Learning Rate', required=False, default='GioGioFullTraining')
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -27,7 +27,10 @@ if __name__ == '__main__':
     ])
 
     print('Carregando dados')
-    folds = loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)
+    if os.path.exists(os.path.join(args.pathBase,'1')):
+        folds = loadFoldsDatasets(args.pathBase, dataTransform)[0]
+    else:
+        folds = loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)
     gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=True)
     pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
 
@@ -62,11 +65,11 @@ if __name__ == '__main__':
         muda.load_state_dict(checkpoint['state_dict'])
 
     cc = SummaryWriter()
-    bestForFold = 500000
+    bestForFold = bestForFoldTLoss = 500000
     bestRankForFold = -1
     print(muda)
     for ep in range(args.epochs):
-        ibl = ibr = ' '
+        ibl = ibr = ibtl = ' '
         muda.train()
         scheduler.step()
         lossAcc = []
@@ -85,7 +88,7 @@ if __name__ == '__main__':
             lossAcc.append(loss.item())
 
         lossAvg = sum(lossAcc) / len(lossAcc)
-        cc.add_scalar('GioGioFullTraining/fullData/loss', lossAvg, ep)
+        cc.add_scalar(args.tensorboardname+'/fullData/loss', lossAvg, ep)
 
         muda.eval()
         total = 0
@@ -105,14 +108,21 @@ if __name__ == '__main__':
 
         cResult = correct / total
         tLoss = sum(loss_val) / len(loss_val)
-        cc.add_scalar('GioGioFullTraining/fullData/accuracy', cResult, ep)
-        cc.add_scalar('GioGioFullTraining/fullData/Validation_loss', tLoss, ep)
+        cc.add_scalar(args.tensorboardname+'/fullData/accuracy', cResult, ep)
+        cc.add_scalar(args.tensorboardname+'/fullData/Validation_loss', tLoss, ep)
 
         state_dict = muda.state_dict()
         opt_dict = optimizer.state_dict()
         fName = '%s_current.pth.tar' % (args.network)
         fName = os.path.join(args.output, fName)
         saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+
+        if bestForFoldTLoss > tLoss:
+            ibtl = 'X'
+            fName = '%s_best_val_loss.pth.tar' % (args.network)
+            fName = os.path.join(args.output, fName)
+            saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+            bestForFoldTLoss = tLoss
 
         if bestRankForFold < cResult:
             ibr = 'X'
@@ -128,4 +138,4 @@ if __name__ == '__main__':
             saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
             bestForFold = lossAvg
 
-        print('[EPOCH %03d] Accuracy of the network on the %d validating images: %.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss,ibl,ibr))
+        print('[EPOCH %03d] Accuracy of the network on the %d validating images: %.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss,ibl,ibtl,ibr))

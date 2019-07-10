@@ -11,8 +11,9 @@
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -e=100 --runOnTest=True -b=5 --loadFromFolder=eurecom_folds_experiment_paper --tensorBoardName=JolyneEurecom --fineTuningClasses=52 --fineTuneWeights=jolyneangle/jolyne_best_loss.pth.tar --arc=jolyne" />
+    <option name="PARAMETERS" value="-c=52 -e=200 --runOnTest=True -b=50 --loadFromFolder=eurecom_3dlbp_folds_experiment_paper --tensorBoardName=GioGioEurecom --arc=giogio --scoreFolder=scores/tdlbp_giogio_eurecom_%d.txt" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

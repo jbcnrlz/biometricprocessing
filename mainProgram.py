@@ -9,6 +9,9 @@ if __name__ == '__main__':
     parser = standartParametrization(parser)
     args = parser.parse_args()
 
+    if not os.path.exists(args.pathImages):
+        os.makedirs(args.pathImages)
+
     faceDataset = []
     sets = ['s1','s2']
     for s in sets:
@@ -59,7 +62,7 @@ if __name__ == '__main__':
         #xek.saveTemplateImage()
 
     if args.operation in ['both', 'fe']:
-        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4],typeMeasurement=args.typeMeasure,procs=args.quantityProcesses,masks=args.generateMasks,forceImage=args.force)
+        tdlbp.featureExtraction(args.points,args.radius,args.parcal,layersUtilize=[1,2,3,4],typeMeasurement=args.typeMeasure,procs=args.quantityProcesses,masks=args.generateMasks,forceImage=args.force,deformValue=args.deformValue)
         sendEmailMessage('Fim dos experimentos','Terminou a extração de características EURECOM e LBP')
 
     if (args.pathtrainingfile is not None) and (args.operation == 'fe'):

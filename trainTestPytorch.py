@@ -1,5 +1,5 @@
 from torchvision import transforms
-from helper.functions import plot_confusion_matrix, saveStatePytorch
+from helper.functions import plot_confusion_matrix, saveStatePytorch, generateFeaturesFile
 from datasetClass.structures import loadFoldsDatasets, loadDatasetFromFolder
 import networks.PyTorch.vgg_face_dag as vgg
 import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
@@ -46,8 +46,12 @@ if __name__ == '__main__':
     parser.add_argument('--folderSnapshots', default='trainPytorch', help='Folder for snapshots', required=False)
     parser.add_argument('--extension', help='Extension from files', required=False, default='png')
     parser.add_argument('--arc', help='Network', required=False, default='giogio')
+    parser.add_argument('--scoreFolder', help='Fold where to save scores', required=False, default=None)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    if args.fineTuneWeights is not None:
+        checkpoint = torch.load(args.fineTuneWeights)
 
     dataTransform = None
     if args.arc.lower() == 'vgg':
@@ -61,8 +65,10 @@ if __name__ == '__main__':
             transforms.ToTensor()
         ])
 
-
-    in_channels = 4 if args.extension == 'png' else 3
+    if args.fineTuneWeights is not None:
+        in_channels = checkpoint['state_dict']['features.0.weight'].shape[1]
+    else:
+        in_channels = 4 if args.extension == 'png' else 3
 
     if args.loadFromFolder is None:
         folds = [loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)]
@@ -101,15 +107,13 @@ if __name__ == '__main__':
         elif args.arc.lower() == 'jolyne':
             muda = jojo.Jolyne(args.classNumber,in_channels=in_channels)
             if args.fineTuneWeights is not None:
-                muda.load_state_dict(torch.load(args.fineTuneWeights)['state_dict'])
+                muda.load_state_dict(checkpoint['state_dict'])
                 nfeats = muda.softmax[-1].in_features
                 muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
 
         else:
             muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
             if args.fineTuneWeights is not None:
-                checkpoint = torch.load(args.fineTuneWeights)
-                #optimizer.load_state_dict(checkpoint['optimizer'])
                 muda.load_state_dict(checkpoint['state_dict'])
                 nfeats = muda.softmax[-1].in_features
                 muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
@@ -166,6 +170,7 @@ if __name__ == '__main__':
                 for data in test_loader:
                     images, labels = data
                     outputs, fs = muda(images.to(device))
+                    scores = scores + [d.tolist() for d in outputs.data]
                     _, predicted = torch.max(outputs.data, 1)
 
                     loss = criterion(outputs, labels.to(device))
@@ -192,6 +197,8 @@ if __name__ == '__main__':
                 fName = os.path.join(args.folderSnapshots, str(f),fName)
                 saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
                 bestForFold = cResult
+                if args.scoreFolder is not None:
+                    generateFeaturesFile(scores,labelsData[0],args.scoreFolder % (f))
 
             if bestLossForFold > lossAvg:
                 ibl = 'X'
@@ -208,14 +215,6 @@ if __name__ == '__main__':
                 bestEpoch = ep
 
             if ep % 10 == 0:
-                fName = '%s_checkpoint_%05d.pth.tar' % ('GioGio',ep)
-                fName = os.path.join(args.folderSnapshots, str(f),fName)
-                save_checkpoint({
-                    'epoch': ep + 1,
-                    'arch': 'GioGio',
-                    'state_dict': muda.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                }, False, fName)
                 foldResults[-1].append(correct / total)
                 a = [i for i in range(max(labelsData[0])+1)]
                 confMat = plot_confusion_matrix(labelsData[0],labelsData[1],['Subject '+str(lnm) for lnm in a])

@@ -7,21 +7,26 @@ from sklearn.metrics import confusion_matrix
 from email.message import EmailMessage
 from yaml import load
 
-def fitPlane(points):
-    #md = np.mean(points, axis=0)
-    #r = points - md
-    #D, V = np.linalg.eig(np.dot(r.T,r))
-    #return V[:, 0]
+def readFeatureFile(fileName):
+    returnFeatures = []
+    classes = []
+    paths = []
+    with open(fileName,'r') as fn:
+        for f in fn:
+            lineSplit = f.split(' ')
+            classes.append(int(lineSplit[-2]))
+            returnFeatures.append(list(map(float,lineSplit[:-2])))
+            paths.append(lineSplit[-1])
 
-    # regular grid covering the domain of the data
-    # best-fit linear plane
+    return (returnFeatures,classes,paths)
+
+def fitPlane(points):
     A = np.c_[points[:, 0], points[:, 1], np.ones(points.shape[0])]
     C, M, _, _ = scipy.linalg.lstsq(A, points[:, 2])  # coefficients
 
     # evaluate it on grid
     Z = C[0] * points[:,0] + C[1] * points[:,1] + C[2]
     return C, Z
-
 
 def calculateQuiver(points):
     u = np.sin(np.pi * points[0]) * np.cos(np.pi * points[1]) * np.cos(np.pi * points[2])
@@ -394,6 +399,14 @@ def getFilesInPath(path,onlyFiles=True,fullPath=True):
     else:
         return [joinFunc(path,f) for f in os.listdir(path)]
 
+def getFilesFromFeatures(path):
+    returnData = []
+    with open(path,'r') as fr:
+        for f in fr:
+            returnData.append(f.split(' ')[-1].strip())
+
+    return returnData
+
 def generateData(pathFiles,extension='png',regularExpression=None):
     returnDataImages = []
     returnDataClass = []
@@ -573,6 +586,7 @@ def standartParametrization(parser):
                         required=False, type=bool)
     parser.add_argument('--loadImages', default=None, help='Images to load', required=False)
     parser.add_argument('--firstLayer', default='lbp', help='Images to load', required=False)
+    parser.add_argument('--deformValue', default=0.222, help='Value to deform the function (only utilized when there is wFunction type)', required=False, type=float)
     return parser
 
 def generateListLayers(model,options):
@@ -662,6 +676,14 @@ def loadFileFeatures(pathFile):
         returnFeatures.append([float(x) for x in d[:-2]] + [int(d[-2])] + [d[-1].strip()])
 
     return returnFeatures
+
+def generateFeaturesFile(scores,labels,path):
+    if os.path.exists(path):
+        os.remove(path)
+
+    with open(path,'w') as ps:
+        for idx, s in enumerate(scores):
+            ps.write(' '.join(list(map(str,s))) + ' ' + str(labels[idx]) + '\n')
 
 if __name__ == '__main__':
     print(generateArrayUniform())

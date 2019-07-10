@@ -114,7 +114,7 @@ class ThreeDLBP(BiometricProcessing):
         cosAngle = np.dot(finalNormal,np.array([0,0,1]))
         return np.degrees(np.arccos(cosAngle))
 
-    def generateCodePR(self, image, center, xPositions, yPositions, type='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp'):
+    def generateCodePR(self, image, center, xPositions, yPositions, type='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp',deformValue=0.222):
         image = np.ascontiguousarray(image, dtype=np.double)
         xPositions = xPositions + center[0]
         yPositions = yPositions + center[1]
@@ -174,12 +174,12 @@ class ThreeDLBP(BiometricProcessing):
                                 place += 1
                     subraction = 7
             elif type == 'wFunction':
-                signSub = -1 if subraction < 0 else 1
+                signSub = np.sign(subraction) if subraction != 0 else 1.0
                 if subraction in self.sigmoid_table.keys():
                     subraction = self.sigmoid_table[subraction]
                 else:
                     keyTable = subraction
-                    subraction = zFunc(subraction,0.222)
+                    subraction = zFunc(subraction,deformValue)
                     self.sigmoid_table[keyTable] = subraction
 
                 subraction = 0 if subraction < 0 else 1 if subraction > 1 else subraction
@@ -213,7 +213,7 @@ class ThreeDLBP(BiometricProcessing):
 
         return layers
 
-    def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None,masks=False,firstLayer='lbp'):
+    def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None,masks=False,firstLayer='lbp',deformValue=0.222):
         returnValue = [[], [], [], []]
         if masks:
             template.underFlow = np.zeros(image.shape)
@@ -237,9 +237,9 @@ class ThreeDLBP(BiometricProcessing):
                         resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2],firstLayer=firstLayer)
                 elif typeLBP == 'pr':
                     if template.underFlow is None or template.overFlow is None:
-                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement,firstLayer=firstLayer)
+                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement,firstLayer=firstLayer,deformValue=deformValue)
                     else:
-                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), xPositions,yPositions, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)],firstLayer=firstLayer)
+                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), xPositions,yPositions, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)],firstLayer=firstLayer,deformValue=deformValue)
 
                 if not template is None:
                     template.layersChar[i][j] = resultCode
@@ -280,20 +280,20 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10,masks=False,firstLayer='lbp'):
+    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10,masks=False,firstLayer='lbp',deformValue=0.222):
         self.quantityItensProcessing = sum([len(d.templates) for d in self.databases])
         self.feitos = 0
         if paralelCalling:
             poolCalling = Pool(processes=procs)
             for database in self.databases:
-                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks,'firstLayer' : firstLayer} for t in database.templates]
+                dataForParCal = [{'template': t, 'points': points, 'radius': radius, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks,'firstLayer' : firstLayer, 'deformValue' : deformValue} for t in database.templates]
                 responses = poolCalling.map(unwrap_self_f_feature, zip([self] * len(dataForParCal), dataForParCal))
                 for i in range(len(responses)):
                     database.templates[i].features = responses[i][1]
         else:
             for database in self.databases:
                 for template in database.templates:
-                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks,'firstLayer' : firstLayer}
+                    dataForParCal = {'points': points, 'radius': radius, 'template': template, 'layersUtilize' : layersUtilize,'forceImage' : forceImage,'typeMeasurement' : typeMeasurement,'masks' : masks,'firstLayer' : firstLayer, 'deformValue' : deformValue}
                     a, template.features = self.doFeatureExtraction(dataForParCal)
 
     def progessNumber(self):
@@ -312,7 +312,7 @@ class ThreeDLBP(BiometricProcessing):
 
             if (not points is None) and (not radius is None):
                 uniArray = generateArrayUniform(points)
-                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'])
+                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'],deformValue=parameters['deformValue'])
                 template.saveMasks('overflowMasks_pr','overflow')
                 template.saveMasks('underflowMasks_pr', 'underflow')
             else:

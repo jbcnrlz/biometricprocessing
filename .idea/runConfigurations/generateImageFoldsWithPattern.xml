@@ -11,8 +11,9 @@
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateImageFoldsWithPattern.py" />
-    <option name="PARAMETERS" value="-p=facedata/eurecom_angle_stacked --folder=eurecom_folds_experiment_paper --filePattern=folds_file_gallery.txt --extension=png" />
+    <option name="PARAMETERS" value="-p=generated_images_eurecom --folder=eurecom_3dlbp_folds_experiment_paper --filePattern=folds_file.txt --extension=png" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

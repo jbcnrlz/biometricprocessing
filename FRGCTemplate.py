@@ -115,7 +115,7 @@ class FRGCTemplate(Template):
 
         imageSaveDLP = im.fromarray(np.uint8(self.layersChar))
         extensions = ['bmp','png']
-        pathNImage = pathImage+'/'+str(self.itemClass) + '_' + fullPath +'.'+extensions[len(self.layersChar.shape) > 3]
+        pathNImage = pathImage+'/'+str(self.itemClass) + '_' + fullPath +'.'+extensions[self.layersChar.shape[2] > 3]
 
         imageSaveDLP.save(pathNImage)
 

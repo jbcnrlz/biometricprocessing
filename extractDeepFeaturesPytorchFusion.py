@@ -1,19 +1,17 @@
 from torchvision.transforms import transforms
-from datasetClass.structures import loadFolder
-from helper.functions import getFilesInPath
+from datasetClass.structures import loadFeaturesFromText
+from helper.functions import getFilesFromFeatures
 import argparse, networks.PyTorch.jojo as jojo
 import torch.utils.data, os, numpy as np
 from joblib import load
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Extract Deep Features utilizing GioGio Network')
+    parser = argparse.ArgumentParser(description='Extract Deep Features utilizing Shallow Network - Siamese Like approach')
     parser.add_argument('--loadFromFolder', default=None, help='Load folds from folders', required=True)
     parser.add_argument('--fineTuneWeights', default=None, help='Do fine tuning with weights', required=True)
     parser.add_argument('--output', default=None, help='Features output files', required=True)
-    parser.add_argument('--network', help='Joestar network to use', required=False, default='giogio')
     parser.add_argument('--pca', help='PCA', required=False, default=False)
-    parser.add_argument('--modeLoadFile', help='Mode to load', required=False, default='auto')
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -22,17 +20,11 @@ if __name__ == '__main__':
         transforms.ToTensor()
     ])
 
-    paths = getFilesInPath(args.loadFromFolder)
-    foldFile = loadFolder(args.loadFromFolder, args.modeLoadFile, dataTransform)
-    gal_loader = torch.utils.data.DataLoader(foldFile, batch_size=100, shuffle=False)
+    folds = loadFeaturesFromText(args.loadFromFolder, validationSize=None,transforms=dataTransform)
+    gal_loader = torch.utils.data.DataLoader(folds, batch_size=100, shuffle=False)
 
     checkpoint = torch.load(args.fineTuneWeights)
-    if args.network == 'giogio':
-        muda = jojo.GioGio(checkpoint['state_dict']['softmax.1.weight'].shape[0],in_channels=checkpoint['state_dict']['features.0.weight'].shape[1]).to(device)
-    elif args.network == 'jolyne':
-        channelsIn = 4 if args.modeLoadFile == 'RGBA' else 3
-        muda = jojo.Jolyne(checkpoint['state_dict']['softmax.2.weight'].shape[0],
-                           in_channels=channelsIn).to(device)
+    muda = jojo.FusingNetwork(2048,checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
     muda.load_state_dict(checkpoint['state_dict'])
 
     muda.eval()
@@ -41,7 +33,9 @@ if __name__ == '__main__':
     with torch.no_grad():
         for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
             print("Extracting features from batch %d"%(bIdx))
-            output, whatever = muda(currBatch.to(device))
+            currBatch[0] = currBatch[0].to(device)
+            currBatch[1] = currBatch[1].to(device)
+            output, whatever = muda(currBatch)
             galleryFeatures = galleryFeatures + whatever.tolist()
             galleryClasses = galleryClasses + currTargetBatch.tolist()
 
@@ -49,6 +43,8 @@ if __name__ == '__main__':
         pca = load(args.pca)
         galleryFeatures=np.array(galleryFeatures)
         galleryFeatures=pca.transform(galleryFeatures).tolist()
+
+    paths = getFilesFromFeatures(args.loadFromFolder.split('__')[0])
     print("Quantidade de características: %d" % (len(galleryFeatures[0])))
     print('Writing feature file')
     with open(args.output, 'w') as dk:

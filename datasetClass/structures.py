@@ -1,7 +1,61 @@
 from torch.utils.data import Dataset
-from helper.functions import loadFoldFromFolders, getFilesInPath
+from helper.functions import loadFoldFromFolders, getFilesInPath, readFeatureFile
 import os, numpy as np, torch
 from PIL import Image as im
+
+def getSameFileFromFoldersFeatures(fileNameParent, siblist):
+    fileNameParent = fileNameParent.split(os.path.sep)[-1]
+    fileName = fileNameParent[fileNameParent.index('_')+1:fileNameParent.index('.')]
+
+    for idxSib, s in enumerate(siblist):
+        simFilename = s.split(os.path.sep)[-1]
+        simFilename = simFilename[simFilename.index('_') + 1:simFilename.index('.')]
+        if simFilename == fileName:
+            return idxSib
+
+
+def loadFeaturesFromText(pathFold,validationSize=0,transforms=None):
+
+    dataFile = []
+    for p in pathFold.split('__'):
+        dataFile.append(readFeatureFile(p))
+
+    if validationSize == 'auto':
+        validationSize = int(len(dataFile[0][0]) / 10)
+    trainFiles = [[], []]
+    valFiles = [[], [], []]
+    for idx,df in enumerate(dataFile[0][0]):
+        siblist = [df] + [dataFile[idxItem][0][getSameFileFromFoldersFeatures(dataFile[0][2][idx],dataFile[idxItem][2])] for idxItem in range(1,len(dataFile))]
+
+        if validationSize is None:
+            trainFiles[0].append(siblist)
+            trainFiles[1].append(dataFile[0][1][idx])
+
+        else:
+            fileName = dataFile[0][2][idx].split(os.path.sep)[-1].strip()
+            fileId = '_'.join(fileName.split('_')[:-4])
+            className = int(''.join([lt for lt in fileName.split('_')[0] if not lt.isalpha()]))
+            if validationSize > 0 and (
+                    className not in valFiles[1] or valFiles[1].count(dataFile[0][1][idx]) < trainFiles[1].count(dataFile[0][1][idx])) and 'rotate' not in fileName:
+                valFiles[0].append(siblist)
+                valFiles[1].append(dataFile[0][1][idx])
+                valFiles[2].append(fileId)
+                validationSize -= 1
+            elif '_'.join(fileName.split('_')[:-4]) not in valFiles[2]:
+                trainFiles[0].append(siblist)
+                trainFiles[1].append(dataFile[0][1][idx])
+
+    if int(min(trainFiles[1])) == 1:
+        trainFiles[1] = [int(t) - 1 for t in trainFiles[1]]
+        valFiles[1] = [int(t) - 1 for t in valFiles[1]]
+
+    if validationSize is None:
+        galDataLoader = SiameseFoldsFeatures(trainFiles[0], trainFiles[1], transforms)
+        return galDataLoader
+    else:
+        galDataLoader = SiameseFoldsFeatures(trainFiles[0], trainFiles[1], transforms)
+        proDataLoader = SiameseFoldsFeatures(valFiles[0], valFiles[1], transforms)
+        return (galDataLoader, proDataLoader)
 
 def loadFoldsDatasets(pathFolds,transforms=None):
     folds = loadFoldFromFolders(pathFolds)
@@ -41,22 +95,30 @@ def loadSiameseDatasetFromFolder(pathFold,otherFolds,validationSize=0,transforms
         className = int(''.join([lt for lt in fileName.split('_')[0] if not lt.isalpha()]))
         siblings = getSameFileFromFolders(fileName,otherFoldsFiles)
         siblings.append(f)
-        if validationSize > 0 and (className not in valFiles[1] or valFiles[1].count(className) < trainFiles[1].count(className)) and 'rotate' not in fileName:
-            valFiles[0].append(siblings)
-            valFiles[1].append(className)
-            valFiles[2].append('_'.join(fileName.split('_')[:-4]))
-            validationSize -= 1
-        elif '_'.join(fileName.split('_')[:-4]) not in valFiles[2]:
+        if validationSize is None:
             trainFiles[0].append(siblings)
             trainFiles[1].append(className)
+        else:
+            if validationSize > 0 and (className not in valFiles[1] or valFiles[1].count(className) < trainFiles[1].count(className)) and 'rotate' not in fileName:
+                valFiles[0].append(siblings)
+                valFiles[1].append(className)
+                valFiles[2].append('_'.join(fileName.split('_')[:-4]))
+                validationSize -= 1
+            elif '_'.join(fileName.split('_')[:-4]) not in valFiles[2]:
+                trainFiles[0].append(siblings)
+                trainFiles[1].append(className)
 
     if int(min(trainFiles[1])) == 1:
         trainFiles[1] = [int(t) - 1 for t in trainFiles[1]]
         valFiles[1] = [int(t) -1 for t in valFiles[1]]
 
-    galDataLoader = SiameseFolds(trainFiles[0],trainFiles[1],transforms)
-    proDataLoader = SiameseFolds(valFiles[0],valFiles[1],transforms)
-    return (galDataLoader,proDataLoader)
+    if validationSize is None:
+        galDataLoader = SiameseFolds(trainFiles[0],trainFiles[1],transforms)
+        return galDataLoader
+    else:
+        galDataLoader = SiameseFolds(trainFiles[0],trainFiles[1],transforms)
+        proDataLoader = SiameseFolds(valFiles[0],valFiles[1],transforms)
+        return (galDataLoader,proDataLoader)
 
 def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None):
     files = getFilesInPath(pathFold)
@@ -67,12 +129,17 @@ def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None):
     for f in files:
         fileName = f.split(os.path.sep)[-1]
         className = int(''.join([lt for lt in fileName.split('_')[0] if not lt.isalpha()]))
+        splitedFileName = fileName.split('_')
+        if len(splitedFileName) < 5:
+            splitedFileName = '_'.join(splitedFileName[:2])
+        else:
+            splitedFileName = '_'.join(splitedFileName[:-4])
         if validationSize > 0 and (className not in valFiles[1] or valFiles[1].count(className) < trainFiles[1].count(className)) and 'rotate' not in fileName:
             valFiles[0].append(f)
             valFiles[1].append(className)
-            valFiles[2].append('_'.join(fileName.split('_')[:-4]))
+            valFiles[2].append(splitedFileName)
             validationSize -= 1
-        elif '_'.join(fileName.split('_')[:-4]) not in valFiles[2]:
+        elif splitedFileName not in valFiles[2]:
             trainFiles[0].append(f)
             trainFiles[1].append(className)
 
@@ -127,6 +194,38 @@ def mat_loader(path,mode):
 def npy_loader(path,mode):
     return np.load(path)
 
+class SiameseFoldsFeatures(Dataset):
+    def __init__(self, features, classes, transform=None, target_transform=None):
+        self.classes = list(map(int,classes))
+        self.samples = features
+        self.transform = transform
+        self.target_transform = target_transform
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __repr__(self):
+        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
+        tmp = '    Transforms (if any): '
+        fmt_str += '{0}{1}\n'.format(tmp, self.transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+        tmp = '    Target Transforms (if any): '
+        fmt_str += '{0}{1}'.format(tmp, self.target_transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+        return fmt_str
+
+    def __getitem__(self, index):
+
+        if self.target_transform is not None:
+            self.classes[index] = self.target_transform(self.classes[index])
+        #finalImageLoaded = np.array(finalImageLoaded)
+        if self.transform is not None:
+            for i in range(len(self.samples[index])):
+                self.samples[index][i] = self.transform(np.array(self.samples[index][i]).reshape(1,-1,1).astype(np.float32))
+
+
+        return self.samples[index], self.classes[index]
+
+
 class SiameseFolds(Dataset):
     def __init__(self, files, classes, transform=None, target_transform=None, modeFile='auto'):
         self.classes = list(map(int,classes))
@@ -150,6 +249,7 @@ class SiameseFolds(Dataset):
     def __getitem__(self, index):
         finalImageLoaded = []
         for idx, fName in enumerate(self.samples[index]):
+            '''
             if type(self.modeFile) is list:
                 if self.modeFile[idx] == 'auto':
                     mode = 'RGBA' if fName[-3:].lower() == 'png' else 'RGB'
@@ -161,7 +261,9 @@ class SiameseFolds(Dataset):
                 else:
                     mode = self.modeFile
 
-            lImage = pil_loader(fName,mode)
+            lImage = pil_loader(fName,mode)            
+            '''
+            lImage = pil_loader(fName, 'RGBA')
             finalImageLoaded.append(lImage)
 
         if self.target_transform is not None:

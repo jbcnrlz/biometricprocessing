@@ -1,6 +1,6 @@
-import torch
-import torch.nn as nn
+import torch, math, torch.nn as nn
 from torch.nn.functional import conv2d
+from torch.autograd.function import Function
 
 class CorrelationImage(nn.Module):
     def __init__(self):
@@ -32,3 +32,63 @@ class CorrelationImage(nn.Module):
         '''
         return newResult
 
+
+class AverageFusion(nn.Module):
+
+    def __init__(self, featuresize, bias=True):
+        super(AverageFusion, self).__init__()
+        self.weight = nn.Parameter(torch.Tensor(featuresize,featuresize))
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(featuresize))
+        else:
+            self.register_parameter('bias',None)
+
+        stdv = 1. / math.sqrt(self.weight.size(0))
+        self.weight.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+    def forward(self, x1, x2):
+        bias = self.bias.expand_as(x1)
+        x = (x1 + x2) / 2
+        return torch.mm(x,self.weight.transpose(0,1)) + bias
+
+class MaxFusion(nn.Module):
+
+    def __init__(self, featuresize, bias=True):
+        super(MaxFusion, self).__init__()
+        self.weight = nn.Parameter(torch.Tensor(featuresize,featuresize))
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(featuresize))
+        else:
+            self.register_parameter('bias',None)
+
+        stdv = 1. / math.sqrt(self.weight.size(0))
+        self.weight.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+    def forward(self, x1, x2):
+        bias = self.bias.expand_as(x1)
+        x = torch.max(x1,x2)
+        return torch.mm(x,self.weight.transpose(0,1)) + bias
+
+class ConcatFusion(nn.Module):
+
+    def __init__(self, featuresize, bias=True):
+        super(ConcatFusion, self).__init__()
+        self.weight = nn.Parameter(torch.Tensor(featuresize*2,featuresize*2))
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(featuresize*2))
+        else:
+            self.register_parameter('bias',None)
+
+        stdv = 1. / math.sqrt(self.weight.size(0))
+        self.weight.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+    def forward(self, x1, x2):
+        x = torch.cat((x1,x2),dim=1)
+        bias = self.bias.expand_as(x)
+        return torch.mm(x,self.weight.transpose(0,1)) + bias

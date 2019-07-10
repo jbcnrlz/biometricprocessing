@@ -145,7 +145,7 @@ class Bosphorus(DatabaseProcessingUtility):
 
         self.templates = self.templates + addTemplates
 
-    def generateDatabaseFile(self, path, faces, otherBases=None, outputDesired='SVMTorchFormat', excludeFiles=[]):
+    def generateDatabaseFile(self, path, otherBases=None, outputDesired='SVMTorchFormat', excludeFiles=[]):
         currSearch = self.templates
         if otherBases:
             for o in otherBases:
@@ -155,14 +155,8 @@ class Bosphorus(DatabaseProcessingUtility):
         for f in currSearch:
             originalPathFile = f.rawRepr.split(os.path.sep)
             originalPathFile = originalPathFile[-1].split('_')[-1]
-            print(originalPathFile)
-            print(excludeFiles)
             if not (originalPathFile in excludeFiles):
-                print('Entrou')
-                if (f.typeTemplate in faces):
-                    for ss in range(len(faces[f.typeTemplate])):
-                        if f.folderTemplate == faces[f.typeTemplate][ss]:
-                            currFiles.append(f)
+                currFiles.append(f)
 
         return getattr(self, outputDesired)(currFiles, path)
 

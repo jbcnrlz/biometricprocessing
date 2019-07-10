@@ -11,8 +11,9 @@
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/extractDeepFeaturesPytorch.py" />
-    <option name="PARAMETERS" value="--loadFromFolder=generated_images_eurecom_angle --fineTuneWeights=jolyneonlyangle/jolyne_best_loss.pth.tar --output=features/jolyne_eurecom_onlyangle.txt --network=jolyne --modeLoadFile=RGB" />
+    <option name="PARAMETERS" value="--loadFromFolder=depth_rebuild_eurecom --fineTuneWeights=jolyne_depth_fmp/jolyne_best_loss.pth.tar --output=features/jolyne_eurecom_rebuilddepth_fmp.txt --network=jolyne --modeLoadFile=RGB" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

@@ -12,18 +12,26 @@ from helper.functions import generateHistogram, generateHistogramUniform, genera
 
 class ThreeDLBP(BiometricProcessing):
 
-    def __init__(self, windowsize, binsize, database,generateImages=True):
+    def __init__(self, windowsize, binsize, database,generateImages=True,lowerBound=-50,upperBound=50):
         self.windowSize = windowsize
         self.binsize = binsize
         self.databases = database
         self.methodName = '3DLBP'
         self.generateImagesTrainig = generateImages
         self.sigmoid_table = {}
+        self.boundarySigmoid = [lowerBound,upperBound]
+        self.histogramBins = None
         super().__init__()
 
     def saveDebug(self, folder, data):
         with open(folder + '/subtraction.txt', 'a') as rty:
             rty.write(str(data) + '\n')
+
+    def generateTableAndHistogram(self,deformValue):
+        for i in np.linspace(self.boundarySigmoid[0],self.boundarySigmoid[1],1000):
+            self.sigmoid_table[i] = zFunc(i,deformValue)
+
+        self.histogramBins = np.histogram(0, bins=8, range=[0, 1])[1]
 
     def generateCode(self, image, center, typeOp='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp'):
         idxs = [
@@ -114,7 +122,7 @@ class ThreeDLBP(BiometricProcessing):
         cosAngle = np.dot(finalNormal,np.array([0,0,1]))
         return np.degrees(np.arccos(cosAngle))
 
-    def generateCodePR(self, image, center, xPositions, yPositions, type='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp',deformValue=0.222):
+    def generateCodePR(self, image, center, xPositions, yPositions, type='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp',deformValue=0.222,subHistory=None):
         image = np.ascontiguousarray(image, dtype=np.double)
         xPositions = xPositions + center[0]
         yPositions = yPositions + center[1]
@@ -141,6 +149,9 @@ class ThreeDLBP(BiometricProcessing):
             else:
                 points.append([i[0], i[1], image[int(i[0])][int(i[1])]])
                 subraction = image[int(i[0])][int(i[1])] - image[center[0]][center[1]]
+
+            if subHistory is not None:
+                subHistory.append(subraction)
 
             if type == 'Normal':
 
@@ -183,8 +194,7 @@ class ThreeDLBP(BiometricProcessing):
                     self.sigmoid_table[keyTable] = subraction
 
                 subraction = 0 if subraction < 0 else 1 if subraction > 1 else subraction
-                subraction = np.histogram(subraction, bins=8, range=[0, 1])[0]
-                subraction = (np.argwhere(subraction == 1)[0][0]+1) * signSub
+                subraction = np.argwhere(subraction > self.histogramBins)[-1][0] * signSub
             elif type == 'sigmoid':
                 signSub = -1 if subraction < 0 else 1
                 subraction = np.histogram(expit(subraction), bins=8, range=[0, 1])[0]
@@ -226,7 +236,7 @@ class ThreeDLBP(BiometricProcessing):
             xPositions = np.round(- r * np.sin(2 * np.pi * np.arange(p, dtype=np.double) / p),5)
             yPositions = np.round(r * np.cos(2 * np.pi * np.arange(p, dtype=np.double) / p),5)
 
-
+        subhistory = []
         for i in range(r, image.shape[0] - r):
             for j in range(r, image.shape[1] - r):
                 resultCode = None
@@ -237,7 +247,7 @@ class ThreeDLBP(BiometricProcessing):
                         resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2],firstLayer=firstLayer)
                 elif typeLBP == 'pr':
                     if template.underFlow is None or template.overFlow is None:
-                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement,firstLayer=firstLayer,deformValue=deformValue)
+                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement,firstLayer=firstLayer,deformValue=deformValue,subHistory=subhistory)
                     else:
                         resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), xPositions,yPositions, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)],firstLayer=firstLayer,deformValue=deformValue)
 
@@ -249,7 +259,7 @@ class ThreeDLBP(BiometricProcessing):
                 returnValue[2].append(resultCode[2])
                 returnValue[3].append(resultCode[3])
 
-        return returnValue
+        return returnValue, subhistory
 
     def cropImage(self, image, le, re, no):
         distance = list(map(operator.sub, le[:2], re[:2]))
@@ -281,6 +291,7 @@ class ThreeDLBP(BiometricProcessing):
         return template
 
     def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10,masks=False,firstLayer='lbp',deformValue=0.222):
+        self.generateTableAndHistogram(deformValue)
         self.quantityItensProcessing = sum([len(d.templates) for d in self.databases])
         self.feitos = 0
         if paralelCalling:
@@ -303,6 +314,7 @@ class ThreeDLBP(BiometricProcessing):
     def localcall(self,parameters):
         template = parameters['template']
         if parameters['forceImage'] or not template.isFileExists(self.fullPathGallFile):
+            print("Doing %s" % (template.rawRepr))
             points = parameters['points']
             radius = parameters['radius']
             imgCroped = np.asarray(template.image).astype(np.int64)
@@ -312,11 +324,16 @@ class ThreeDLBP(BiometricProcessing):
 
             if (not points is None) and (not radius is None):
                 uniArray = generateArrayUniform(points)
-                desc = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'],deformValue=parameters['deformValue'])
+                desc,sh = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'],deformValue=parameters['deformValue'])
+                if len(sh) > 0:
+                    fname = template.rawRepr.split(os.path.sep)[-1]
+                    with open('subhistory/'+fname[:-3]+'txt','w') as shf:
+                        shf.write(' '.join(list(map(str,sh))))
+
                 template.saveMasks('overflowMasks_pr','overflow')
                 template.saveMasks('underflowMasks_pr', 'underflow')
             else:
-                desc = self.generateImageDescriptor(imgCroped,template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'])
+                desc,sh = self.generateImageDescriptor(imgCroped,template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'])
                 template.saveMasks('overflowMasks','overflow')
                 template.saveMasks('underflowMasks', 'underflow')
 
@@ -341,8 +358,7 @@ class ThreeDLBP(BiometricProcessing):
                         else:
                             fullImageDescriptor += generateHistogramUniform(reshapedWindow[idxLayer - 1], points,uniArray)
 
-            self.progessNumber()
             return saving, fullImageDescriptor
         else:
-            self.progessNumber()
+            #self.progessNumber()
             return None, None

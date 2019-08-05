@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="joining_features" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="generateTrainset" type="PythonConfigurationType" factoryName="Python">
     <module name="biometricprocessing" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -12,8 +12,8 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/joining_features.py" />
-    <option name="PARAMETERS" value="--files=features/jolyne_eurecom_rebuilddepth_fmp.txt__features/jolyne_eurecom_wfunc_fmp.txt --modelOutput=features/jolyne_eurecom_dw_fmp_concatenation.txt --typeJoin=conc" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateTrainset.py" />
+    <option name="PARAMETERS" value="--pathBase=generated_images_lbp_frgc --outputPath=frgc_3dlbp_traindata --validationSize=600 --classQuantity=458" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

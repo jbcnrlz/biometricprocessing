@@ -17,8 +17,9 @@ if __name__ == '__main__':
     parser.add_argument('--extension', help='Extension from files', required=False, default='png')
     parser.add_argument('--network', help='Joestar network to use', required=False, default='giogio')
     parser.add_argument('--layers', help='Quantitye of layers', required=False, default=None)
-    parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.001, type=float)
+    parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.01, type=float)
     parser.add_argument('--tensorboardname', help='Learning Rate', required=False, default='GioGioFullTraining')
+    parser.add_argument('--fineTuningClasses', default=0, help='Fine Tuning classes number', required=False, type=int)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -50,7 +51,7 @@ if __name__ == '__main__':
         muda = jojo.Jolyne(args.classNumber, in_channels=in_channels)
     elif args.network == 'octjolyne':
         muda = jojo.OctJolyne(args.classNumber, in_channels=in_channels)
-    muda.to(device)
+
 
     print('Criando otimizadores')
     optimizer = optim.SGD(muda.parameters(),lr=args.learningRate)
@@ -60,10 +61,16 @@ if __name__ == '__main__':
     print('Iniciando treino')
     if args.fineTuneWeights is not None:
         print('Loading Pre-trained')
-        checkpoint = torch.load(args.fineTuneWeights)
-        optimizer.load_state_dict(checkpoint['optimizer'])
+        checkpoint = torch.load(args.fineTuneWeights,map_location=torch.device('cpu'))
+        #optimizer.load_state_dict(checkpoint['optimizer'])
         muda.load_state_dict(checkpoint['state_dict'])
+        if args.fineTuningClasses > 0:
+            nfeats = muda.softmax[-1].in_features
+            muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
 
+        checkpoint = None
+
+    muda.to(device)
     cc = SummaryWriter()
     bestForFold = bestForFoldTLoss = 500000
     bestRankForFold = -1
@@ -73,7 +80,9 @@ if __name__ == '__main__':
         muda.train()
         scheduler.step()
         lossAcc = []
+        totalImages = 0
         for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
+            totalImages += currBatch.shape[0]
             currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
 
             output, features = muda(currBatch)
@@ -138,4 +147,4 @@ if __name__ == '__main__':
             saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
             bestForFold = lossAvg
 
-        print('[EPOCH %03d] Accuracy of the network on the %d validating images: %.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss,ibl,ibtl,ibr))
+        print('[EPOCH %03d] Accuracy of the network on the %d validating images: %.2f %% Training Loss %.5f Validation Loss %.5f - Total of training images %d [%c] [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss,totalImages,ibl,ibtl,ibr))

@@ -11,8 +11,9 @@
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_frgc.py" />
-    <option name="PARAMETERS" value="-p=$PROJECT_DIR$/../non-inv_dataset -t=NewDepth -op=fe --pathImages=$PROJECT_DIR$/generated_images_frgc_lbp_33 --parcal=True" />
+    <option name="PARAMETERS" value="-p=$PROJECT_DIR$/../non-inv_dataset -t=NewDepth -op=fe --pathImages=generated_images_frgc_wfunc_077 --angles=-30_-20_-10_10_20_30 -ap=16 -r=1 --typeMeasure=wFunction --deformValue=0.777" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

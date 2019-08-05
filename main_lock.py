@@ -1,18 +1,18 @@
 import argparse
-from FRGC import *
+from LockDB import *
 from tdlbp import *
 from helper.functions import sendEmailMessage, standartParametrization
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Process and extract FRGC database')
+    parser = argparse.ArgumentParser(description='Process and extract Lock 3D database')
     parser = standartParametrization(parser)
     args = parser.parse_args()
 
     print('Iniciando...')
     print(args)
 
-    gallery = FRGC(args.pathdatabase,args.typeoffile)
+    gallery = LockDB(args.pathdatabase)
     gallery.feedTemplates()
 
     tdlbp = ThreeDLBP(8,14,[gallery])
@@ -55,9 +55,8 @@ if __name__ == '__main__':
             masks=args.generateMasks,
             forceImage=args.force,
             typeMeasurement=args.typeMeasure,
-            firstLayer=args.firstLayer, deformValue=args.deformValue
+            firstLayer=args.firstLayer
         )
-
         sendEmailMessage('Fim dos experimentos', 'Terminou a extração de características FRGC e LBP')
 
     if not args.pathtrainingfile is None:

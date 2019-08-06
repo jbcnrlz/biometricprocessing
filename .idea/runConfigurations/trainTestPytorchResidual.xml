@@ -1,0 +1,23 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="trainTestPytorchResidual" type="PythonConfigurationType" factoryName="Python">
+    <module name="biometricprocessing" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="IS_MODULE_SDK" value="true" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorchResidual.py" />
+    <option name="PARAMETERS" value="-c=4096 -e=100 --runOnTest=True -b=10 --loadFromFolder=eurecom_3dlbp_folds --tensorBoardName=GioGioEurecomResidual --fineTuningClasses=52 --residualFolder=overflowMasks_pr_eurecom__underflowMasks_pr_eurecom --fineTuneWeights=training_full_pytorch_residual/GioGio_best_loss.pth.tar" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="MODULE_MODE" value="false" />
+    <option name="REDIRECT_INPUT" value="false" />
+    <option name="INPUT_FILE" value="" />
+    <method v="2" />
+  </configuration>
+</component>

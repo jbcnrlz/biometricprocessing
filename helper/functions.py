@@ -7,6 +7,11 @@ from sklearn.metrics import confusion_matrix
 from email.message import EmailMessage
 from yaml import load
 
+
+def checkSize(size,image):
+    imope = np.array(im.open(image))
+    return (imope.shape[0] == size[0] and imope.shape[1] == size[1])
+
 def readFeatureFile(fileName):
     returnFeatures = []
     classes = []
@@ -541,6 +546,9 @@ def loadFoldFromFolders(pathFolders):
         for t in types:
             filesForFold = getFilesInPath(os.path.join(pathFolders,inF,t))
             for ffolder in filesForFold:
+                if not checkSize((100,100), ffolder):
+                    continue
+
                 currFile = ffolder.split(os.path.sep)[-1]
                 curreFileName = currFile.split('_')[1] if currFile.split('_')[0] == 'depth' else currFile.split('_')[0]
                 cClass = int(''.join([lt for lt in curreFileName if not lt.isalpha()]))
@@ -555,7 +563,7 @@ def loadFoldFromFolders(pathFolders):
 
 def standartParametrization(parser):
     parser.add_argument('-p', '--pathdatabase', help='Path for the database', required=True)
-    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj','Matlab','VRML'],
+    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj','Matlab','VRML','NewDepthbmp','DepthPng'],
                         help='Type of files (Depth, NewDepth, Range, 3DObj, Matlab)', required=True)
     parser.add_argument('-op', '--operation', choices=['pp', 'fe', 'both'], default='both',
                         help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)

@@ -47,6 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--extension', help='Extension from files', required=False, default='png')
     parser.add_argument('--arc', help='Network', required=False, default='giogio')
     parser.add_argument('--scoreFolder', help='Fold where to save scores', required=False, default=None)
+    parser.add_argument('--noTraning', help='does not train', required=False, default=False, type=bool)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -79,9 +80,10 @@ if __name__ == '__main__':
         folds = loadFoldsDatasets(args.loadFromFolder,dataTransform)
         #folds = loadFoldFromFolders(args.loadFromFolder)
 
-    if os.path.exists(args.folderSnapshots):
-        shutil.rmtree(args.folderSnapshots)
-    os.makedirs(args.folderSnapshots)
+    if not args.noTraning:
+        if os.path.exists(args.folderSnapshots):
+            shutil.rmtree(args.folderSnapshots)
+        os.makedirs(args.folderSnapshots)
 
     if args.useTensorboard:
         cc = SummaryWriter()
@@ -109,14 +111,15 @@ if __name__ == '__main__':
             if args.fineTuneWeights is not None:
                 muda.load_state_dict(checkpoint['state_dict'])
                 nfeats = muda.softmax[-1].in_features
-                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses, bias=False)
 
         else:
             muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
             if args.fineTuneWeights is not None:
                 muda.load_state_dict(checkpoint['state_dict'])
-                nfeats = muda.softmax[-1].in_features
-                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+                if not args.noTraning:
+                    nfeats = muda.softmax[-1].in_features
+                    muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
 
         print(muda)
         muda.to(device)
@@ -136,34 +139,11 @@ if __name__ == '__main__':
         bestEpoch = -1
 
         fTrainignTime = []
-        for ep in range(args.epochs):
-            ibl = ibr = ' '
-            muda.train()
-            lossAcc = []
-            start_time = time.time()
-            for bIdx, (currBatch,currTargetBatch) in enumerate(train_loader):
-                currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
-
-                output, features = muda(currBatch)
-
-                loss = criterion(output, currTargetBatch)
-
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-
-                lossAcc.append(loss.item())
-
-            finishTime = time.time() - start_time
-            fTrainignTime.append(finishTime)
-
-            if args.useTensorboard:
-                cc.add_scalar(args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/loss', sum(lossAcc) / len(lossAcc), ep)
-
+        if args.noTraning:
             muda.eval()
             total = 0
             correct = 0
-            labelsData = [[],[]]
+            labelsData = [[], []]
             scores = []
             loss_val = []
             with torch.no_grad():
@@ -182,45 +162,100 @@ if __name__ == '__main__':
                     labelsData[1] = labelsData[1] + np.array(predicted.cpu()).tolist()
 
             cResult = correct / total
-            lossAvg = sum(lossAcc) / len(lossAcc)
             tLoss = sum(loss_val) / len(loss_val)
-
-            if args.useTensorboard:
-                cc.add_scalar(args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/Validation_loss', tLoss, ep)
-
-            state_dict = muda.state_dict()
-            opt_dict = optimizer.state_dict()
-
-            if bestForFold < cResult:
-                ibr = 'X'
-                fName = '%s_best_rank.pth.tar' % ('GioGio')
-                fName = os.path.join(args.folderSnapshots, str(f),fName)
-                saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
-                bestForFold = cResult
-                if args.scoreFolder is not None:
-                    generateFeaturesFile(scores,labelsData[0],args.scoreFolder % (f))
-
-            if bestLossForFold > lossAvg:
-                ibl = 'X'
-                fName = '%s_best_loss.pth.tar' % ('GioGio')
-                fName = os.path.join(args.folderSnapshots, str(f),fName)
-                saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
-                bestLossForFold = lossAvg
-
-            if args.useTensorboard:
-                cc.add_scalar(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/accuracy', cResult, ep)
-
-            if bestResult < cResult:
-                bestResult = cResult
-                bestEpoch = ep
-
-            if ep % 10 == 0:
-                foldResults[-1].append(correct / total)
-                a = [i for i in range(max(labelsData[0])+1)]
-                confMat = plot_confusion_matrix(labelsData[0],labelsData[1],['Subject '+str(lnm) for lnm in a])
-                cc.add_figure(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/confMatrix', confMat,ep)
+            if args.scoreFolder is not None:
+                generateFeaturesFile(scores, labelsData[0], args.scoreFolder % (f))
+            print('Accuracy of the network on the %d validating images: %03.2f %% Validation Loss %.5f' % (total, 100 * cResult, tLoss))
 
 
-            print('[EPOCH %03d] Accuracy of the network on the %d validating images: %03.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss, ibl, ibr))
+        else:
+            for ep in range(args.epochs):
+                ibl = ibr = ' '
+                muda.train()
+                lossAcc = []
+                start_time = time.time()
+                for bIdx, (currBatch,currTargetBatch) in enumerate(train_loader):
+                    currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
+
+                    output, features = muda(currBatch)
+                    #output = muda(currBatch)
+
+                    loss = criterion(output, currTargetBatch)
+
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+
+                    lossAcc.append(loss.item())
+
+                finishTime = time.time() - start_time
+                fTrainignTime.append(finishTime)
+
+                if args.useTensorboard:
+                    cc.add_scalar(args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/loss', sum(lossAcc) / len(lossAcc), ep)
+
+                muda.eval()
+                total = 0
+                correct = 0
+                labelsData = [[],[]]
+                scores = []
+                loss_val = []
+                with torch.no_grad():
+                    for data in test_loader:
+                        images, labels = data
+                        outputs, fs = muda(images.to(device))
+                        #outputs = muda(images.to(device))
+                        scores = scores + [d.tolist() for d in outputs.data]
+                        _, predicted = torch.max(outputs.data, 1)
+
+                        loss = criterion(outputs, labels.to(device))
+                        loss_val.append(loss)
+
+                        total += labels.size(0)
+                        correct += (predicted == labels.to(device)).sum().item()
+                        labelsData[0] = labelsData[0] + np.array(labels.cpu()).tolist()
+                        labelsData[1] = labelsData[1] + np.array(predicted.cpu()).tolist()
+
+                cResult = correct / total
+                lossAvg = sum(lossAcc) / len(lossAcc)
+                tLoss = sum(loss_val) / len(loss_val)
+
+                if args.useTensorboard:
+                    cc.add_scalar(args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/Validation_loss', tLoss, ep)
+
+                state_dict = muda.state_dict()
+                opt_dict = optimizer.state_dict()
+
+                if bestForFold < cResult:
+                    ibr = 'X'
+                    fName = '%s_best_rank.pth.tar' % ('GioGio')
+                    fName = os.path.join(args.folderSnapshots, str(f),fName)
+                    saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+                    bestForFold = cResult
+                    if args.scoreFolder is not None:
+                        generateFeaturesFile(scores,labelsData[0],args.scoreFolder % (f))
+
+                if bestLossForFold > lossAvg:
+                    ibl = 'X'
+                    fName = '%s_best_loss.pth.tar' % ('GioGio')
+                    fName = os.path.join(args.folderSnapshots, str(f),fName)
+                    saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+                    bestLossForFold = lossAvg
+
+                if args.useTensorboard:
+                    cc.add_scalar(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/accuracy', cResult, ep)
+
+                if bestResult < cResult:
+                    bestResult = cResult
+                    bestEpoch = ep
+
+                if ep % 10 == 0:
+                    foldResults[-1].append(correct / total)
+                    a = [i for i in range(max(labelsData[0])+1)]
+                    confMat = plot_confusion_matrix(labelsData[0],labelsData[1],['Subject '+str(lnm) for lnm in a])
+                    cc.add_figure(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/confMatrix', confMat,ep)
+
+
+                print('[EPOCH %03d] Accuracy of the network on the %d validating images: %03.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss, ibl, ibr))
         trainTimeFolds.append(sum(fTrainignTime))
         print('Best result %2.6f Epoch %d' % (bestResult*100,bestEpoch))

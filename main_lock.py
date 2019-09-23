@@ -9,10 +9,13 @@ if __name__ == '__main__':
     parser = standartParametrization(parser)
     args = parser.parse_args()
 
+    if not os.path.exists(args.pathImages):
+        os.makedirs(args.pathImages)
+
     print('Iniciando...')
     print(args)
 
-    gallery = LockDB(args.pathdatabase)
+    gallery = LockDB(args.pathdatabase,imageType=args.typeoffile)
     gallery.feedTemplates()
 
     tdlbp = ThreeDLBP(8,14,[gallery])

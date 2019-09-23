@@ -9,7 +9,6 @@ from scipy.spatial.distance import euclidean
 from scipy.interpolate import interp2d
 from helper.functions import generateHistogram, generateHistogramUniform, generateArrayUniform, zFunc, fitPlane
 
-
 class ThreeDLBP(BiometricProcessing):
 
     def __init__(self, windowsize, binsize, database,generateImages=True,lowerBound=-50,upperBound=50):
@@ -325,10 +324,10 @@ class ThreeDLBP(BiometricProcessing):
             if (not points is None) and (not radius is None):
                 uniArray = generateArrayUniform(points)
                 desc,sh = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'],deformValue=parameters['deformValue'])
-                if len(sh) > 0:
-                    fname = template.rawRepr.split(os.path.sep)[-1]
-                    with open('subhistory/'+fname[:-3]+'txt','w') as shf:
-                        shf.write(' '.join(list(map(str,sh))))
+                #if len(sh) > 0:
+                #    fname = template.rawRepr.split(os.path.sep)[-1]
+                #    with open('subhistory/'+fname[:-3]+'txt','w') as shf:
+                #        shf.write(' '.join(list(map(str,sh))))
 
                 template.saveMasks('overflowMasks_pr','overflow')
                 template.saveMasks('underflowMasks_pr', 'underflow')

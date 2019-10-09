@@ -6,6 +6,7 @@ from textwrap import wrap
 from sklearn.metrics import confusion_matrix
 from email.message import EmailMessage
 from yaml import load
+from sklearn.neighbors import NearestNeighbors
 
 def readFeatureFile(fileName):
     returnFeatures = []
@@ -418,7 +419,7 @@ def generateData(pathFiles,extension='png',regularExpression=None):
         if f[-3:] == extension:
             returnDataImages.append(f)
             classNumber = f.split(os.path.sep)[-1]
-            if extension in ['png','npy','bmp']:
+            if extension in ['png','npy','bmp','jpg']:
                 cnum = classNumber.split('_')[0]
                 if cnum == 'depth':
                     classNumber = classNumber.split('_')[1]
@@ -555,7 +556,7 @@ def loadFoldFromFolders(pathFolders):
 
 def standartParametrization(parser):
     parser.add_argument('-p', '--pathdatabase', help='Path for the database', required=True)
-    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj','Matlab','VRML'],
+    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj','Matlab','VRML','NewDepthBMP'],
                         help='Type of files (Depth, NewDepth, Range, 3DObj, Matlab)', required=True)
     parser.add_argument('-op', '--operation', choices=['pp', 'fe', 'both'], default='both',
                         help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
@@ -665,15 +666,28 @@ def plotFeaturesCenterloss(features, labels, colors, dirname=None, epoch=None, c
         fig.savefig(save_name, bbox_inches='tight')
     return fig
 
-def loadFileFeatures(pathFile):
-    dataFile = None
-    with open(pathFile,'r') as f:
-        dataFile = f.readlines()
-
+def loadFileFeatures(pathFile,type='all'):
     returnFeatures = []
-    for d in dataFile:
-        d = d.split(' ')
-        returnFeatures.append([float(x) for x in d[:-2]] + [int(d[-2])] + [d[-1].strip()])
+    if type == 'all':
+        dataFile = None
+        with open(pathFile,'r') as f:
+            dataFile = f.readlines()
+
+        for d in dataFile:
+            d = d.split(' ')
+            returnFeatures.append([float(x) for x in d[:-2]] + [int(d[-2])] + [d[-1].strip()])
+
+    elif type == 'onlyFileType':
+        currPosition = 0
+        curLineSize = 0
+        fileSize = os.path.getsize(pathFile)
+        with open(pathFile,'r') as f:
+            while currPosition < fileSize:
+                f.seek(currPosition)
+                currLine = f.readline()
+                returnFeatures.append((currPosition,currLine.split(' ')[-1].strip()))
+                curLineSize = len(currLine)
+                currPosition += curLineSize
 
     return returnFeatures
 
@@ -688,3 +702,127 @@ def generateFeaturesFile(scores,labels,path):
 if __name__ == '__main__':
     print(generateArrayUniform())
 
+def best_fit_transform(A, B):
+    '''
+    Calculates the least-squares best-fit transform that maps corresponding points A to B in m spatial dimensions
+    Input:
+      A: Nxm numpy array of corresponding points
+      B: Nxm numpy array of corresponding points
+    Returns:
+      T: (m+1)x(m+1) homogeneous transformation matrix that maps A on to B
+      R: mxm rotation matrix
+      t: mx1 translation vector
+    '''
+
+    assert A.shape == B.shape
+
+    # get number of dimensions
+    m = A.shape[1]
+
+    # translate points to their centroids
+    centroid_A = np.mean(A, axis=0)
+    centroid_B = np.mean(B, axis=0)
+    AA = A - centroid_A
+    BB = B - centroid_B
+
+    # rotation matrix
+    H = np.dot(AA.T, BB)
+    U, S, Vt = np.linalg.svd(H)
+    R = np.dot(Vt.T, U.T)
+
+    # special reflection case
+    if np.linalg.det(R) < 0:
+       Vt[m-1,:] *= -1
+       R = np.dot(Vt.T, U.T)
+
+    # translation
+    t = centroid_B.T - np.dot(R,centroid_A.T)
+
+    # homogeneous transformation
+    T = np.identity(m+1)
+    T[:m, :m] = R
+    T[:m, m] = t
+
+    return T, R, t
+
+
+def nearest_neighbor(src, dst):
+    '''
+    Find the nearest (Euclidean) neighbor in dst for each point in src
+    Input:
+        src: Nxm array of points
+        dst: Nxm array of points
+    Output:
+        distances: Euclidean distances of the nearest neighbor
+        indices: dst indices of the nearest neighbor
+    '''
+
+    assert src.shape == dst.shape
+
+    neigh = NearestNeighbors(n_neighbors=1)
+    neigh.fit(dst)
+    distances, indices = neigh.kneighbors(src, return_distance=True)
+    return distances.ravel(), indices.ravel()
+
+
+def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.001):
+    '''
+    The Iterative Closest Point method: finds best-fit transform that maps points A on to points B
+    Input:
+        A: Nxm numpy array of source mD points
+        B: Nxm numpy array of destination mD point
+        init_pose: (m+1)x(m+1) homogeneous transformation
+        max_iterations: exit algorithm after max_iterations
+        tolerance: convergence criteria
+    Output:
+        T: final homogeneous transformation that maps A on to B
+        distances: Euclidean distances (errors) of the nearest neighbor
+        i: number of iterations to converge
+    '''
+
+    assert A.shape == B.shape
+
+    # get number of dimensions
+    m = A.shape[1]
+
+    # make points homogeneous, copy them to maintain the originals
+    src = np.ones((m+1,A.shape[0]))
+    dst = np.ones((m+1,B.shape[0]))
+    src[:m,:] = np.copy(A.T)
+    dst[:m,:] = np.copy(B.T)
+
+    # apply the initial pose estimation
+    if init_pose is not None:
+        src = np.dot(init_pose, src)
+
+    prev_error = 0
+
+    for i in range(max_iterations):
+        # find the nearest neighbors between the current source and destination points
+        distances, indices = nearest_neighbor(src[:m,:].T, dst[:m,:].T)
+
+        # compute the transformation between the current source and nearest destination points
+        T,_,_ = best_fit_transform(src[:m,:].T, dst[:m,indices].T)
+
+        # update the current source
+        src = np.dot(T, src)
+
+        # check error
+        mean_error = np.mean(distances)
+        if np.abs(prev_error - mean_error) < tolerance:
+            break
+        prev_error = mean_error
+
+    # calculate final transformation
+    T,_,_ = best_fit_transform(A, src[:m,:].T)
+
+    return T, distances, i
+
+def loadFeatureFromFile(index,filePath):
+    data = None
+    with open(filePath,'r') as fp:
+        fp.seek(index)
+        data = fp.readline().split(' ')[:-1]
+        data = np.array(list(map(float,data)))
+
+    return data

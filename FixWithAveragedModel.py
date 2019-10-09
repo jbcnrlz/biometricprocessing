@@ -1,6 +1,6 @@
 from baseClasses.PreProcessingStep import *
 from SymmetricFilling import *
-import math, numpy as np,matlab.engine, os
+import math, numpy as np, os
 from scipy.signal import savgol_filter
 from helper.functions import loadOBJ
 

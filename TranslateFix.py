@@ -1,5 +1,5 @@
 from baseClasses.PreProcessingStep import *
-import numpy as np, pcl, os
+import numpy as np, os
 
 class TranslateFix(PreProcessingStep):
 
@@ -20,12 +20,4 @@ class TranslateFix(PreProcessingStep):
         template.image = self.translateToOriginByNoseTip(template.image,template.faceMarks[self.nosetipindex])
         if (type(self.nosetipindex) is int) or (self.nosetipindex.isdigit()):
             template.faceMarks = self.translateToOriginByNoseTip(template.faceMarks,template.faceMarks[self.nosetipindex])
-
-        txtFilePath = template.rawRepr[0:-4] + '_segmented.pcd'
-        cloudp = pcl.PointCloud()
-        cloudp.from_array(np.array(template.image, dtype=np.float32))
-        if (os.path.exists(txtFilePath)):
-            os.remove(txtFilePath)
-        cloudp.to_file(txtFilePath.encode('utf-8'))
-
         return template

@@ -2,7 +2,7 @@ from PIL import Image as im
 from helper.functions import loadOBJ
 from models.models import *
 from models.engine_creation import *
-import pcl, numpy as np, sys, os
+import numpy as np, sys, os
 
 class Template:
 

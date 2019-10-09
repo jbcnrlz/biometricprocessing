@@ -116,7 +116,7 @@ if __name__ == '__main__':
             if args.fineTuneWeights is not None:
                 muda.load_state_dict(checkpoint['state_dict'])
                 nfeats = muda.softmax[-1].in_features
-                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses,bias=False)
 
         print(muda)
         muda.to(device)

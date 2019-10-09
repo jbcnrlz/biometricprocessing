@@ -70,6 +70,7 @@ if __name__ == '__main__':
 
         checkpoint = None
 
+    print(muda)
     muda.to(device)
     cc = SummaryWriter()
     bestForFold = bestForFoldTLoss = 500000
@@ -78,7 +79,6 @@ if __name__ == '__main__':
     for ep in range(args.epochs):
         ibl = ibr = ibtl = ' '
         muda.train()
-        scheduler.step()
         lossAcc = []
         totalImages = 0
         for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
         lossAvg = sum(lossAcc) / len(lossAcc)
         cc.add_scalar(args.tensorboardname+'/fullData/loss', lossAvg, ep)
-
+        scheduler.step()
         muda.eval()
         total = 0
         correct = 0

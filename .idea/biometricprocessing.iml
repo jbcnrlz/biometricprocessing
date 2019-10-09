@@ -73,12 +73,15 @@
       <excludeFolder url="file://$MODULE_DIR$/generated_images_eurecom_wfunc_055" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_eurecom_wfunc_077" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_eurecom_wfunc_3layers" />
+      <excludeFolder url="file://$MODULE_DIR$/generated_images_frgc" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_frgc_angle" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_frgc_depth" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_frgc_lbp_33" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_frgc_wfunc" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_frgc_wfunc_077" />
+      <excludeFolder url="file://$MODULE_DIR$/generated_images_frgc_wfunc_0777" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_frgc_wfunc_3layers" />
+      <excludeFolder url="file://$MODULE_DIR$/generated_images_iiitd" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_lbp_bosphorus" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_lbp_bosphorus_generated_sig" />
       <excludeFolder url="file://$MODULE_DIR$/generated_images_lbp_bosphorus_sigmoid" />
@@ -113,7 +116,7 @@
       <excludeFolder url="file://$MODULE_DIR$/underflowMasks_pr_eurecom" />
       <excludeFolder url="file://$MODULE_DIR$/vgg_original_weights" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="Python 3.6" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

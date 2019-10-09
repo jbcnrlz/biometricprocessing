@@ -210,8 +210,15 @@ class Jolyne(nn.Module):
 
         #self.savBlock = nn.Conv2d(in_channels,1792,stride=10,kernel_size=10)
 
+        self.block0 = nn.Sequential(
+            nn.Conv2d(in_channels, 128, kernel_size=8, stride=4),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True)
+        )
+
+
         self.block1 = nn.Sequential(
-            nn.Conv2d(in_channels, 256, kernel_size=8, stride=4),
+            nn.Conv2d(128, 256, kernel_size=4, stride=2),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True)
         )
@@ -225,12 +232,15 @@ class Jolyne(nn.Module):
             nn.BatchNorm2d(1024),
             nn.ReLU(inplace=True)
         )
-        self.maxpool = nn.MaxPool2d(kernel_size=10, stride=2, padding=2)
-        self.maxpoolb2 = nn.MaxPool2d(kernel_size=2, stride=1)
-        self.reducepool = nn.MaxPool2d(kernel_size=2, stride=2)
+        #self.maxpool = nn.MaxPool2d(kernel_size=10, stride=2, padding=2)
+        #self.maxpoolb2 = nn.MaxPool2d(kernel_size=2, stride=1)
+        #self.reducepool = nn.MaxPool2d(kernel_size=2, stride=2)
         '''
         self.features = nn.Sequential(
-            nn.Conv2d(in_channels, 256, kernel_size=8, stride=4),
+            nn.Conv2d(in_channels, 128, kernel_size=8, stride=4),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 256, kernel_size=4, stride=2),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.Conv2d(256, 512, kernel_size=4,stride=2),
@@ -245,42 +255,27 @@ class Jolyne(nn.Module):
         '''
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            MaxoutDynamic(int(1792 / 2),1792),
-            nn.Linear(1792, 1024),
+            nn.Linear(9216, 2048),
+
             nn.ReLU(inplace=True),
+            MaxoutDynamic(int(2048 / 2), 2048),
             nn.Dropout(),
-            MaxoutDynamic(512, 1024),
-            nn.Linear(1024, 1024),
+            nn.Linear(2048, 2048),
         )
 
         self.softmax = nn.Sequential(
             nn.ReLU(inplace=True),
-            MaxoutDynamic(512,1024),
-            nn.Linear(1024, classes)
+            MaxoutDynamic(int(2048 / 2), 2048),
+            nn.Linear(2048, classes, bias=False)
         )
 
     def forward(self, x):
-        #savWs = self.savBlock(x)
+        x = self.block0(x)
         x = self.block1(x)
-        mp1 = self.maxpool(x)
         x = self.block2(x)
-        mp2 = self.maxpoolb2(x)
         x = self.block3(x)
-        x = torch.cat((x,mp1,mp2),dim=1)
-        '''
-        fv = x.clone()[:,:,1,1]
-        savWs = self.savBlock.weight.data.mean(dim=1)
-        savWs = savWs.view(savWs.shape[0], savWs.shape[1] * savWs.shape[2], 1)
-        for i in range(fv.shape[0]):
-            t2 = x[i, :, :, :]
-            t2 = t2.view(x.shape[1],x.shape[2] * x.shape[3],1).transpose(1,2)
-            fv[i] = torch.bmm(t2,savWs).flatten()
-
-        fv = self.classifier(fv)
-        '''
-        #x = self.reducepool(x)
-        #x = x.view(x.size(0),-1)
-        x = torch.mean(x.view(x.size(0), x.size(1), -1), dim=2)
+        #x = self.features(x)
+        x = x.view(x.size(0),-1)
         x = self.classifier(x)
         return  self.softmax(x), x
 

@@ -11,7 +11,7 @@ class DatabaseProcessingUtility:
         pass
 
     def __init__(self,path):
-        self.extensionFile = {'Range': 'jpg', 'NewDepth': 'jpeg', 'Depth': 'obj', 'Matlab' : 'mat', 'VRML' : 'off', 'DepthPng' : 'png'}
+        self.extensionFile = {'Range': 'jpg', 'NewDepth': 'jpeg', 'Depth': 'obj', 'Matlab' : 'mat', 'VRML' : 'off', 'DepthPng' : 'png','NewDepthBMP' : 'bmp'}
         self.databasePath = path
         self.templates = []
         #self.modelDatabase = self.getModel()

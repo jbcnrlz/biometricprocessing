@@ -1,5 +1,4 @@
 from baseClasses.PreProcessingStep import *
-import math
 import numpy as np
 
 class FixPaperOcclusion(PreProcessingStep):

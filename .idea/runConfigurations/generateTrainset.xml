@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateTrainset.py" />
-    <option name="PARAMETERS" value="--pathBase=generated_images_lbp_frgc --outputPath=frgc_3dlbp_traindata --validationSize=600 --classQuantity=458" />
+    <option name="PARAMETERS" value="--pathBase=newdepth_frgc --outputPath=frgc_depth_traindata --validationSize=600 --classQuantity=458" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

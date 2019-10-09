@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateCMCData.py" />
-    <option name="PARAMETERS" value="--scoreFiles=scores/wfunc_055_giogio_eurecom_0.txt__scores/wfunc_055_giogio_eurecom_1.txt__scores/wfunc_055_giogio_eurecom_2.txt" />
+    <option name="PARAMETERS" value="--scoreFiles=scores/fusion_iiitd_0_wa_0.50_wb_0.50.txt__scores/fusion_iiitd_1_wa_0.50_wb_0.50.txt__scores/fusion_iiitd_2_wa_0.50_wb_0.50.txt__scores/fusion_iiitd_3_wa_0.50_wb_0.50.txt__scores/fusion_iiitd_4_wa_0.50_wb_0.50.txt" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

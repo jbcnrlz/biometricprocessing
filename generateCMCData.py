@@ -42,7 +42,7 @@ if __name__ == '__main__':
         else:
             print(ranksResults)
 
-    pyperclip.copy(finalCopy)
+    #pyperclip.copy(finalCopy)
     print(finalCopy)
 
 

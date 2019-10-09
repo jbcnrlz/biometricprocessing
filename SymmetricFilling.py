@@ -1,7 +1,8 @@
-import math, numpy as np, pcl, matlab.engine, os, uuid, scipy.ndimage as ndimage
+import uuid
 from baseClasses.PreProcessingStep import *
-from helper.functions import getArbitraryMatrix, outputObj, loadOBJ
+from helper.functions import getArbitraryMatrix, outputObj, loadOBJ, icp, nearest_neighbor
 from FRGCTemplate import *
+from IIITDTemplate import *
 
 class SymmetricFilling(PreProcessingStep):
 
@@ -48,13 +49,21 @@ class SymmetricFilling(PreProcessingStep):
         symfacecon = np.array(symmetricFilledFace,dtype=np.float32)
         return np.concatenate((face,symfacecon))
 
-    def smoothCloudPoint(self,cp):
-        facet = pcl.PointCloud()
-        facet.from_array(cp)
-        fil = facet.make_statistical_outlier_filter()
-        fil.set_mean_k (50)
-        fil.set_std_dev_mul_thresh (1.0)
-        return np.array(fil.filter(),dtype=np.float32)
+    def symmetricFilling(self,face,mirroredFace,pathCompl='',doICP=True):
+        if doICP:
+            t,d,i = icp(mirroredFace,face)
+
+        distances, indices = nearest_neighbor(face, mirroredFace)
+        symmetricFilledFace = []
+        for i, x in enumerate(indices):
+            if (distances[i] > self.symmThreshold):
+                    symmetricFilledFace.append(mirroredFace[x])
+        symfacecon = np.array(symmetricFilledFace,dtype=np.float32)
+        coordnates = np.ones((symfacecon.shape[0], 1))
+        sface = np.concatenate((symfacecon, coordnates), axis=1)
+        symfacecon = t.dot(sface.T).T
+        symfacecon = symfacecon[:,:3]
+        return np.concatenate((face,symfacecon))
 
     def outputSymmFillObj(self,template):
         subject = "%04d" % (template.itemClass)
@@ -69,8 +78,11 @@ class SymmetricFilling(PreProcessingStep):
         imageFromFace = np.array(template.image,dtype=np.float32)
         mirroredFace = self.mirrorFace(imageFromFace)
         folderPath = template.rawRepr.split(os.path.sep)
-        faceSimmetricalFused = self.symmetricFillingPCL(imageFromFace,mirroredFace,os.path.sep.join(folderPath[:-1]),doICP=(template.typeTemplate != 'OcclusionPaper'))
-        if not type(template) is FRGCTemplate:
+        faceSimmetricalFused = self.symmetricFilling(imageFromFace,mirroredFace,os.path.sep.join(folderPath[:-1]),doICP=(template.typeTemplate != 'OcclusionPaper'))
+        if type(template) is IIITDTemplate:
+            template.image = faceSimmetricalFused.tolist()
+            template.saveSymfilled()
+        elif not type(template) is FRGCTemplate:
             template.image = faceSimmetricalFused.tolist()
             self.outputSymmFillObj(template)
         else:

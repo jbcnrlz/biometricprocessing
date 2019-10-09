@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorch.py" />
-    <option name="PARAMETERS" value="-c=52 -e=200 --runOnTest=True -b=50 --loadFromFolder=eurecom_wfunc_022_folds_experiment_paper --tensorBoardName=GioGioEurecom --arc=giogio --scoreFolder=scores/wfunc_022_giogio_eurecom_%d.txt" />
+    <option name="PARAMETERS" value="-c=458 -e=100 --runOnTest=True -b=50 --loadFromFolder=iiitd_folds_experiment_paper_sigmoid --tensorBoardName=GioGioEurecom --arc=giogio --scoreFolder=scores/sigmoid_iiitd_%d.txt --fineTuneWeights=training_full_pytorch_sigmoid/giogio_best_loss.pth.tar --fineTuningClasses=106 --extension=png" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

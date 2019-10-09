@@ -4,6 +4,7 @@ from sklearn.preprocessing import normalize
 from FRGCTemplate import *
 from LFWTemplate import *
 from BosphorusTemplate import *
+from IIITDTemplate import *
 from baseClasses.BiometricProcessing import *
 from scipy.spatial.distance import euclidean
 from scipy.interpolate import interp2d
@@ -283,7 +284,7 @@ class ThreeDLBP(BiometricProcessing):
         return template
 
     def cleanupTemplate(self, template):
-        if (type(template) is not FRGCTemplate) and (type(template) is not BosphorusTemplate) and (len(template.image) > 0):
+        if (type(template) is not FRGCTemplate) and (type(template) is not BosphorusTemplate) and (type(template) is not IIITDTemplate) and (len(template.image) > 0):
             template.layersChar = np.zeros((len(template.image), len(template.image[0]), 4))
             template.image = im.fromarray(np.array(template.image, dtype=np.uint8))
             template.image = template.image.rotate(-180)

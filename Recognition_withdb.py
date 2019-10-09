@@ -90,7 +90,7 @@ if __name__ == '__main__':
                 gallery = np.concatenate((pca.transform(gallery[:,:-1]),gallery[:,-1].reshape((-1,1))),axis=1)
                 probe = np.concatenate((pca.transform(probe[:,:-1]),probe[:,-1].reshape((-1,1))),axis=1)
                 print('Final feature size = %d' % (len(gallery[0])))
-        print('Doing fold %d with %d fold subjects' % (fnum,len(e[1])))
+        print('Doing fold %d with %d fold subjects, gallery size %d' % (fnum,len(e[1]),len(gallery)))
         resultado = np.zeros(2)
         scoresCurrFold = np.zeros((len(probe), len(gallery)))
         labelsWhatever = np.zeros((len(probe), 1)).flatten()

@@ -2,7 +2,7 @@ from math import sqrt
 from baseClasses.Template import *
 from helper.functions import outputObj, loadOBJ
 from PIL import Image as im
-import os, numpy as np, random, pcl, math
+import os, numpy as np, random, math
 
 class LFWTemplate(Template):
 

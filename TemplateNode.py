@@ -1,5 +1,4 @@
 from EurecomTemplate import *
-import pcl
 import numpy as np
 
 class TemplateNode(EurecomTemplate):    

@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateImageFoldsWithPattern.py" />
-    <option name="PARAMETERS" value="-p=generated_images_eurecom_wfunc --folder=eurecom_wfunc_022_folds_experiment_paper --filePattern=folds_file.txt --extension=png" />
+    <option name="PARAMETERS" value="-p=generated_images_iiitd_sigmoid --folder=iiitd_folds_experiment_paper_sigmoid --filePattern=folds_files_iitd.txt --extension=png" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

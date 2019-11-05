@@ -5,7 +5,7 @@ def main(pathDirs,fileInclude=['01']):
     filesReturn = []
     dirs = getDirectoriesInPath(pathDirs)
     for d in dirs:
-        files = getFilesInPath(d)
+        files = getFilesInPath(os.path.join(pathDirs,d))
         for f in files:
             fileName = f.split(os.path.sep)[-1].split('_')[-2]
             if fileName in fileInclude:
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--filesInclude', help='Output path for the database', required=False, default='01')
     args = parser.parse_args()
 
-    files = main(args.pathdatabase,args.filesInclude.splt('_'))
+    files = main(args.pathdatabase,args.filesInclude.split('_'))
     if not os.path.exists(args.outputpathdatabase):
         os.makedirs(args.outputpathdatabase)
 

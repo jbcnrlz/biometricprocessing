@@ -22,6 +22,9 @@ class LockTemplate(Template):
         if (self.rawRepr[-3:]=='obj'):
             a, b, imageFace, y = loadOBJ(self.rawRepr)
             self.image = np.array(imageFace)
+        elif self.rawRepr[-3:] == 'bmp':
+            self.image = im.open(self.rawRepr).convert('L')
+            self.layersChar = np.zeros((self.image.size[0], self.image.size[1], 4))
         else:
             imageRange = cv2.imread(self.rawRepr, -1)
             self.image = np.array([[i,j,imageRange[i,j]] for i in range(imageRange.shape[0]) for j in range(imageRange.shape[1])])
@@ -30,6 +33,7 @@ class LockTemplate(Template):
     def loadImage(self):
         if self.rawRepr[-3:] == 'bmp':
             imageFace = im.open(self.rawRepr).convert('L')
+            self.layersChar = np.zeros((imageFace.size[0], imageFace.size[1], 4))
         elif self.rawRepr[-3:] == 'png':
             imageRange = cv2.imread(self.rawRepr,-1)
             imageFace = [[i,j,imageRange[i,j]] for i in range(imageRange.shape[0]) for j in range(imageRange.shape[1]) if imageRange[i,j]]
@@ -89,7 +93,7 @@ class LockTemplate(Template):
         fullPath = fullPath[-1].split('.')
         fullPath = fullPath[0]
         imageSaveDLP = im.fromarray(np.uint8(self.layersChar))
-        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath + '.png'
+        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + fullPath + '.png'
         imageSaveDLP.save(pathNImage)
 
     def saveHistogramImage(self, imageSave=None, folder='generated_images_wld'):
@@ -132,7 +136,7 @@ class LockTemplate(Template):
         fullPath = self.rawRepr.split(os.path.sep)
         fullPath = fullPath[-1].split('.')
         fullPath = fullPath[0]
-        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + self.folderTemplate + '_' + fullPath + '.' + filetype
+        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + fullPath + '.' + filetype
         return os.path.exists(pathNImage)
 
     def existsPreProcessingFile(self):

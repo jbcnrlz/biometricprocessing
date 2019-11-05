@@ -120,7 +120,8 @@ def loadSiameseDatasetFromFolder(pathFold,otherFolds,validationSize=0,transforms
         proDataLoader = SiameseFolds(valFiles[0],valFiles[1],transforms)
         return (galDataLoader,proDataLoader)
 
-def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None):
+
+def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None,size=(100,100)):
     files = getFilesInPath(pathFold)
     if validationSize == 'auto':
         validationSize = int(len(files) / 10)

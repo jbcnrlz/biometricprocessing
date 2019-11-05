@@ -1,20 +1,17 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="trainTestPytorch" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="fixLock" type="PythonConfigurationType" factoryName="Python">
     <module name="biometricprocessing" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
-    <envs>
-      <env name="PYTHONUNBUFFERED" value="1" />
-    </envs>
     <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -e=100 --runOnTest=True -b=50 --loadFromFolder=iiitd_folds_experiment_paper_sigmoid --tensorBoardName=GioGioEurecom --arc=giogio --scoreFolder=scores/sigmoid_iiitd_%d.txt --fineTuneWeights=training_full_pytorch_sigmoid/giogio_best_loss.pth.tar --fineTuningClasses=106 --extension=png" />
-    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/fixLock.py" />
+    <option name="PARAMETERS" value="--pathBase=$USER_HOME$/Documents/depth/lockdataset --pathTo=$USER_HOME$/Documents/depth/lockprepros" />
+    <option name="SHOW_COMMAND_LINE" value="true" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
     <option name="REDIRECT_INPUT" value="false" />

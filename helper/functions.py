@@ -8,34 +8,38 @@ from email.message import EmailMessage
 from yaml import load
 from sklearn.neighbors import NearestNeighbors
 
+
 def readFeatureFile(fileName):
     returnFeatures = []
     classes = []
     paths = []
-    with open(fileName,'r') as fn:
+    with open(fileName, 'r') as fn:
         for f in fn:
             lineSplit = f.split(' ')
             classes.append(int(lineSplit[-2]))
-            returnFeatures.append(list(map(float,lineSplit[:-2])))
+            returnFeatures.append(list(map(float, lineSplit[:-2])))
             paths.append(lineSplit[-1])
 
-    return (returnFeatures,classes,paths)
+    return (returnFeatures, classes, paths)
+
 
 def fitPlane(points):
     A = np.c_[points[:, 0], points[:, 1], np.ones(points.shape[0])]
     C, M, _, _ = scipy.linalg.lstsq(A, points[:, 2])  # coefficients
 
     # evaluate it on grid
-    Z = C[0] * points[:,0] + C[1] * points[:,1] + C[2]
+    Z = C[0] * points[:, 0] + C[1] * points[:, 1] + C[2]
     return C, Z
+
 
 def calculateQuiver(points):
     u = np.sin(np.pi * points[0]) * np.cos(np.pi * points[1]) * np.cos(np.pi * points[2])
     v = -np.cos(np.pi * points[0]) * np.sin(np.pi * points[1]) * np.cos(np.pi * points[2])
     w = (np.sqrt(2 / 3) * np.cos(np.pi * points[0]) * np.cos(np.pi * points[1]) * np.sin(np.pi * points[2]))
-    return u,v,w
+    return u, v, w
 
-def sendEmailMessage(subject,message):
+
+def sendEmailMessage(subject, message):
     config = None
     with open("emailConfig.yaml", 'r') as stream:
         config = load(stream)
@@ -47,19 +51,22 @@ def sendEmailMessage(subject,message):
     msg['To'] = config['to']
     msg.set_content(message)
 
-    server = smtplib.SMTP(config['server'],int(config['port']))
-    server.login(config['login'],config['password'])
+    server = smtplib.SMTP(config['server'], int(config['port']))
+    server.login(config['login'], config['password'])
     server.send_message(msg)
     server.quit()
 
-def zFunc(t,A,logValue=None):
+
+def zFunc(t, A, logValue=None):
     if logValue is None:
-        logValue = np.log(2 + np.sqrt(3))
+        logValue = np.log10(2 + np.sqrt(3))
 
-    return 1 / (1 + np.exp(-A * logValue * t ))
+    return 1 / (1 + np.exp(-A * logValue * t))
 
-def wFunc(t,A):
-    return (1 / (zFunc(1/A,A) - 0.5)) * (zFunc(t,A) - 0.5)
+
+def wFunc(t, A):
+    return (1 / (zFunc(1 / A, A) - 0.5)) * (zFunc(t, A) - 0.5)
+
 
 def plot_confusion_matrix(correct_labels, predict_labels, labels, normalize=False):
     '''
@@ -79,7 +86,7 @@ def plot_confusion_matrix(correct_labels, predict_labels, labels, normalize=Fals
     '''
     cm = confusion_matrix(correct_labels, predict_labels)
     if normalize:
-        cm = cm.astype('float')*10 / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype('float') * 10 / cm.sum(axis=1)[:, np.newaxis]
         cm = np.nan_to_num(cm, copy=True)
         cm = cm.astype('int')
 
@@ -97,20 +104,22 @@ def plot_confusion_matrix(correct_labels, predict_labels, labels, normalize=Fals
 
     ax.set_xlabel('Predicted', fontsize=7)
     ax.set_xticks(tick_marks)
-    c = ax.set_xticklabels(classes, fontsize=4, rotation=-90,  ha='center')
+    c = ax.set_xticklabels(classes, fontsize=4, rotation=-90, ha='center')
     ax.xaxis.set_label_position('bottom')
     ax.xaxis.tick_bottom()
 
     ax.set_ylabel('True Label', fontsize=7)
     ax.set_yticks(tick_marks)
-    ax.set_yticklabels(classes, fontsize=4, va ='center')
+    ax.set_yticklabels(classes, fontsize=4, va='center')
     ax.yaxis.set_label_position('left')
     ax.yaxis.tick_left()
 
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        ax.text(j, i, format(cm[i, j], 'd') if cm[i,j]!=0 else '.', horizontalalignment="center", fontsize=3, verticalalignment='center', color= "black")
+        ax.text(j, i, format(cm[i, j], 'd') if cm[i, j] != 0 else '.', horizontalalignment="center", fontsize=3,
+                verticalalignment='center', color="black")
     fig.set_tight_layout(True)
     return fig
+
 
 def bilinear_interpolation(x, y, points):
     '''Interpolate (x,y) from values associated with four points.
@@ -126,7 +135,7 @@ def bilinear_interpolation(x, y, points):
         165.0
     '''
     # See formula at:  http://en.wikipedia.org/wiki/Bilinear_interpolation
-    points = sorted(points)               # order points by x, then by y
+    points = sorted(points)  # order points by x, then by y
     (x1, y1, q11), (_x1, y2, q12), (x2, _y1, q21), (_x2, _y2, q22) = points
 
     if x1 != _x1 or x2 != _x2 or y1 != _y1 or y2 != _y2:
@@ -138,9 +147,10 @@ def bilinear_interpolation(x, y, points):
             q21 * (x - x1) * (y2 - y) +
             q12 * (x2 - x) * (y - y1) +
             q22 * (x - x1) * (y - y1)
-           ) / ((x2 - x1) * (y2 - y1) + 0.0)
+            ) / ((x2 - x1) * (y2 - y1) + 0.0)
 
-def generateHistogram(data,nbins,labels=False):
+
+def generateHistogram(data, nbins, labels=False):
     histogram = [0] * nbins
     if (len(data) <= 0):
         return histogram
@@ -158,7 +168,7 @@ def generateHistogram(data,nbins,labels=False):
                 histogram[bin] += 1
                 labelOrder.append(bin)
         start = stop
-        if (bin + 2) == nbins:            
+        if (bin + 2) == nbins:
             stop = 1.0
         else:
             stop = start + step
@@ -167,17 +177,19 @@ def generateHistogram(data,nbins,labels=False):
     else:
         return minmax(histogram)
 
-def scaleValues(a,b,data):
+
+def scaleValues(a, b, data):
     newData = np.zeros(data.shape)
-    diffValue = b-a
+    diffValue = b - a
     minValue = np.amin(data)
     maxValue = np.amax(data)
     divValue = maxValue - minValue
     for i in range(newData.shape[0]):
         for j in range(newData.shape[1]):
-            newData[i][j] = ((diffValue*(data[i][j] - minValue)) / divValue) + a
+            newData[i][j] = ((diffValue * (data[i][j] - minValue)) / divValue) + a
 
     return newData
+
 
 def minmax(itens):
     real_list = list(itens)
@@ -190,7 +202,8 @@ def minmax(itens):
         returnOrdered.append((i - minval) / divisor)
     return returnOrdered
 
-def loadOBJ(filename,outputFacet=False):
+
+def loadOBJ(filename, outputFacet=False):
     numVerts = 0
     verts = []
     norms = []
@@ -211,14 +224,15 @@ def loadOBJ(filename,outputFacet=False):
                 for f in vals[1:]:
                     w = f.split("/")
                     # OBJ Files are 1-indexed so we must subtract 1 below
-                    vertsOut.append(list(verts[int(w[0])-1]))
+                    vertsOut.append(list(verts[int(w[0]) - 1]))
                     idxsVerts[-1].append(int(w[0]) - 1)
-                    normsOut.append(list(norms[int(w[2])-1]))
+                    normsOut.append(list(norms[int(w[2]) - 1]))
                     numVerts += 1
     if outputFacet:
         return vertsOut, normsOut, verts, norms, idxsVerts
     else:
         return vertsOut, normsOut, verts, norms
+
 
 def isUniform(number):
     changes = 0
@@ -232,27 +246,29 @@ def isUniform(number):
             return False
     return True
 
+
 def generateArrayUniform(points):
-    maxNumberQntde = int(math.pow(2,points))
+    maxNumberQntde = int(math.pow(2, points))
     currBinNumer = ['0'] * (points)
     uniformNumbersDecimal = {}
     for i in range(maxNumberQntde):
         changesInNumber = 0
         for j in range(len(currBinNumer) - 1):
-            if (currBinNumer[j] != currBinNumer[j+1]):
+            if (currBinNumer[j] != currBinNumer[j + 1]):
                 changesInNumber += 1
 
-            if(changesInNumber > 2):
+            if (changesInNumber > 2):
                 break
 
         if (changesInNumber <= 2):
-            uniformNumbersDecimal[int(''.join(currBinNumer),2)] = 0
+            uniformNumbersDecimal[int(''.join(currBinNumer), 2)] = 0
 
-        currBinNumer = [ k for k in format(int(''.join(currBinNumer),2)+0b1,'#0'+str(points+2)+'b')[2:]]
+        currBinNumer = [k for k in format(int(''.join(currBinNumer), 2) + 0b1, '#0' + str(points + 2) + 'b')[2:]]
     uniformNumbersDecimal['n'] = 0
     return uniformNumbersDecimal
 
-def generateHistogramUniform(data,numberPoints,histogram=None):
+
+def generateHistogramUniform(data, numberPoints, histogram=None):
     if histogram is None:
         histogram = generateArrayUniform(numberPoints)
     else:
@@ -266,81 +282,87 @@ def generateHistogramUniform(data,numberPoints,histogram=None):
 
     lastArgument = histogram['n']
     del histogram['n']
-    returnOrderedHistogram = [histogram[key] for key in sorted(histogram.keys())]+[lastArgument]
+    returnOrderedHistogram = [histogram[key] for key in sorted(histogram.keys())] + [lastArgument]
     return minmax(returnOrderedHistogram)
 
-def outputObj(points,fileName):
-    f = open(fileName,'w')
+
+def outputObj(points, fileName):
+    f = open(fileName, 'w')
     f.write('g \n')
     for p in points:
         if (len(p) == 2):
-            f.write('v ' + ' '.join(map(str,p[0])) + '\n')
+            f.write('v ' + ' '.join(map(str, p[0])) + '\n')
         else:
-            f.write('v ' + ' '.join(map(str,p)) + '\n')
+            f.write('v ' + ' '.join(map(str, p)) + '\n')
     f.write('g 1 \n')
     f.close()
 
-def getArbitraryMatrix(axis,theta):
-    origin = np.array([0,0,0])
+
+def getArbitraryMatrix(axis, theta):
+    origin = np.array([0, 0, 0])
     if (axis != origin).any():
-        axis = axis/math.sqrt(np.dot(axis,axis))
-    a = math.cos(theta/2)
-    b,c,d = -axis*math.sin(theta/2)
-    return np.array([[a*a+b*b-c*c-d*d, 2*(b*c-a*d), 2*(b*d+a*c)],
-                     [2*(b*c+a*d), a*a+c*c-b*b-d*d, 2*(c*d-a*b)],
-                     [2*(b*d-a*c), 2*(c*d+a*b), a*a+d*d-b*b-c*c]])
+        axis = axis / math.sqrt(np.dot(axis, axis))
+    a = math.cos(theta / 2)
+    b, c, d = -axis * math.sin(theta / 2)
+    return np.array([[a * a + b * b - c * c - d * d, 2 * (b * c - a * d), 2 * (b * d + a * c)],
+                     [2 * (b * c + a * d), a * a + c * c - b * b - d * d, 2 * (c * d - a * b)],
+                     [2 * (b * d - a * c), 2 * (c * d + a * b), a * a + d * d - b * b - c * c]])
+
 
 def getRotationMatrix(theta):
-    return np.array([[math.cos(theta),-math.sin(theta)],[math.sin(theta),math.cos(theta)]])
+    return np.array([[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]])
 
-def getRotationMatrix3D(angle,matrix):
+
+def getRotationMatrix3D(angle, matrix):
     cosResult = np.cos(angle)
     sinResult = np.sin(angle)
     if matrix == 'x':
         return np.array([
-                    (1 ,0, 0, 0),
-                    (0 , cosResult, -sinResult, 0),                
-                    (0 , sinResult,  cosResult, 0),
-                    (0 ,         0,          0, 1)
-                ])
+            (1, 0, 0, 0),
+            (0, cosResult, -sinResult, 0),
+            (0, sinResult, cosResult, 0),
+            (0, 0, 0, 1)
+        ])
     elif matrix == 'y':
         return np.array([
-                    (cosResult , 0, sinResult, 0),
-                    (0         , 1, 0        , 0),
-                    (-sinResult, 0, cosResult, 0),
-                    (0         , 0,         0, 1)                
-                ])
+            (cosResult, 0, sinResult, 0),
+            (0, 1, 0, 0),
+            (-sinResult, 0, cosResult, 0),
+            (0, 0, 0, 1)
+        ])
     else:
         return np.array([
-                    (cosResult ,-sinResult, 0, 0),
-                    (sinResult , cosResult, 0, 0),                
-                    (0         ,         0, 1, 0),
-                    (0         ,         0, 0, 1)
-                ])
+            (cosResult, -sinResult, 0, 0),
+            (sinResult, cosResult, 0, 0),
+            (0, 0, 1, 0),
+            (0, 0, 0, 1)
+        ])
 
-def getRegionFromCenterPoint(center,radius,points):
+
+def getRegionFromCenterPoint(center, radius, points):
     centerPoint = points[center]
     sortedList = list(points)
     neighbors = []
-    for x in range(center-1,-1,-1):
-        if ((centerPoint != sortedList[x]).all() and (sortedList[x] != [0.0,0.0,0.0]).all()):
-            distancePoints = euclidean(np.array(centerPoint[0:2]),np.array(sortedList[x][0:2]))
+    for x in range(center - 1, -1, -1):
+        if ((centerPoint != sortedList[x]).all() and (sortedList[x] != [0.0, 0.0, 0.0]).all()):
+            distancePoints = euclidean(np.array(centerPoint[0:2]), np.array(sortedList[x][0:2]))
             if distancePoints <= radius:
                 neighbors.append(sortedList[x])
 
-    for x in range(center + 1,len(sortedList)):
-        if ((centerPoint != sortedList[x]).all() and (sortedList[x] != [0.0,0.0,0.0]).all()):
-            distancePoints = euclidean(np.array(centerPoint[0:2]),np.array(sortedList[x][0:2]))
+    for x in range(center + 1, len(sortedList)):
+        if ((centerPoint != sortedList[x]).all() and (sortedList[x] != [0.0, 0.0, 0.0]).all()):
+            distancePoints = euclidean(np.array(centerPoint[0:2]), np.array(sortedList[x][0:2]))
             if distancePoints <= radius:
                 neighbors.append(sortedList[x])
     return neighbors
 
-def findPointIndex(points,pointIndex):
-    smallerDistance = [100000000000000000000000000000000000000000000000000000000,0]
+
+def findPointIndex(points, pointIndex):
+    smallerDistance = [100000000000000000000000000000000000000000000000000000000, 0]
     for p in range(len(points)):
         accDist = 0
         for i in range(len(pointIndex)):
-            accDist += euclidean(points[p][i],pointIndex[i])
+            accDist += euclidean(points[p][i], pointIndex[i])
             '''
             if (points[p][0] == pointIndex[0] and points[p][1] == pointIndex[1] and points[p][2] == pointIndex[2]):
                 return p
@@ -351,22 +373,24 @@ def findPointIndex(points,pointIndex):
         if accDist < smallerDistance[0]:
             smallerDistance[0] = accDist
             smallerDistance[1] = p
-    
+
     return smallerDistance[1]
 
-def mergeArraysDiff(arrA,arrB):
+
+def mergeArraysDiff(arrA, arrB):
     for k in range(arrA.shape[2]):
         idxOuter = 0
         for i in range(arrA.shape[0]):
             for j in range(arrA.shape[1]):
                 if (idxOuter < len(arrB[k])):
-                    arrA[i,j,k] = arrB[k][idxOuter]
+                    arrA[i, j, k] = arrB[k][idxOuter]
 
                 idxOuter += 1
 
     return arrA
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -381,34 +405,38 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end='\r')
     # Print New Line on Complete
-    if iteration == total: 
+    if iteration == total:
         print()
+
 
 def getDirectoriesInPath(path):
     return [f for f in os.listdir(path) if not os.path.isfile(os.path.join(path, f))]
 
-def getFilesInPath(path,onlyFiles=True,fullPath=True):
+
+def getFilesInPath(path, onlyFiles=True, fullPath=True):
     if fullPath:
-        joinFunc = lambda p, fn : os.path.join(p,fn)
+        joinFunc = lambda p, fn: os.path.join(p, fn)
     else:
-        joinFunc = lambda p, fn : fn
+        joinFunc = lambda p, fn: fn
 
     if onlyFiles:
-        return [joinFunc(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        return [joinFunc(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     else:
-        return [joinFunc(path,f) for f in os.listdir(path)]
+        return [joinFunc(path, f) for f in os.listdir(path)]
+
 
 def getFilesFromFeatures(path):
     returnData = []
-    with open(path,'r') as fr:
+    with open(path, 'r') as fr:
         for f in fr:
             returnData.append(f.split(' ')[-1].strip())
 
     return returnData
 
-def generateData(pathFiles,extension='png',regularExpression=None):
+
+def generateData(pathFiles, extension='png', regularExpression=None):
     returnDataImages = []
     returnDataClass = []
     filesOnPath = getFilesInPath(pathFiles)
@@ -419,7 +447,7 @@ def generateData(pathFiles,extension='png',regularExpression=None):
         if f[-3:] == extension:
             returnDataImages.append(f)
             classNumber = f.split(os.path.sep)[-1]
-            if extension in ['png','npy','bmp','jpg']:
+            if extension in ['png', 'npy', 'bmp', 'jpg']:
                 cnum = classNumber.split('_')[0]
                 if cnum == 'depth':
                     classNumber = classNumber.split('_')[1]
@@ -431,10 +459,10 @@ def generateData(pathFiles,extension='png',regularExpression=None):
                 classNumber = classNumber.split('_')[1]
             returnDataClass.append(int(''.join([lt for lt in classNumber.split('_')[0] if not lt.isalpha()])))
 
-
     return returnDataImages, returnDataClass
 
-def generateExperimentDataPattern(imageData,classesData,patternProbe,patternGallery):
+
+def generateExperimentDataPattern(imageData, classesData, patternProbe, patternGallery):
     foldProbe = []
     foldProbeClasses = []
     foldGallery = []
@@ -455,18 +483,19 @@ def generateExperimentDataPattern(imageData,classesData,patternProbe,patternGall
                 foldGalleryClasses.append(classesData[i])
             else:
                 for pg in patternGallery:
-                    if re.match(pg,fileName):
+                    if re.match(pg, fileName):
                         foldGallery.append(imageData[i])
                         foldGalleryClasses.append(classesData[i])
 
     return foldGallery, foldGalleryClasses, foldProbe, foldProbeClasses
 
-def generateFoldsOfData(fq,imageData,classesData,stop=None):
+
+def generateFoldsOfData(fq, imageData, classesData, stop=None):
     foldSize = int(len(imageData) / fq)
     foldResult = []
     alreadyWentFold = []
     for foldNumber in range(fq):
-        print('Fazendo fold ' + str(foldNumber+1))
+        print('Fazendo fold ' + str(foldNumber + 1))
         foldChoices = random.sample([i for i in range(len(imageData)) if i not in alreadyWentFold], foldSize)
         alreadyWentFold = alreadyWentFold + foldChoices
         foldProbe = []
@@ -488,16 +517,17 @@ def generateFoldsOfData(fq,imageData,classesData,stop=None):
 
     return foldResult
 
-def generateImageData(paths,resize=None,silent=False,loadMasks=None,prefix=True,averageDiv=None):
+
+def generateImageData(paths, resize=None, silent=False, loadMasks=None, prefix=True, averageDiv=None):
     if (loadMasks is not None) and (resize is not None):
         raise ValueError('You cannot put resize and load masks togheter')
     returningPaths = []
     for p in paths:
         if not silent:
-            print('Loading image '+p)
+            print('Loading image ' + p)
         ni = im.open(p).convert('RGB')
         if not resize is None:
-            ni = ni.resize(resize,im.ANTIALIAS)
+            ni = ni.resize(resize, im.ANTIALIAS)
 
         ni = np.array(ni)
 
@@ -505,8 +535,8 @@ def generateImageData(paths,resize=None,silent=False,loadMasks=None,prefix=True,
             ni = ni / averageDiv
 
         if loadMasks is not None:
-            newImage = np.zeros((100,100,6))
-            newImage[:,:,0:4] = ni
+            newImage = np.zeros((100, 100, 6))
+            newImage[:, :, 0:4] = ni
             for idx, l in enumerate(loadMasks):
                 fileName = p.split(os.path.sep)[-1]
                 if prefix:
@@ -517,30 +547,31 @@ def generateImageData(paths,resize=None,silent=False,loadMasks=None,prefix=True,
                 else:
                     fileName = fileName[:-4] + '.bmp'
                 if not silent:
-                    print('Loading Mask ' + os.path.join(l,fileName))
-                mask = im.open(os.path.join(l,fileName)).convert('L')
+                    print('Loading Mask ' + os.path.join(l, fileName))
+                mask = im.open(os.path.join(l, fileName)).convert('L')
                 mask = np.array(mask)
-                newImage[:,:,4+idx] = mask
+                newImage[:, :, 4 + idx] = mask
 
             returningPaths.append(newImage)
         else:
             returningPaths.append(ni)
     return np.array(returningPaths)
 
+
 def loadFoldFromFolders(pathFolders):
     inFolder = None
     try:
-        inFolder = list(map(int,getDirectoriesInPath(pathFolders)))
+        inFolder = list(map(int, getDirectoriesInPath(pathFolders)))
         inFolder.sort()
         inFolder = list(map(str, inFolder))
     except:
         inFolder = getDirectoriesInPath(pathFolders)
     returnFolders = []
     for inF in inFolder:
-        returnFolders.append([[],[],[],[]])
-        types = getDirectoriesInPath(os.path.join(pathFolders,inF))
+        returnFolders.append([[], [], [], []])
+        types = getDirectoriesInPath(os.path.join(pathFolders, inF))
         for t in types:
-            filesForFold = getFilesInPath(os.path.join(pathFolders,inF,t))
+            filesForFold = getFilesInPath(os.path.join(pathFolders, inF, t))
             for ffolder in filesForFold:
                 currFile = ffolder.split(os.path.sep)[-1]
                 curreFileName = currFile.split('_')[1] if currFile.split('_')[0] == 'depth' else currFile.split('_')[0]
@@ -554,9 +585,11 @@ def loadFoldFromFolders(pathFolders):
 
     return returnFolders
 
+
 def standartParametrization(parser):
     parser.add_argument('-p', '--pathdatabase', help='Path for the database', required=True)
-    parser.add_argument('-t', '--typeoffile', choices=['Depth', 'NewDepth', 'Range', '3DObj','Matlab','VRML','NewDepthBMP'],
+    parser.add_argument('-t', '--typeoffile',
+                        choices=['Depth', 'NewDepth', 'Range', '3DObj', 'Matlab', 'VRML', 'NewDepthBMP'],
                         help='Type of files (Depth, NewDepth, Range, 3DObj, Matlab)', required=True)
     parser.add_argument('-op', '--operation', choices=['pp', 'fe', 'both'], default='both',
                         help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)
@@ -580,17 +613,20 @@ def standartParametrization(parser):
                         required=False)
     parser.add_argument('--axis', default='x_y', help='Load symmetric filling images', required=False)
     parser.add_argument('--typeMeasure', default='Normal', help='Type of measurement', required=False)
-    parser.add_argument('--quantityProcesses', default=10, help='Maximum number of processes', required=False)
+    parser.add_argument('--quantityProcesses', default=10, help='Maximum number of processes', required=False, type=int)
     parser.add_argument('--generateMasks', default=False, help='Generate the over and underflow masks', required=False,
                         type=bool)
     parser.add_argument('--force', default=False, help='Utilize this to force the generation of new images',
                         required=False, type=bool)
     parser.add_argument('--loadImages', default=None, help='Images to load', required=False)
     parser.add_argument('--firstLayer', default='lbp', help='Images to load', required=False)
-    parser.add_argument('--deformValue', default=0.222, help='Value to deform the function (only utilized when there is wFunction type)', required=False, type=float)
+    parser.add_argument('--deformValue', default=0.222,
+                        help='Value to deform the function (only utilized when there is wFunction type)',
+                        required=False, type=float)
     return parser
 
-def generateListLayers(model,options):
+
+def generateListLayers(model, options):
     returnValue = []
     for c in model.named_children():
         parametersDict = {'params': c[1].parameters()}
@@ -600,9 +636,10 @@ def generateListLayers(model,options):
             returnValue.append(parametersDict)
     return returnValue
 
+
 def loadPatternFromFiles(fileWithPattern):
     filesPattern = []
-    with open(fileWithPattern,'r') as fwp:
+    with open(fileWithPattern, 'r') as fwp:
         for cLine in fwp:
             cLine = cLine.strip()
             if cLine == 'fold':
@@ -612,15 +649,17 @@ def loadPatternFromFiles(fileWithPattern):
 
     return filesPattern
 
-def saveStatePytorch(fName,stateDict,optmizerStateDict,epoch,arch='VGG'):
+
+def saveStatePytorch(fName, stateDict, optmizerStateDict, epoch, arch='VGG'):
     torch.save({
         'epoch': epoch,
         'arch': arch,
-        'state_dict':stateDict,
+        'state_dict': stateDict,
         'optimizer': optmizerStateDict,
     }, fName)
 
-def shortenNetwork(network,desiredLayers,batchNorm=False):
+
+def shortenNetwork(network, desiredLayers, batchNorm=False):
     if batchNorm:
         newNetork = []
         for i in desiredLayers:
@@ -632,17 +671,19 @@ def shortenNetwork(network,desiredLayers,batchNorm=False):
     else:
         return [network[i] for i in desiredLayers]
 
+
 def generateRandomColors(number):
     alreadyWent = []
     r = lambda: random.randint(0, 255)
     for i in range(number):
-        color = '#%02X%02X%02X' % (r(),r(),r())
+        color = '#%02X%02X%02X' % (r(), r(), r())
         while color in alreadyWent:
-            color = '#%02X%02X%02X' % (r(),r(),r())
+            color = '#%02X%02X%02X' % (r(), r(), r())
 
         alreadyWent.append(color)
 
     return alreadyWent
+
 
 def plotFeaturesCenterloss(features, labels, colors, dirname=None, epoch=None, classNumber=10):
     """Plot features on 2D plane.
@@ -655,8 +696,8 @@ def plotFeaturesCenterloss(features, labels, colors, dirname=None, epoch=None, c
     ax = fig.add_subplot(1, 1, 1)
     for label_idx in range(classNumber):
         ax.scatter(
-            features[labels==label_idx, 0],
-            features[labels==label_idx, 1],
+            features[labels == label_idx, 0],
+            features[labels == label_idx, 1],
             s=1,
             c=colors[label_idx]
         )
@@ -666,11 +707,12 @@ def plotFeaturesCenterloss(features, labels, colors, dirname=None, epoch=None, c
         fig.savefig(save_name, bbox_inches='tight')
     return fig
 
-def loadFileFeatures(pathFile,type='all'):
+
+def loadFileFeatures(pathFile, type='all'):
     returnFeatures = []
     if type == 'all':
         dataFile = None
-        with open(pathFile,'r') as f:
+        with open(pathFile, 'r') as f:
             dataFile = f.readlines()
 
         for d in dataFile:
@@ -681,26 +723,29 @@ def loadFileFeatures(pathFile,type='all'):
         currPosition = 0
         curLineSize = 0
         fileSize = os.path.getsize(pathFile)
-        with open(pathFile,'r') as f:
+        with open(pathFile, 'r') as f:
             while currPosition < fileSize:
                 f.seek(currPosition)
                 currLine = f.readline()
-                returnFeatures.append((currPosition,currLine.split(' ')[-1].strip()))
+                returnFeatures.append((currPosition, currLine.split(' ')[-1].strip()))
                 curLineSize = len(currLine)
                 currPosition += curLineSize
 
     return returnFeatures
 
-def generateFeaturesFile(scores,labels,path):
+
+def generateFeaturesFile(scores, labels, path):
     if os.path.exists(path):
         os.remove(path)
 
-    with open(path,'w') as ps:
+    with open(path, 'w') as ps:
         for idx, s in enumerate(scores):
-            ps.write(' '.join(list(map(str,s))) + ' ' + str(labels[idx]) + '\n')
+            ps.write(' '.join(list(map(str, s))) + ' ' + str(labels[idx]) + '\n')
+
 
 if __name__ == '__main__':
     print(generateArrayUniform())
+
 
 def best_fit_transform(A, B):
     '''
@@ -732,14 +777,14 @@ def best_fit_transform(A, B):
 
     # special reflection case
     if np.linalg.det(R) < 0:
-       Vt[m-1,:] *= -1
-       R = np.dot(Vt.T, U.T)
+        Vt[m - 1, :] *= -1
+        R = np.dot(Vt.T, U.T)
 
     # translation
-    t = centroid_B.T - np.dot(R,centroid_A.T)
+    t = centroid_B.T - np.dot(R, centroid_A.T)
 
     # homogeneous transformation
-    T = np.identity(m+1)
+    T = np.identity(m + 1)
     T[:m, :m] = R
     T[:m, m] = t
 
@@ -786,10 +831,10 @@ def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.001):
     m = A.shape[1]
 
     # make points homogeneous, copy them to maintain the originals
-    src = np.ones((m+1,A.shape[0]))
-    dst = np.ones((m+1,B.shape[0]))
-    src[:m,:] = np.copy(A.T)
-    dst[:m,:] = np.copy(B.T)
+    src = np.ones((m + 1, A.shape[0]))
+    dst = np.ones((m + 1, B.shape[0]))
+    src[:m, :] = np.copy(A.T)
+    dst[:m, :] = np.copy(B.T)
 
     # apply the initial pose estimation
     if init_pose is not None:
@@ -799,10 +844,10 @@ def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.001):
 
     for i in range(max_iterations):
         # find the nearest neighbors between the current source and destination points
-        distances, indices = nearest_neighbor(src[:m,:].T, dst[:m,:].T)
+        distances, indices = nearest_neighbor(src[:m, :].T, dst[:m, :].T)
 
         # compute the transformation between the current source and nearest destination points
-        T,_,_ = best_fit_transform(src[:m,:].T, dst[:m,indices].T)
+        T, _, _ = best_fit_transform(src[:m, :].T, dst[:m, indices].T)
 
         # update the current source
         src = np.dot(T, src)
@@ -814,15 +859,16 @@ def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.001):
         prev_error = mean_error
 
     # calculate final transformation
-    T,_,_ = best_fit_transform(A, src[:m,:].T)
+    T, _, _ = best_fit_transform(A, src[:m, :].T)
 
     return T, distances, i
 
-def loadFeatureFromFile(index,filePath):
+
+def loadFeatureFromFile(index, filePath):
     data = None
-    with open(filePath,'r') as fp:
+    with open(filePath, 'r') as fp:
         fp.seek(index)
         data = fp.readline().split(' ')[:-1]
-        data = np.array(list(map(float,data)))
+        data = np.array(list(map(float, data)))
 
     return data

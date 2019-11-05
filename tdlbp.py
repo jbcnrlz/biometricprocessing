@@ -8,7 +8,7 @@ from IIITDTemplate import *
 from baseClasses.BiometricProcessing import *
 from scipy.spatial.distance import euclidean
 from scipy.interpolate import interp2d
-from helper.functions import generateHistogram, generateHistogramUniform, generateArrayUniform, zFunc, fitPlane
+from helper.functions import generateHistogram, generateHistogramUniform, generateArrayUniform, zFunc, fitPlane, bilinear_interpolation
 
 
 class ThreeDLBP(BiometricProcessing):
@@ -35,6 +35,29 @@ class ThreeDLBP(BiometricProcessing):
         self.histogramBins = np.histogram(0, bins=8, range=[0, 1])[1]
 
     def generateCode(self, image, center, typeOp='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp'):
+        region = image - image[center[0], center[1]]
+        flattenCenter = (center[0] * region.shape[0]) + center[1]
+        fl = region >= 0
+        layers = [list(map(str, map(int, fl))), [], [], []]
+
+        if typeOp == 'Normal':
+            region[region > 7] = 7
+            region[region < -7] = -7
+            region = np.concatenate((region.flatten()[:flattenCenter], region.flatten()[flattenCenter + 1:]))
+
+        else:
+            region = expit(region)
+            region = [np.argwhere(np.histogram(r, bins=8, range=[0, 1])[0] == 1)[0][0] for r in region]
+
+        nums = list(map('{0:03b}'.format, map(abs, region)))
+        for n in nums:
+            layers[1].append(n[0])
+            layers[2].append(n[1])
+            layers[3].append(n[2])
+
+        return [int(''.join(l), 2) for l in layers]
+
+        '''
         idxs = [
             (center[0] - 1, center[1] - 1),
             (center[0] - 1, center[1]),
@@ -83,7 +106,7 @@ class ThreeDLBP(BiometricProcessing):
             layers[0] = np.histogram(angle, bins=255, range=[0, 2*np.pi])[0]
 
         return layers
-
+        '''
     '''
     Gera indices quando usando P e R no 3DLBP ao inves da vizinhanca fixa de 3x3
     '''
@@ -123,7 +146,51 @@ class ThreeDLBP(BiometricProcessing):
         cosAngle = np.dot(finalNormal,np.array([0,0,1]))
         return np.degrees(np.arccos(cosAngle))
 
-    def generateCodePR(self, image, center, xPositions, yPositions, type='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp',deformValue=0.222,subHistory=None):
+    def generateCodePR(self, image, center, xPositions, yPositions, type='Normal',deformValue=0.222):
+        '''
+        indexes = np.array([list(p) for p in zip(xPositions + center[0], yPositions + center[1])])
+        indexes = np.concatenate((indexes[-3:], indexes[0:-3]))
+        #imageDataBil = np.array([[j,i,image[j][i]] for j in range(image.shape[1]) for i in range(image.shape[0])])
+        #nFunc = Rbf(imageDataBil[:, 0], imageDataBil[:, 1], imageDataBil[:, 2])
+
+        points = np.zeros((len(indexes), 1))
+        for idx, p in enumerate(indexes):
+            if (p[0].is_integer() and p[1].is_integer()):
+                points[idx] = image[int(p[0])][int(p[1])]
+            else:
+                xidxs = [math.floor(p[0]), math.ceil(p[0])]
+                yidxs = [math.floor(p[1]), math.ceil(p[1])]
+
+                imageDataBil = np.array([
+                    (xidxs[0], yidxs[0], image[xidxs[0]][yidxs[0]]),
+                    (xidxs[0], yidxs[1], image[xidxs[0]][yidxs[1]]),
+                    (xidxs[1], yidxs[0], image[xidxs[1]][yidxs[0]]),
+                    (xidxs[1], yidxs[1], image[xidxs[1]][yidxs[1]])
+                ])
+
+                points[idx] = bilinear_interpolation(p[0],p[1],imageDataBil.tolist())
+
+        points = np.round(points - image[center[0]][center[1]])
+        if type == 'Normal:':
+            points[points > 7] = 7
+            points[points < -7] = -7
+        elif type == 'wFunction':
+            points = np.array([np.argwhere(np.histogram(zFunc(r,deformValue), bins=8, range=[0, 1])[0] == 1)[0][0] for r in points])
+            points[points < 0] = 0
+            points[points > 1] = 1
+
+        fl = points >= 0
+
+        layers = [list(map(str, map(int, fl))), [], [], []]
+        nums = list(map('{0:03b}'.format, map(abs, points.astype(np.int8).flatten())))
+        for n in nums:
+            layers[1].append(n[0])
+            layers[2].append(n[1])
+            layers[3].append(n[2])
+
+        return [int(''.join(l), 2) for l in layers]
+        '''
+
         image = np.ascontiguousarray(image, dtype=np.double)
         xPositions = xPositions + center[0]
         yPositions = yPositions + center[1]
@@ -151,39 +218,11 @@ class ThreeDLBP(BiometricProcessing):
                 points.append([i[0], i[1], image[int(i[0])][int(i[1])]])
                 subraction = image[int(i[0])][int(i[1])] - image[center[0]][center[1]]
 
-            if subHistory is not None:
-                subHistory.append(subraction)
-
             if type == 'Normal':
 
                 if subraction < -7:
-                    if truncMaskMinus is not None and i[0].is_integer() and i[1].is_integer():
-                        truncMaskMinus[int(i[0])][int(i[1])] += abs(subraction + 7)
-                    elif truncMaskMinus is not None:
-                        xidxs = [math.floor(i[0]), math.ceil(i[0])]
-                        yidxs = [math.floor(i[1]), math.ceil(i[1])]
-                        distancesEachItem = [euclidean([xidxs[interpX], yidxs[interpY]],i) for interpX in range(2) for interpY in range(2)]
-                        distancesEachItem = normalize(np.array(distancesEachItem)[:,np.newaxis], axis=0).ravel()
-                        place=0
-                        for interpX in range(2):
-                            for interpY in range(2):
-                                truncMaskMinus[xidxs[interpX]][yidxs[interpY]] += abs(subraction + 7) * distancesEachItem[place]
-                                place += 1
-
                     subraction = -7
                 elif subraction > 7:
-                    if truncMaskPlus is not None and i[0].is_integer() and i[1].is_integer():
-                        truncMaskPlus[int(i[0])][int(i[1])] += abs(subraction - 7)
-                    elif truncMaskPlus is not None:
-                        xidxs = [math.floor(i[0]), math.ceil(i[0])]
-                        yidxs = [math.floor(i[1]), math.ceil(i[1])]
-                        distancesEachItem = [euclidean([xidxs[interpX], yidxs[interpY]],i) for interpX in range(2) for interpY in range(2)]
-                        distancesEachItem = normalize(np.array(distancesEachItem)[:,np.newaxis], axis=0).ravel()
-                        place=0
-                        for interpX in range(2):
-                            for interpY in range(2):
-                                truncMaskPlus[xidxs[interpX]][yidxs[interpY]] += abs(subraction - 7) * distancesEachItem[place]
-                                place += 1
                     subraction = 7
             elif type == 'wFunction':
                 signSub = np.sign(subraction) if subraction != 0 else 1.0
@@ -201,28 +240,19 @@ class ThreeDLBP(BiometricProcessing):
                 subraction = np.histogram(expit(subraction), bins=8, range=[0, 1])[0]
                 subraction = np.argwhere(subraction == 1)[0][0] * signSub
 
-            if firstLayer != 'angle':
-                layers[0].append(str(int(subraction >= 0)))
+            layers[0].append(str(int(subraction >= 0)))
 
-                bin = '{0:03b}'.format(abs(int(round(subraction))))
-                layers[1].append(bin[0])
-                layers[2].append(bin[1])
-                layers[3].append(bin[2])
-            else:
-                bin = '{0:03b}'.format(abs(int(round(subraction))))
-                layers[0].append(bin[0])
-                layers[1].append(bin[1])
-                layers[2].append(bin[2])
+            bin = '{0:03b}'.format(abs(int(round(subraction))))
+            layers[1].append(bin[0])
+            layers[2].append(bin[1])
+            layers[3].append(bin[2])
 
         for l in range(len(layers)):
             if len(layers[l]) > 0:
                 layers[l] = int(''.join(layers[l]), 2)
 
-        if firstLayer == 'angle':
-            angle = round(self.getAnglePlaneAxis(np.array(points + [[center[0],center[1],image[center[0]][center[1]]]])))
-            layers[3] = angle
-
         return layers
+
 
     def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None,masks=False,firstLayer='lbp',deformValue=0.222):
         returnValue = [[], [], [], []]
@@ -247,10 +277,7 @@ class ThreeDLBP(BiometricProcessing):
                     else:
                         resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2],firstLayer=firstLayer)
                 elif typeLBP == 'pr':
-                    if template.underFlow is None or template.overFlow is None:
-                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement,firstLayer=firstLayer,deformValue=deformValue,subHistory=subhistory)
-                    else:
-                        resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]), xPositions,yPositions, typeMeasurement,template.overFlow[i - r:i + (r + 1), j - r:j + (r + 1)],template.underFlow[i - r:i + (r + 1), j - r:j + (r + 1)],firstLayer=firstLayer,deformValue=deformValue)
+                    resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement)
 
                 if not template is None:
                     template.layersChar[i][j] = resultCode
@@ -328,9 +355,10 @@ class ThreeDLBP(BiometricProcessing):
                 desc,sh = self.generateImageDescriptor(imgCroped, p=points, r=radius,typeLBP='pr',template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'],deformValue=parameters['deformValue'])
                 if len(sh) > 0:
                     fname = template.rawRepr.split(os.path.sep)[-1]
+                    '''
                     with open('subhistory/'+fname[:-3]+'txt','w') as shf:
                         shf.write(' '.join(list(map(str,sh))))
-
+                    '''
                 template.saveMasks('overflowMasks_pr','overflow')
                 template.saveMasks('underflowMasks_pr', 'underflow')
             else:

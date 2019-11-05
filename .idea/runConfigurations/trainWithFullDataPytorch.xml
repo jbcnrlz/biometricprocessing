@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainWithFullDataPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -p=frgc_depth_traindata -e=200 -b=50 --output=training_jolyne_depth --extension=bmp --network=jolyne --tensorboardname=jolyne_frgc_3dlbp" />
+    <option name="PARAMETERS" value="-c=458 -p=tdlbp_sigmoid_b10_training -e=200 -b=50 --output=training_jolyne_sigmoid_10_0222 --extension=png --network=jolyne --tensorboardname=jolyne_frgc_3dlbp" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

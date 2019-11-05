@@ -1,6 +1,10 @@
 from PyTorchLayers.maxout_dynamic import *
 from PyTorchLayers.octoconv import *
 from PyTorchLayers.CorrelationImages import *
+import math
+
+def calculateMaxPoolingSize(inputsize,padding,dilatation,kernel,stride):
+    return math.floor(((inputsize + (2 * padding) - dilatation * (kernel - 1) - 1) / stride)+1)
 
 class FusingNetwork(nn.Module):
     def __init__(self,featureSize,classes):
@@ -208,14 +212,12 @@ class Jolyne(nn.Module):
         self.imageInput = imageInput
         super(Jolyne,self).__init__()
 
-        #self.savBlock = nn.Conv2d(in_channels,1792,stride=10,kernel_size=10)
-
+        '''
         self.block0 = nn.Sequential(
             nn.Conv2d(in_channels, 128, kernel_size=8, stride=4),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True)
         )
-
 
         self.block1 = nn.Sequential(
             nn.Conv2d(128, 256, kernel_size=4, stride=2),
@@ -228,15 +230,24 @@ class Jolyne(nn.Module):
             nn.ReLU(inplace=True)
         )
         self.block3 = nn.Sequential(
-            nn.Conv2d(512, 1024, kernel_size=2, stride=1),
-            nn.BatchNorm2d(1024),
+            nn.Conv2d(896+in_channels, (896+in_channels)*2, kernel_size=1, stride=1),
+            nn.BatchNorm2d((896+in_channels)*2),
             nn.ReLU(inplace=True)
         )
-        #self.maxpool = nn.MaxPool2d(kernel_size=10, stride=2, padding=2)
-        #self.maxpoolb2 = nn.MaxPool2d(kernel_size=2, stride=1)
-        #self.reducepool = nn.MaxPool2d(kernel_size=2, stride=2)
-        '''
+        self.maxpool = nn.MaxPool2d(kernel_size=10, stride=5, padding=2)
+        self.maxpoolb2 = nn.MaxPool2d(kernel_size=4, stride=2)
+        self.maxInput = nn.MaxPool2d(kernel_size=25, stride=20)        
         self.features = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(((896+in_channels)*2)*4*4, 2048),
+
+            nn.ReLU(inplace=True),
+            MaxoutDynamic(int(2048 / 2), 2048),
+            nn.Dropout(),
+            nn.Linear(2048, 2048),
+        )
+        '''
+        self.convNet = nn.Sequential(
             nn.Conv2d(in_channels, 128, kernel_size=8, stride=4),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
@@ -246,14 +257,12 @@ class Jolyne(nn.Module):
             nn.Conv2d(256, 512, kernel_size=4,stride=2),
             nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
-            #nn.MaxPool2d(kernel_size=3, stride=2),
             nn.Conv2d(512, 1024, kernel_size=2, stride=1),
             nn.BatchNorm2d(1024),
             nn.ReLU(inplace=True),
-            #nn.MaxPool2d(kernel_size=3, stride=2)
         )
-        '''
-        self.classifier = nn.Sequential(
+
+        self.features = nn.Sequential(
             nn.Dropout(),
             nn.Linear(9216, 2048),
 
@@ -263,6 +272,7 @@ class Jolyne(nn.Module):
             nn.Linear(2048, 2048),
         )
 
+
         self.softmax = nn.Sequential(
             nn.ReLU(inplace=True),
             MaxoutDynamic(int(2048 / 2), 2048),
@@ -270,13 +280,21 @@ class Jolyne(nn.Module):
         )
 
     def forward(self, x):
+        '''
+        inputImage = self.maxInput(x)
         x = self.block0(x)
+        ft1 = self.maxpool(x)
         x = self.block1(x)
+        ft2 = self.maxpoolb2(x)
         x = self.block2(x)
+        x = torch.cat((inputImage,ft1,ft2,x),dim=1)
         x = self.block3(x)
-        #x = self.features(x)
         x = x.view(x.size(0),-1)
-        x = self.classifier(x)
+        x = self.features(x)
+        '''
+        x = self.convNet(x)
+        x = x.view(x.size(0),-1)
+        x = self.features(x)
         return  self.softmax(x), x
 
 class GioGio(nn.Module):

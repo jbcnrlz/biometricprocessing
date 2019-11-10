@@ -37,13 +37,13 @@ if __name__ == '__main__':
 
     featuresSame = {}
     filesLoad = args.files.split('__')
-    for f in filesLoad:
+    for idx, f in enumerate(filesLoad):
         features = loadFileFeatures(f)
         for fe in features:
             fileNoExt = fe[-1].split('.')[0]
             if fileNoExt in featuresSame.keys():
                 featuresSame[fileNoExt].append(fe[:-2])
-            else:
+            elif idx == 0:
                 featuresSame[fileNoExt] = [fe[:-2]]
 
     if args.typeJoin == 'sum':

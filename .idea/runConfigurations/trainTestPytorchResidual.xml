@@ -6,11 +6,12 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="" />
+    <option name="SDK_HOME" value="C:\Users\João Cardia\AppData\Local\Programs\Python\Python37\python.exe" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorchResidual.py" />
     <option name="PARAMETERS" value="-c=4096 -e=100 --runOnTest=True -b=10 --loadFromFolder=eurecom_3dlbp_folds --tensorBoardName=GioGioEurecomResidual --fineTuningClasses=52 --residualFolder=overflowMasks_pr_eurecom__underflowMasks_pr_eurecom --fineTuneWeights=training_full_pytorch_residual/GioGio_best_loss.pth.tar" />
     <option name="SHOW_COMMAND_LINE" value="false" />

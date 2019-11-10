@@ -6,11 +6,12 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="" />
+    <option name="SDK_HOME" value="C:\Users\João Cardia\AppData\Local\Programs\Python\Python37\python.exe" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_frgc.py" />
     <option name="PARAMETERS" value="-p=$PROJECT_DIR$/../newDataset -t=Depth -op=pp --parcal=True -s=RotateFaceLFW_GenerateNewDepthMapsRFRGC:regenarate=False" />
     <option name="SHOW_COMMAND_LINE" value="false" />

@@ -6,11 +6,12 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
+    <option name="SDK_HOME" value="C:\Users\João Cardia\AppData\Local\Programs\Python\Python37\python.exe" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_BU3DFE.py" />
     <option name="PARAMETERS" value="-p=$USER_HOME$/mount_point_local/BU-3DFE -t=VRML -op=pp -s=SegmentFace_TranslateFix:nosetip=nosetip_RotateFaceLFW_GenerateNewDepthMapsLFW --faceVariation=NE_AN_DI_FE_HA_SA_SU --parcal=True" />
     <option name="SHOW_COMMAND_LINE" value="false" />

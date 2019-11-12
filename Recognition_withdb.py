@@ -1,7 +1,9 @@
 import random, numpy as np, argparse, re, os
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics import confusion_matrix
 from helper.functions import loadPatternFromFiles, loadFileFeatures
 from sklearn.decomposition import PCA
+from helper.functions import plot_confusion_matrix
 
 def generateDatabase(pathFile):
     dataFile = None
@@ -94,6 +96,7 @@ if __name__ == '__main__':
         resultado = np.zeros(2)
         scoresCurrFold = np.zeros((len(probe), len(gallery)))
         labelsWhatever = np.zeros((len(probe), 1)).flatten()
+        labelsPredicted = np.zeros((len(probe), 1)).flatten()
         for snum, p in enumerate(probe):
             pdone = (snum / len(probe)) * 100
             cClass = p[-1]
@@ -111,6 +114,7 @@ if __name__ == '__main__':
                     temp_index = j[-1]
 
             resultado[int(temp_index == cClass)] += 1
+            labelsPredicted[snum] = temp_index
 
         if args.saveScores is not None:
             if not os.path.exists(os.path.join(args.saveScores,str(fnum))):
@@ -118,6 +122,10 @@ if __name__ == '__main__':
 
             np.save(os.path.join(args.saveScores,str(fnum),'scores'),scoresCurrFold)
             np.save(os.path.join(args.saveScores, str(fnum), 'labels'), labelsWhatever)
+
+        a = [i for i in range(int(max(labelsWhatever)) + 1)]
+        confMat = plot_confusion_matrix(labelsWhatever, labelsPredicted, ['Subject ' + str(lnm) for lnm in a])
+        confMat.savefig('cmatrix_fold_'+str(fnum)+'.png')
 
         resultado = resultado / len(e[1])
         print("\nRight %.2f Wrong %.2f" % (resultado[1] * 100, resultado[0] * 100))

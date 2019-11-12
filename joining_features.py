@@ -72,6 +72,17 @@ if __name__ == '__main__':
                     idxW += 1
 
         outputFile(newFeatures,featuresSame,args.modelOutput)
+
+    elif args.typeJoin == 'conc':
+        sizeC = sum([len(i) for i in featuresSame[list(featuresSame.keys())[0]]])
+        newFeatures = np.zeros((len(featuresSame),sizeC))
+        for idx, f in enumerate(featuresSame):
+            if len(featuresSame[f]) < len(filesLoad):
+                continue
+            newFeatures[idx] = np.concatenate(featuresSame[f])
+
+        outputFile(newFeatures,featuresSame,args.modelOutput)
+
     else:
         if args.pca is not None:
             features = {}

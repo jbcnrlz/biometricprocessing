@@ -318,4 +318,4 @@ class Folds(Dataset):
         if self.target_transform is not None:
             target = self.target_transform(self.classes[index])
 
-        return sample.float() / 255, target
+        return sample.float(), target

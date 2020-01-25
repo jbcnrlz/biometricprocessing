@@ -3,7 +3,7 @@ import math, numpy as np, os
 from scipy.spatial.distance import euclidean
 from helper.functions import outputObj
 from BUTemplate import *
-
+from IIITDTemplate import *
 
 class SegmentFace(PreProcessingStep):
 
@@ -50,7 +50,11 @@ class SegmentFace(PreProcessingStep):
             imFile = np.array(template.image)
         else:
             imFile = template.image
-        if type(template) is BUTemplate:
+        if type(template) is IIITDTemplate:
+            imFile = imFile[imFile[:, 2] > 20]
+            template.image = self.getFaceFromCenterPoint(template.image[int(template.image.shape[0] / 2)], distancePoints, imFile)
+
+        elif type(template) is BUTemplate:
             nosetip = euclidean(np.array(template.faceMarks[37]), np.array(template.faceMarks[42]))
             nosetip = np.array(template.faceMarks[37]) + (nosetip / 2)
             template.faceMarks[self.nosetipindex] = nosetip

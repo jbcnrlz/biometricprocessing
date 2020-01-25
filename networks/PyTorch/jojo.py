@@ -246,7 +246,6 @@ class Jolyne(nn.Module):
             nn.Dropout(),
             nn.Linear(2048, 2048),
         )
-        '''
         self.convNet = nn.Sequential(
             nn.Conv2d(in_channels, 128, kernel_size=8, stride=4),
             nn.BatchNorm2d(128),
@@ -261,10 +260,28 @@ class Jolyne(nn.Module):
             nn.BatchNorm2d(1024),
             nn.ReLU(inplace=True),
         )
+        '''
+
+        self.cv1 = nn.Conv2d(in_channels, 128, kernel_size=8, stride=4)
+        self.bn1 = nn.BatchNorm2d(128)
+        self.rl1 = nn.ReLU(inplace=True)
+        self.cv2 = nn.Conv2d(128, 256, kernel_size=4, stride=2)
+        self.bn2 = nn.BatchNorm2d(256)
+        self.rl2 = nn.ReLU(inplace=True)
+        self.cv3 = nn.Conv2d(256, 512, kernel_size=4,stride=2)
+        self.bn3 = nn.BatchNorm2d(512)
+        self.rl3 = nn.ReLU(inplace=True)
+        self.cv4 = nn.Conv2d(512, 1024, kernel_size=2, stride=1)
+        self.bn4 = nn.BatchNorm2d(1024)
+        self.rl4 = nn.ReLU(inplace=True)
+
+        self.cv5 = nn.Conv2d(1920, 3840, kernel_size=1, stride=1)
+        self.bn5 = nn.BatchNorm2d(3840)
+        self.rl5 = nn.ReLU(inplace=True)
 
         self.features = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(9216, 2048),
+            nn.Linear(34560, 2048),
 
             nn.ReLU(inplace=True),
             MaxoutDynamic(int(2048 / 2), 2048),
@@ -279,6 +296,10 @@ class Jolyne(nn.Module):
             nn.Linear(2048, classes, bias=False)
         )
 
+        self.maxpool = nn.MaxPool2d(kernel_size=10, stride=7, padding=2)
+        self.maxpoolb2 = nn.MaxPool2d(kernel_size=4, stride=3)
+        self.maxpoolb3 = nn.MaxPool2d(kernel_size=2, stride=1)
+
     def forward(self, x):
         '''
         inputImage = self.maxInput(x)
@@ -292,7 +313,26 @@ class Jolyne(nn.Module):
         x = x.view(x.size(0),-1)
         x = self.features(x)
         '''
-        x = self.convNet(x)
+        #x = self.convNet(x)
+        x = self.cv1(x)
+        ft1 = self.maxpool(x)
+        x = self.bn1(x)
+        x = self.rl1(x)
+        x = self.cv2(x)
+        ft2 = self.maxpoolb2(x)
+        x = self.bn2(x)
+        x = self.rl2(x)
+        x = self.cv3(x)
+        ft3 = self.maxpoolb3(x)
+        x = self.bn3(x)
+        x = self.rl3(x)
+        x = self.cv4(x)
+        x = self.bn4(x)
+        x = self.rl4(x)
+        x = torch.cat((ft1, ft2, ft3, x), dim=1)
+        x = self.cv5(x)
+        x = self.bn5(x)
+        x = self.rl5(x)
         x = x.view(x.size(0),-1)
         x = self.features(x)
         return  self.softmax(x), x
@@ -325,16 +365,16 @@ class GioGio(nn.Module):
 
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(384*5*5, 4096),
+            nn.Linear(40000, 4096),
             nn.ReLU(inplace=True),
-            #MaxoutDynamic(int(4096 / 2), 4096),
+            MaxoutDynamic(int(4096 / 2), 4096),
             nn.Dropout(),
             nn.Linear(4096, 4096),
         )
 
         self.softmax = nn.Sequential(
             nn.ReLU(inplace=True),
-            #MaxoutDynamic(1024, 2048),
+            #MaxoutDynamic(int(4096 / 2), 4096),
             nn.Linear(4096, classes,bias=False)
         )
 

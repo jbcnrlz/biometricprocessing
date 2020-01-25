@@ -20,6 +20,8 @@ if __name__ == '__main__':
     parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.01, type=float)
     parser.add_argument('--tensorboardname', help='Learning Rate', required=False, default='GioGioFullTraining')
     parser.add_argument('--fineTuningClasses', default=0, help='Fine Tuning classes number', required=False, type=int)
+    parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
+    parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

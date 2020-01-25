@@ -347,6 +347,8 @@ class ThreeDLBP(BiometricProcessing):
             radius = parameters['radius']
             imgCroped = np.asarray(template.image).astype(np.int64)
             uniArray = None
+            if len(imgCroped) <= 0:
+                return None, None
             if template.layersChar is None:
                 template.layersChar = np.full((imgCroped.shape[0], imgCroped.shape[1], 4),255)
 

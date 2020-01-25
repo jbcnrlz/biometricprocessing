@@ -6,7 +6,7 @@ if __name__ == '__main__':
     subjects = {}
     for f in files:
         fileName = f.split(os.path.sep)[-1]
-        originalClassName = int(fileName.split('_')[1])
+        originalClassName = fileName.split('_')
 
-        newFileName = str(originalClassName) + '_' + fileName
+        newFileName = originalClassName[0] + '_' + originalClassName[3] + '_' + '_'.join(originalClassName[1:])
         shutil.copy(f,os.path.join('eurecom_newdepth_dataset_renamed',newFileName))

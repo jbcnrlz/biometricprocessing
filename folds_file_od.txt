@@ -1,9 +1,9 @@
 fold
-([0-9]*_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_newdepth.bmp|[0-9]*_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth.bmp)
-[0-9]*_depth_[0-9]{4}_s2_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_newdepth.bmp
+([0-9]*_s1_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_newdepth.bmp|[0-9]*_s1_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth.bmp)
+[0-9]*_s2_depth_[0-9]{4}_s2_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_newdepth.bmp
 fold
-([0-9]*_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_newdepth.bmp|[0-9]*_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth.bmp)
-[0-9]*_depth_[0-9]{4}_s2_(LightOn|Smile|Neutral|OpenMouth)_newdepth.bmp
+([0-9]*_s1_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_newdepth.bmp|[0-9]*_s1_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth.bmp)
+[0-9]*_s2_depth_[0-9]{4}_s2_(LightOn|Smile|Neutral|OpenMouth)_newdepth.bmp
 fold
-([0-9]*_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_newdepth.bmp|[0-9]*_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth.bmp)
-[0-9]*_depth_[0-9]{4}_s2_(Neutral)_newdepth.bmp
+([0-9]*_s1_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_newdepth.bmp|[0-9]*_s1_depth_[0-9]{4}_s1_(OcclusionEyes|OcclusionMouth|LightOn|Smile|Neutral|OpenMouth|OcclusionPaper)_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth.bmp)
+[0-9]*_s2_depth_[0-9]{4}_s2_(Neutral)_newdepth.bmp

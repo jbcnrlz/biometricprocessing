@@ -19,7 +19,8 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     dataTransform = transforms.Compose([
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize([176.95474987005545,176.95474987005545,176.95474987005545],[20.804202200767897,20.804202200767897,20.804202200767897])
     ])
 
     paths = getFilesInPath(args.loadFromFolder)

@@ -41,10 +41,14 @@ if __name__ == '__main__':
         features = loadFileFeatures(f)
         for fe in features:
             fileNoExt = fe[-1].split('.')[0]
+            if 'newdepth' in fileNoExt:
+                fileNoExt = fileNoExt[:(fileNoExt.index('newdepth')-1)]
             if fileNoExt in featuresSame.keys():
                 featuresSame[fileNoExt].append(fe[:-2])
             elif idx == 0:
                 featuresSame[fileNoExt] = [fe[:-2]]
+            else:
+                print('opa')
 
     if args.typeJoin == 'sum':
 
@@ -72,6 +76,13 @@ if __name__ == '__main__':
                     idxW += 1
 
         outputFile(newFeatures,featuresSame,args.modelOutput)
+
+    elif args.typeJoin == 'mean':
+        newFeatures = np.zeros((len(featuresSame),len(featuresSame[list(featuresSame.keys())[0]][0])))
+        for idx, f in enumerate(featuresSame):
+            newFeatures[idx] = np.mean(featuresSame[f],axis=0) * np.std(featuresSame[f],axis=0)
+
+        outputFile(newFeatures, featuresSame, args.modelOutput)
 
     elif args.typeJoin == 'conc':
         sizeC = sum([len(i) for i in featuresSame[list(featuresSame.keys())[0]]])

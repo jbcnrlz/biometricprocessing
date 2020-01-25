@@ -120,6 +120,16 @@ def loadSiameseDatasetFromFolder(pathFold,otherFolds,validationSize=0,transforms
         proDataLoader = SiameseFolds(valFiles[0],valFiles[1],transforms)
         return (galDataLoader,proDataLoader)
 
+def loadFullSet(pathFiles,transforms=None):
+    files = getFilesInPath(pathFiles)
+    trainFiles = [[], []]
+    for f in files:
+        fileName = f.split(os.path.sep)[-1]
+        className = int(''.join([lt for lt in fileName.split('_')[0] if not lt.isalpha()]))
+        trainFiles[0].append(f)
+        trainFiles[1].append(className)
+    return Folds(trainFiles[0],trainFiles[1],transforms)
+
 
 def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None,size=(100,100)):
     files = getFilesInPath(pathFold)
@@ -318,4 +328,4 @@ class Folds(Dataset):
         if self.target_transform is not None:
             target = self.target_transform(self.classes[index])
 
-        return sample.float(), target
+        return sample.float() / 255, target

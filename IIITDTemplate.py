@@ -57,7 +57,7 @@ class IIITDTemplate(Template):
             outputObj(self.image, os.path.join('temporaryTemplate', fileName[:-4] + '.obj'))
             self.outputMarks()
         else:
-            nImage = im.fromarray(self.image).convert('RGB')
+            nImage = im.fromarray(self.image).convert('RGB').rotate(-180)
             nImage.save(self.rawRepr[0:-4] + '_newdepth.bmp')
 
     def loadMarks(self):
@@ -68,7 +68,10 @@ class IIITDTemplate(Template):
                 self.faceMarks.append([int(pointsFace[0]), int(pointsFace[1]), int(pointsFace[2])])
 
     def loadNewDepthImage(self):
-        self.image = im.open(self.rawRepr[0:-4] + '_newdepth.bmp')
+        if os.path.exists(self.rawRepr[0:-4] + '_newdepth.bmp'):
+            self.image = im.open(self.rawRepr[0:-4] + '_newdepth.bmp').convert('L')
+        else:
+            self.image = []
         #self.loadMarks('newdepth')
 
     def saveImageTraining(self, avgImageSave=True, pathImage='generated_images_lbp'):

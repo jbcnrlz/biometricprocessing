@@ -85,6 +85,9 @@ class RotateFace(PreProcessingStep):
 
                     else:
                         rty = self.getRotationMatrix(i,ax)
+                        if faceCloud.shape[1] < 4:
+                            uns = np.ones((faceCloud.shape[0],1))
+                            faceCloud = np.concatenate((faceCloud, uns), axis=1)
                         nObj.image = self.multiplyMatrices(faceCloud,rty)
                         self.outputObj(nObj.image,os.path.join('temporaryTemplate','objRotated',nObj.rawRepr[0:-4] + '_rotate_'+str(i)+'_'+ax+'_newdepth.obj'))
                         nObj = genFaces.doPreProcessing(nObj)

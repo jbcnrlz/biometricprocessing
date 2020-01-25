@@ -59,7 +59,7 @@ def sendEmailMessage(subject, message):
 
 def zFunc(t, A, logValue=None):
     if logValue is None:
-        logValue = np.log10(2 + np.sqrt(3))
+        logValue = np.log(2 + np.sqrt(3))
 
     return 1 / (1 + np.exp(-A * logValue * t))
 

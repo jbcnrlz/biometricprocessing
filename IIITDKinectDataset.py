@@ -32,6 +32,41 @@ class IIITDKinectDataset(DatabaseProcessingUtility):
         self.imageType = type
         super().__init__(path)
 
+    def loadRotatedFaces(self,angles,axis):
+        addTemplates = []
+        for t in self.templates:
+            print("Gerando copia de "+t.rawRepr)
+            for ax in axis:
+                if ax == 'xy':
+                    for a in angles:
+                        for b in angles:
+                            if a == 0 or b == 0:
+                                continue
+                            print("Cross Angulo "+ str(a) + ' '+str(b))
+                            nobj = copy.deepcopy(t)
+                            if os.path.exists(nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+str(b)+'_'+ax+'_newdepth.bmp'):
+                                pathImages = nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+str(b)+'_'+ax+'_newdepth.bmp'
+                                with im.open(pathImages) as currImg:
+                                    nobj.image = np.asarray(currImg)
+                                    nobj.rawRepr = pathImages
+                                addTemplates.append(nobj)
+                else:
+                    for a in angles:
+                        print("Angulo = "+ str(a))
+                        nobj = copy.deepcopy(t)
+                        if os.path.exists(nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'):
+                            pathImages = nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'
+                            try:
+                                with im.open(pathImages) as currImg:
+                                    nobj.image = np.asarray(currImg)
+                                    nobj.rawRepr = pathImages
+                                addTemplates.append(nobj)
+                            except:
+                                continue
+
+        self.templates = self.templates + addTemplates
+
+
     def loadNewDepthImage(self):
         for t in self.templates:
             t.loadNewDepthImage()
@@ -51,11 +86,12 @@ class IIITDKinectDataset(DatabaseProcessingUtility):
         for subject in self.getDirecotiresInPath(self.databasePath):
             directories = self.getFilesFromDirectory(os.path.join(self.databasePath,subject,'Depth'))
             for d in directories:
-
-                euTemp = IIITDTemplate(os.path.join(self.databasePath,subject,d),subject)
-                if self.imageType == 'Depth':
-                    euTemp.loadMarks()
-                self.templates.append(euTemp)
+                statinfo = os.stat(os.path.join(self.databasePath,subject,d))
+                if statinfo.st_size > 15 and 'rotate' not in d and 'matlab' not in d:
+                    euTemp = IIITDTemplate(os.path.join(self.databasePath,subject,d),subject)
+                    if self.imageType == 'Depth':
+                        euTemp.loadMarks()
+                    self.templates.append(euTemp)
 
     def getDatabaseRepresentation(self):
         returnRepr = [[],[]]

@@ -33,7 +33,7 @@ def getFilesFromFolder(pathFold,validationSize='auto'):
         splitedFileName = fileName.split('_')
         if len(splitedFileName) <= 2:
             splitedFileName = splitedFileName[0]
-        elif len(splitedFileName) < 5:
+        elif len(splitedFileName) < 5 or ('_occluded_' in fileName):
             splitedFileName = '_'.join(splitedFileName[:2])
         else:
             splitedFileName = '_'.join(splitedFileName[:-4])

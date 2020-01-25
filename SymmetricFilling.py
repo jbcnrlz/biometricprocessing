@@ -3,6 +3,7 @@ from baseClasses.PreProcessingStep import *
 from helper.functions import getArbitraryMatrix, outputObj, loadOBJ, icp, nearest_neighbor
 from FRGCTemplate import *
 from IIITDTemplate import *
+from matlab import engine
 
 class SymmetricFilling(PreProcessingStep):
 
@@ -21,7 +22,7 @@ class SymmetricFilling(PreProcessingStep):
         outputObj(face,os.path.join(pathCompl,fileNameUnique + 'face_normal.obj'))
         outputObj(mirror,os.path.join(pathCompl,fileNameUnique + 'face_mirror.obj'))
 
-        eng = matlab.engine.start_matlab()
+        eng = engine.start_matlab()
         rotMatrice = eng.doICP(pathCompl+os.path.sep+fileNameUnique + 'face_normal.obj',pathCompl+os.path.sep+fileNameUnique + 'face_mirror.obj')
         rotMatrice = np.array(rotMatrice)
         os.remove(os.path.join(pathCompl,fileNameUnique + 'face_normal.obj'))
@@ -33,6 +34,7 @@ class SymmetricFilling(PreProcessingStep):
 
         return np.array(mirroredList,dtype=np.float32)
 
+    '''
     def symmetricFillingPCL(self,face,mirroredFace,pathCompl='',doICP=True):
         if doICP:
             mirroredFace = self.applyICP(face,mirroredFace,pathCompl)
@@ -48,6 +50,7 @@ class SymmetricFilling(PreProcessingStep):
                     symmetricFilledFace.append(mirror[x])
         symfacecon = np.array(symmetricFilledFace,dtype=np.float32)
         return np.concatenate((face,symfacecon))
+    '''
 
     def symmetricFilling(self,face,mirroredFace,pathCompl='',doICP=True):
         if doICP:

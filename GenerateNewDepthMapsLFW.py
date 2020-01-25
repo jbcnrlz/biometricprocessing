@@ -3,7 +3,6 @@ from helper.functions import scaleValues
 import math, numpy as np,matlab.engine, os
 from scipy.signal import savgol_filter
 from helper.functions import outputObj
-import pcl
 
 class GenerateNewDepthMapsLFW(PreProcessingStep):
 

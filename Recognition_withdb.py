@@ -1,6 +1,7 @@
 import random, numpy as np, argparse, re, os
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics import confusion_matrix
+from sklearn.neighbors import KNeighborsClassifier
 from helper.functions import loadPatternFromFiles, loadFileFeatures
 from sklearn.decomposition import PCA
 from helper.functions import plot_confusion_matrix
@@ -63,6 +64,7 @@ if __name__ == '__main__':
     parser.add_argument('--folds', help='Path for folds file', required=True)
     parser.add_argument('--pca', help='Learn an apply PCA to the data', required=False, default=None)
     parser.add_argument('--saveScores', help='Path to save scores', required=False, default=None)
+    parser.add_argument('--typeDecision', help='Which classifier to use as to make a decision', required=False, default='cosine_similarity')
     args = parser.parse_args()
 
     features = loadFileFeatures(args.path)
@@ -97,35 +99,42 @@ if __name__ == '__main__':
         scoresCurrFold = np.zeros((len(probe), len(gallery)))
         labelsWhatever = np.zeros((len(probe), 1)).flatten()
         labelsPredicted = np.zeros((len(probe), 1)).flatten()
-        for snum, p in enumerate(probe):
-            pdone = (snum / len(probe)) * 100
-            cClass = p[-1]
-            labelsWhatever[snum] = int(cClass)
-            p = p[0:-1]
-            temp_max = -10
-            temp_index = 0
-            temp_max = -1000
-            for gnum, j in enumerate(gallery):
-                print('\r[%.2f Completed] --- Checking subject %d from class %d against gallery subject %d from class %d' % (pdone, snum, cClass, gnum, j[-1]), end='\r', flush=True)
-                temp_similarity = cosine_similarity(p.reshape(1, -1), j[:-1].reshape(1, -1))
-                scoresCurrFold[snum,gnum] = temp_similarity
-                if temp_max < temp_similarity:
-                    temp_max = temp_similarity
-                    temp_index = j[-1]
+        if args.typeDecision == 'knn':
+            kns = KNeighborsClassifier(n_neighbors=5)
+            kns.fit(gallery[:,:-1],gallery[:,-1])
+            decisions = kns.predict(probe[:,:-1])
+            for idxD, d in enumerate(decisions):
+                resultado[int(d==probe[idxD,-1])] += 1
+        else:
+            for snum, p in enumerate(probe):
+                pdone = (snum / len(probe)) * 100
+                cClass = p[-1]
+                labelsWhatever[snum] = int(cClass)
+                p = p[0:-1]
+                temp_max = -10
+                temp_index = 0
+                temp_max = -1000
+                for gnum, j in enumerate(gallery):
+                    print('\r[%.2f Completed] --- Checking subject %d from class %d against gallery subject %d from class %d' % (pdone, snum, cClass, gnum, j[-1]), end='\r', flush=True)
+                    temp_similarity = cosine_similarity(p.reshape(1, -1), j[:-1].reshape(1, -1))
+                    scoresCurrFold[snum,gnum] = temp_similarity
+                    if temp_max < temp_similarity:
+                        temp_max = temp_similarity
+                        temp_index = j[-1]
 
-            resultado[int(temp_index == cClass)] += 1
-            labelsPredicted[snum] = temp_index
+                resultado[int(temp_index == cClass)] += 1
+                labelsPredicted[snum] = temp_index
 
-        if args.saveScores is not None:
-            if not os.path.exists(os.path.join(args.saveScores,str(fnum))):
-                os.makedirs(os.path.join(args.saveScores,str(fnum)))
+            if args.saveScores is not None:
+                if not os.path.exists(os.path.join(args.saveScores,str(fnum))):
+                    os.makedirs(os.path.join(args.saveScores,str(fnum)))
 
-            np.save(os.path.join(args.saveScores,str(fnum),'scores'),scoresCurrFold)
-            np.save(os.path.join(args.saveScores, str(fnum), 'labels'), labelsWhatever)
+                np.save(os.path.join(args.saveScores,str(fnum),'scores'),scoresCurrFold)
+                np.save(os.path.join(args.saveScores, str(fnum), 'labels'), labelsWhatever)
 
-        a = [i for i in range(int(max(labelsWhatever)) + 1)]
-        confMat = plot_confusion_matrix(labelsWhatever, labelsPredicted, ['Subject ' + str(lnm) for lnm in a])
-        confMat.savefig('cmatrix_fold_'+str(fnum)+'.png')
+            a = [i for i in range(int(max(labelsWhatever)) + 1)]
+            confMat = plot_confusion_matrix(labelsWhatever, labelsPredicted, ['Subject ' + str(lnm) for lnm in a])
+            confMat.savefig('cmatrix_fold_'+str(fnum)+'.png')
 
         resultado = resultado / len(e[1])
         print("\nRight %.2f Wrong %.2f" % (resultado[1] * 100, resultado[0] * 100))

@@ -1,5 +1,6 @@
 from baseClasses.PreProcessingStep import *
 import numpy as np, os
+from IIITDTemplate import *
 
 class TranslateFix(PreProcessingStep):
 
@@ -17,7 +18,10 @@ class TranslateFix(PreProcessingStep):
         return points
 
     def doPreProcessing(self,template):
-        template.image = self.translateToOriginByNoseTip(template.image,template.faceMarks[self.nosetipindex])
-        if (type(self.nosetipindex) is int) or (self.nosetipindex.isdigit()):
-            template.faceMarks = self.translateToOriginByNoseTip(template.faceMarks,template.faceMarks[self.nosetipindex])
+        if type(template) is IIITDTemplate:
+            template.image = self.translateToOriginByNoseTip(template.image, template.faceMarks[self.nosetipindex])
+        else:
+            template.image = self.translateToOriginByNoseTip(template.image,template.faceMarks[self.nosetipindex])
+            if (type(self.nosetipindex) is int) or (self.nosetipindex.isdigit()):
+                template.faceMarks = self.translateToOriginByNoseTip(template.faceMarks,template.faceMarks[self.nosetipindex])
         return template

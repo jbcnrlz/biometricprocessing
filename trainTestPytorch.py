@@ -47,6 +47,8 @@ if __name__ == '__main__':
     parser.add_argument('--extension', help='Extension from files', required=False, default='png')
     parser.add_argument('--arc', help='Network', required=False, default='giogio')
     parser.add_argument('--scoreFolder', help='Fold where to save scores', required=False, default=None)
+    parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
+    parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

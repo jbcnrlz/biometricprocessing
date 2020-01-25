@@ -15,6 +15,12 @@ if __name__ == '__main__':
     gallery = IIITDKinectDataset(args.pathdatabase,args.typeoffile)
     gallery.feedTemplates()
 
+    if args.loadNewDepth:
+        gallery.loadNewDepthImage()
+
+    if args.angles:
+        gallery.loadRotatedFaces(args.angles.split('_'),args.axis.split('_'))
+
     tdlbp = ThreeDLBP(8,14,[gallery])
     tdlbp.fullPathGallFile = args.pathImages
     if not args.steps is None:

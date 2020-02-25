@@ -54,7 +54,7 @@ class BiometricProcessing:
         template = self.setupTemplate(template)
         if forceImage or not template.existsPreProcessingFile():
             if verbose:
-                print(str(template.itemClass))
+                print(str(template.rawRepr))
 
             try:
                 for p in self.preProcessingSteps:

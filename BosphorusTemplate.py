@@ -29,7 +29,7 @@ class BosphorusTemplate(Template):
         if (self.rawRepr[-3:] == 'mat'):
             arrays = {}
             try:
-                with h5py.File(self.rawRepr) as fPy:
+                with h5py.File(self.rawRepr,'r') as fPy:
                     for k, v in fPy.items():
                         arrays[k] = np.array(v)
                 if 'vertex' in arrays.keys():
@@ -80,7 +80,7 @@ class BosphorusTemplate(Template):
     def saveNewDepth(self):
         sImage = im.fromarray(self.image).convert('RGB')
         sImage = sImage.rotate(180)
-        sImage.save(self.rawRepr[0:-4] + '_newdepth.jpeg')
+        sImage.save(self.rawRepr[0:-4] + '_newdepth.bmp')
 
     def save(self, saveOnPath=False, prefix='_segmented'):
         if (not saveOnPath):
@@ -177,3 +177,6 @@ class BosphorusTemplate(Template):
             imageSaveDLP = im.fromarray(self.underFlow)
 
         imageSaveDLP.convert('RGB').save(pathNImage)
+
+    def existsPreProcessingFile(self):
+        return os.path.exists(self.rawRepr[0:-4] + '_newdepth.bmp')

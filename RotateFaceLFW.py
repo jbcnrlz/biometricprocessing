@@ -55,7 +55,7 @@ class RotateFaceLFW(PreProcessingStep):
 
     def __init__(self,**kwargs):
         self.regenFaces = kwargs.get('regenarate', True)
-        self.axis = kwargs.get('axis', ['xy','x','y'])
+        self.axis = kwargs.get('axis', ['x','y'])
 
     def doPreProcessing(self,template):
         genFaces = None
@@ -97,7 +97,7 @@ class RotateFaceLFW(PreProcessingStep):
                                 if not type(nObj) is FRGCTemplate:
                                     nObj.image = nObj.image.rotate(-180)
                                     nObj.image.save(
-                                        nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '_newdepth.bmp')
+                                        nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '_newdepth.'+extentionFiles)
 
                         else:
                             rty = self.getRotationMatrix(i, ax)
@@ -111,6 +111,6 @@ class RotateFaceLFW(PreProcessingStep):
                             nObj.image = im.fromarray(np.array(nObj.image, dtype=np.uint8))
                             if not type(nObj) is FRGCTemplate:
                                 nObj.image = nObj.image.rotate(-180)
-                                nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '_newdepth.bmp')
+                                nObj.image.save(nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '_newdepth.'+extentionFiles)
 
         return template

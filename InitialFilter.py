@@ -1,5 +1,5 @@
 from baseClasses.PreProcessingStep import *
-import numpy as np, pcl, os
+import numpy as np, os
 
 class InitialFilter(PreProcessingStep):
 

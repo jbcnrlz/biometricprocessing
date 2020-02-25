@@ -55,7 +55,7 @@ class RotateFaceLFW(PreProcessingStep):
 
     def __init__(self,**kwargs):
         self.regenFaces = kwargs.get('regenarate', True)
-        self.axis = kwargs.get('axis', ['x','y'])
+        self.axis = kwargs.get('axis', ['xy','x','y'])
 
     def doPreProcessing(self,template):
         genFaces = None
@@ -87,6 +87,9 @@ class RotateFaceLFW(PreProcessingStep):
                                 rty = self.getRotationMatrix(j, 'y')
                                 nObj.image = self.multiplyMatrices(faceCloud, rtx)
                                 nObj.image = self.multiplyMatrices(nObj.image.tolist(), rty)
+                                #newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
+                                #fullPathPCD = nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '.pcd'
+                                #newCloud.to_file(fullPathPCD.encode('utf-8'))
                                 if type(nObj) is FRGCTemplate:
                                     genFaces.fileExtension = '_rotate_' + str(i) + '_' + ax
                                 nObj = genFaces.doPreProcessing(nObj)
@@ -99,6 +102,9 @@ class RotateFaceLFW(PreProcessingStep):
                         else:
                             rty = self.getRotationMatrix(i, ax)
                             nObj.image = self.multiplyMatrices(faceCloud.tolist(), rty)
+                            #newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
+                            #fullPathPCD = nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '.pcd'
+                            #newCloud.to_file(fullPathPCD.encode('utf-8'))
                             if type(nObj) is FRGCTemplate:
                                 genFaces.fileExtension = '_rotate_' + str(i) + '_' + ax
                             nObj = genFaces.doPreProcessing(nObj)

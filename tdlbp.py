@@ -22,6 +22,7 @@ class ThreeDLBP(BiometricProcessing):
         self.sigmoid_table = {}
         self.boundarySigmoid = [lowerBound,upperBound]
         self.histogramBins = None
+        self.modelInterCalc = None
         super().__init__()
 
     def saveDebug(self, folder, data):
@@ -34,16 +35,91 @@ class ThreeDLBP(BiometricProcessing):
 
         self.histogramBins = np.histogram(0, bins=8, range=[0, 1])[1]
 
+    def getModelInterp(self,image):
+        x = [i for i in range(image.shape[0])]
+        y = [i for i in range(image.shape[1])]
+        xx,yy = np.meshgrid(x,y)
+        return interp2d(xx,yy,image.T)
+
+    def generateCodeFullImagePR(self,image,xPositions, yPositions,r,typeOp='Normal'):
+        codeImage = np.zeros((image.shape[0],image.shape[1],4))
+        for i in range(r, image.shape[0] - r):
+            for j in range(r, image.shape[1] - r):
+                codeLocal = np.array([self.modelInterCalc(i+xPositions[k],j+yPositions[k]) - image[i][j] for k in range(len(xPositions))])
+                fl = codeLocal >= 0
+                layers = [list(map(str, map(int, fl))), [], [], []]
+                if typeOp == 'Normal':
+                    codeLocal[codeLocal > 7] = 7
+                    codeLocal[codeLocal < -7] = -7
+
+                else:
+                    codeLocal = expit(codeLocal)
+                    codeLocal = [np.argwhere(np.histogram(r, bins=8, range=[0, 1])[0] == 1)[0][0] for r in codeLocal]
+
+                codeLocal = np.abs(np.round(codeLocal.flatten())).astype(np.uint8)
+                nums = list(map('{0:03b}'.format, codeLocal.flatten()))
+                for n in nums:
+                    layers[1].append(n[0])
+                    layers[2].append(n[1])
+                    layers[3].append(n[2])
+
+                codeImage[i, j, :] = np.array([int(''.join(l), 2) for l in layers])
+
+        return codeImage
+
+
+    def truncSeven(self,image):
+        image[image > 7] = 7
+        image[image < -7] = -7
+        return image
+
+    def generateCodeFullImage(self,image):
+        pl = np.pad(image, ((0, 0), (1, 0)), mode='constant', constant_values=-1)
+        pl1 = np.pad(image, ((1, 0), (1, 0)), mode='constant', constant_values=-1)
+        pr = np.pad(image, ((0, 0), (0, 1)), mode='constant', constant_values=-1)
+        pr1 = np.pad(image, ((1, 0), (0, 1)), mode='constant', constant_values=-1)
+        pt = np.pad(image, ((1, 0), (0, 0)), mode='constant', constant_values=-1)
+        pb = np.pad(image, ((0, 1), (0, 0)), mode='constant', constant_values=-1)
+        pb1 = np.pad(image, ((0, 1), (1, 0)), mode='constant', constant_values=-1)
+        pb2 = np.pad(image, ((0, 1), (0, 1)), mode='constant', constant_values=-1)
+
+        v1 = self.truncSeven(pl1[:-1, :-1] - image)
+        v2 = self.truncSeven(pt[:-1, :] - image)
+        v3 = self.truncSeven(pr1[:-1, 1:] - image)
+        v4 = self.truncSeven(pl[:, :-1] - image)
+        v5 = self.truncSeven(pr[:, 1:] - image)
+        v6 = self.truncSeven(pb1[1:, :-1] - image)
+        v7 = self.truncSeven(pb[1:, :] - image)
+        v8 = self.truncSeven(pb2[1:, 1:] - image)
+
+        operator = np.array([v1, v2, v3, v4, v5, v6, v7, v8])
+
+        nImage = np.zeros((image.shape[0], image.shape[1], 4))
+
+        for i in range(1, image.shape[0]-1):
+            for j in range(1, image.shape[1]-1):
+                fl = operator[:, i, j] >= 0
+                layers = [list(map(str, map(int, fl))), [], [], []]
+                nums = list(map('{0:03b}'.format, map(abs, operator[:, i, j])))
+                for n in nums:
+                    layers[1].append(n[0])
+                    layers[2].append(n[1])
+                    layers[3].append(n[2])
+
+                nImage[i, j, :] = np.array([int(''.join(l), 2) for l in layers])
+
+        return nImage
+
     def generateCode(self, image, center, typeOp='Normal',truncMaskPlus=None,truncMaskMinus=None,firstLayer='lbp'):
         region = image - image[center[0], center[1]]
         flattenCenter = (center[0] * region.shape[0]) + center[1]
+        region = np.concatenate((region.flatten()[:flattenCenter], region.flatten()[flattenCenter + 1:]))
         fl = region >= 0
         layers = [list(map(str, map(int, fl))), [], [], []]
 
         if typeOp == 'Normal':
             region[region > 7] = 7
             region[region < -7] = -7
-            region = np.concatenate((region.flatten()[:flattenCenter], region.flatten()[flattenCenter + 1:]))
 
         else:
             region = expit(region)
@@ -253,41 +329,56 @@ class ThreeDLBP(BiometricProcessing):
 
         return layers
 
-
     def generateImageDescriptor(self, image, p=8, r=1, typeLBP='original', typeMeasurement='Normal',template=None,masks=False,firstLayer='lbp',deformValue=0.222):
-        returnValue = [[], [], [], []]
-        if masks:
-            template.underFlow = np.zeros(image.shape)
-            template.overFlow  = np.zeros(image.shape)
+
+        if typeMeasurement == 'prtest':
+            xPositions = np.round(-r * np.sin(2 * np.pi * np.arange(p, dtype=np.double) / p), 5)
+            yPositions = np.round( r * np.cos(2 * np.pi * np.arange(p, dtype=np.double) / p), 5)
+            xPositions = np.concatenate((xPositions[-3:],xPositions[0:-3]))
+            yPositions = np.concatenate((yPositions[-3:],yPositions[0:-3]))
+
+            self.modelInterCalc = self.getModelInterp(image)
+
+            codewow = self.generateCodeFullImagePR(image,xPositions,yPositions,1)
+            if not template is None:
+                template.layersChar = codewow
+
+            return [], []
+
+        elif typeLBP == 'original':
+            template.layersChar = self.generateCodeFullImage(image)
+            return template.layersChar, []
+
         else:
-            template.underFlow = None
-            template.overFlow  = None
+            returnValue = [[], [], [], []]
+            if masks:
+                template.underFlow = np.zeros(image.shape)
+                template.overFlow  = np.zeros(image.shape)
+            else:
+                template.underFlow = None
+                template.overFlow  = None
 
-        if typeLBP == 'pr':
-            xPositions = np.round(- r * np.sin(2 * np.pi * np.arange(p, dtype=np.double) / p),5)
-            yPositions = np.round(r * np.cos(2 * np.pi * np.arange(p, dtype=np.double) / p),5)
+            if typeLBP == 'pr':
+                xPositions = np.round(- r * np.sin(2 * np.pi * np.arange(p, dtype=np.double) / p),5)
+                yPositions = np.round(r * np.cos(2 * np.pi * np.arange(p, dtype=np.double) / p),5)
+                if self.modelInterCalc is None:
+                    self.modelInterCalc = self.getModelInterp(image)
 
-        subhistory = []
-        for i in range(r, image.shape[0] - r):
-            for j in range(r, image.shape[1] - r):
-                resultCode = None
-                if typeLBP == 'original':
-                    if template.underFlow is None or template.overFlow is None:
-                        resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]),typeMeasurement,firstLayer=firstLayer)
-                    else:
-                        resultCode = self.generateCode(image[i - 1:i + 2, j - 1:j + 2], np.array([1, 1]), typeMeasurement,template.overFlow[i - 1:i + 2, j - 1:j + 2],template.underFlow[i - 1:i + 2, j - 1:j + 2],firstLayer=firstLayer)
-                elif typeLBP == 'pr':
-                    resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement)
+            subhistory = []
+            for i in range(r, image.shape[0] - r):
+                for j in range(r, image.shape[1] - r):
+                    resultCode = None
+                    resultCode = self.generateCodePR(image[i - r:i + (r + 1), j - r:j + (r + 1)], np.array([r, r]),xPositions, yPositions, typeMeasurement,deformValue=deformValue)
 
-                if not template is None:
-                    template.layersChar[i][j] = resultCode
+                    if not template is None:
+                        template.layersChar[i][j] = resultCode
 
-                returnValue[0].append(resultCode[0])
-                returnValue[1].append(resultCode[1])
-                returnValue[2].append(resultCode[2])
-                returnValue[3].append(resultCode[3])
+                    returnValue[0].append(resultCode[0])
+                    returnValue[1].append(resultCode[1])
+                    returnValue[2].append(resultCode[2])
+                    returnValue[3].append(resultCode[3])
 
-        return returnValue, subhistory
+            return returnValue, subhistory
 
     def cropImage(self, image, le, re, no):
         distance = list(map(operator.sub, le[:2], re[:2]))
@@ -361,8 +452,6 @@ class ThreeDLBP(BiometricProcessing):
                     with open('subhistory/'+fname[:-3]+'txt','w') as shf:
                         shf.write(' '.join(list(map(str,sh))))
                     '''
-                template.saveMasks('overflowMasks_pr','overflow')
-                template.saveMasks('underflowMasks_pr', 'underflow')
             else:
                 desc,sh = self.generateImageDescriptor(imgCroped,template=template,typeMeasurement=parameters['typeMeasurement'],masks=parameters['masks'],firstLayer=parameters['firstLayer'])
                 template.saveMasks('overflowMasks','overflow')

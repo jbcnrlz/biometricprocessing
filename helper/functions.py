@@ -8,6 +8,10 @@ from email.message import EmailMessage
 from yaml import load
 from sklearn.neighbors import NearestNeighbors
 
+def outputScores(data,pathFile):
+    with open(pathFile,'w') as pf:
+        for d in data:
+            pf.write(' '.join(list(map(str,d))) + '\n')
 
 def readFeatureFile(fileName):
     returnFeatures = []
@@ -74,8 +78,6 @@ def plot_confusion_matrix(correct_labels, predict_labels, labels, normalize=Fals
         correct_labels                  : These are your true classification categories.
         predict_labels                  : These are you predicted classification categories
         labels                          : This is a lit of labels which will be used to display the axix labels
-        title='Confusion matrix'        : Title for your matrix
-        tensor_name = 'MyFigure/image'  : Name for the output summay tensor
 
     Returns:
         summary: TensorFlow summary

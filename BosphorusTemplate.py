@@ -72,10 +72,10 @@ class BosphorusTemplate(Template):
 
     def loadNewDepthImage(self):
         if self.lazyLoading:
-            self.rawRepr = self.rawRepr[0:-4] + '_newdepth.jpeg'
+            self.rawRepr = self.rawRepr[0:-4] + '_newdepth.bmp'
         else:
 
-            self.image = np.array(im.open(self.rawRepr[0:-4] + '_newdepth.jpeg'))
+            self.image = np.array(im.open(self.rawRepr[0:-4] + '_newdepth.bmp'))
 
     def saveNewDepth(self):
         sImage = im.fromarray(self.image).convert('RGB')

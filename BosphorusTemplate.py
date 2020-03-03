@@ -52,7 +52,10 @@ class BosphorusTemplate(Template):
                 self.image = arrays['d'][:,0:3]
                 self.faceMarks = self.loadLandmarksfromFile()
         else:
-            self.image = np.array(im.open(self.rawRepr).convert('L'))
+            if os.path.exists(self.rawRepr):
+                self.image = np.array(im.open(self.rawRepr).convert('L'))
+            else:
+                self.image = []
 
     def loadImage(self):
         if self.rawRepr[-3:] == 'bmp':

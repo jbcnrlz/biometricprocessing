@@ -101,8 +101,8 @@ class Bosphorus(DatabaseProcessingUtility):
                                 continue
                             print("Cross Angulo "+ str(a) + ' '+str(b))
                             nobj = copy.deepcopy(t)
-                            if os.path.exists(nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+str(b)+'_'+ax+'_newdepth.bmp'):
-                                pathImages = nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+str(b)+'_'+ax+'_newdepth.bmp'
+                            if os.path.exists(nobj.rawRepr[0:-13] +'_rotate_'+str(a)+'_'+str(b)+'_'+ax+'_newdepth.bmp'):
+                                pathImages = nobj.rawRepr[0:-13] +'_rotate_'+str(a)+'_'+str(b)+'_'+ax+'_newdepth.bmp'
                                 with im.open(pathImages) as currImg:
                                     nobj.image = np.asarray(currImg)
                                     nobj.rawRepr = pathImages
@@ -111,8 +111,8 @@ class Bosphorus(DatabaseProcessingUtility):
                     for a in angles:
                         print("Angulo = "+ str(a))
                         nobj = copy.deepcopy(t)
-                        if os.path.exists(nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'):
-                            pathImages = nobj.rawRepr[0:-14] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'
+                        if os.path.exists(nobj.rawRepr[0:-13] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'):
+                            pathImages = nobj.rawRepr[0:-13] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'
                             with im.open(pathImages) as currImg:
                                 nobj.image = np.asarray(currImg)
                                 nobj.rawRepr = pathImages

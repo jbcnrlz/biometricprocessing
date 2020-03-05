@@ -357,15 +357,15 @@ class GioGio(nn.Module):
             nn.BatchNorm2d(192),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
-            #nn.Conv2d(192, 384, kernel_size=3, padding=1),
-            #nn.BatchNorm2d(384),
-            #nn.ReLU(inplace=True),
-            #nn.MaxPool2d(kernel_size=3, stride=2)
+            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.BatchNorm2d(384),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(27648, 4096),
+            nn.Linear(9600, 4096),
             nn.ReLU(inplace=True),
             MaxoutDynamic(int(4096 / 2), 4096),
             nn.Dropout(),
@@ -374,7 +374,7 @@ class GioGio(nn.Module):
 
         self.softmax = nn.Sequential(
             nn.ReLU(inplace=True),
-            #MaxoutDynamic(int(4096 / 2), 4096),
+            MaxoutDynamic(int(4096 / 2), 4096),
             nn.Linear(4096, classes,bias=False)
         )
 

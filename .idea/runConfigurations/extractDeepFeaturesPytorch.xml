@@ -6,14 +6,14 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="C:\Users\João Cardia\AppData\Local\Programs\Python\Python37\python.exe" />
+    <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="false" />
+    <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/extractDeepFeaturesPytorch.py" />
-    <option name="PARAMETERS" value="--loadFromFolder=generated_images_eurecom_wfunc_b10_022 --fineTuneWeights=training_jolyne_sigmoid_10_0222/jolyne_best_loss.pth.tar --output=features/jolyne_eurecom_b10_sigmoid_0222.txt --network=jolyne --modeLoadFile=RGBA" />
+    <option name="PARAMETERS" value="--loadFromFolder=rgb_eurecom_renamed --fineTuneWeights=jolyne_rgb/jolyne_best_loss.pth.tar --output=features/jolyne_eurecom_rgb.txt --network=jolyne --modeLoadFile=RGB" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

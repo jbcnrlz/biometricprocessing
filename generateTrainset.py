@@ -84,7 +84,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate folder with training data')
     parser.add_argument('--pathBase', help='Path for faces', required=True)
     parser.add_argument('--outputPath', help='Path in which faces are going to be saved', required=True)
-    parser.add_argument('--validationSize', help='Size of the validation data', required=True, type=int)
+    parser.add_argument('--validationSize', help='Size of the validation data', required=True)
     parser.add_argument('--classQuantity', help='Quantity of classes', required=True, type=int)
     parser.add_argument('--startingPoint', help='Number of first class', required=False, type=int, default=1)
     args = parser.parse_args()

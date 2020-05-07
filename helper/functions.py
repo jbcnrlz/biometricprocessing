@@ -713,14 +713,18 @@ def plotFeaturesCenterloss(features, labels, colors, dirname=None, epoch=None, c
 def loadFileFeatures(pathFile, type='all'):
     returnFeatures = []
     if type == 'all':
-        dataFile = None
         with open(pathFile, 'r') as f:
-            dataFile = f.readlines()
+            for rf in f:
+                rf = rf.strip().split()
+                returnFeatures.append([float(x) for x in rf[:-2]] + [int(rf[-2])] + [rf[-1]])
 
-        for d in dataFile:
+        '''
+        for idx, d in enumerate(dataFile):
             d = d.split(' ')
-            returnFeatures.append([float(x) for x in d[:-2]] + [int(d[-2])] + [d[-1].strip()])
-
+            returnFeatures.append([float(x) for x in d[:-2]] + [int(d[-2])] + [d[-1]])
+            d = None
+            dataFile[idx] = None
+        '''
     elif type == 'onlyFileType':
         currPosition = 0
         curLineSize = 0

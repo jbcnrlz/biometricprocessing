@@ -6,14 +6,14 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="C:\Users\João Cardia\AppData\Local\Programs\Python\Python37\python.exe" />
+    <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="false" />
+    <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_bosphorus.py" />
-    <option name="PARAMETERS" value="-p=$PROJECT_DIR$/bosphorus/BosphorusConv -t=Matlab -op=fe --pathImages=generated_images_bosphorus_wfunc_0777 --loadNewDepth=True -ap=16 -r=1 --typeMeasure=wFunction --angles=-30_-20_-10_10_20_30 --faceVariation=N_LFAU_UFAU_CAU_E_YR_PR_CR_O --parcal=True --deformValue=0.777" />
+    <option name="PARAMETERS" value="-p=$PROJECT_DIR$/bosphorus/BosphorusConv -t=Matlab -op=fe --pathImages=generated_images_bosphorus_3dlbp --loadNewDepth=True -ap=16 -r=1 --angles=-30_-20_-10_10_20_30 --faceVariation=N_LFAU_UFAU_E_CAU" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

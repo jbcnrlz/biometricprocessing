@@ -2,11 +2,11 @@ from helper.functions import getFilesInPath
 import shutil, os
 
 if __name__ == '__main__':
-    files = getFilesInPath('rgb_eurecom')
+    files = getFilesInPath('bosphorus_depth')
     subjects = {}
     for f in files:
         fileName = f.split(os.path.sep)[-1]
         originalClassName = fileName.split('_')
 
-        newFileName = originalClassName[1] + '_' + originalClassName[2] + '_' + '_'.join(originalClassName[0:])
-        shutil.copy(f,os.path.join('rgb_eurecom_renamed',newFileName))
+        newFileName = originalClassName[0][2:] + '_' + fileName
+        shutil.copy(f,os.path.join('bosphorus_depth_renamed',newFileName))

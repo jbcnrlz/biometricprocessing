@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainWithFullDataPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -p=depth_rebuild_frgc -e=200 -b=50 --output=giogio_depth --extension=bmp --network=giogio --tensorboardname=phgpd" />
+    <option name="PARAMETERS" value="-c=52 -p=generated_images_eurecom_3b3 -e=200 -b=50 --output=jolyne_test --extension=png --network=jolyne --tensorboardname=phgpd" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

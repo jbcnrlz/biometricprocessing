@@ -57,7 +57,7 @@ class IIITDTemplate(Template):
             outputObj(self.image, os.path.join('temporaryTemplate', fileName[:-4] + '.obj'))
             self.outputMarks()
         else:
-            nImage = im.fromarray(self.image).convert('RGB').rotate(-180)
+            nImage = im.fromarray(self.image).convert('RGB')
             nImage.save(self.rawRepr[0:-4] + '_newdepth.bmp')
 
     def loadMarks(self):

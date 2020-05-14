@@ -51,8 +51,8 @@ class SegmentFace(PreProcessingStep):
         else:
             imFile = template.image
         if type(template) is IIITDTemplate:
-            imFile = imFile[imFile[:, 2] > 20]
-            template.image = self.getFaceFromCenterPoint(template.image[int(template.image.shape[0] / 2)], distancePoints, imFile)
+            #imFile = imFile[imFile[:, 2] > 20]
+            template.image = self.getFaceFromCenterPoint([0,0,0], distancePoints, imFile)
 
         elif type(template) is BUTemplate:
             nosetip = euclidean(np.array(template.faceMarks[37]), np.array(template.faceMarks[42]))

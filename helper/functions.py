@@ -8,6 +8,14 @@ from email.message import EmailMessage
 from yaml import load
 from sklearn.neighbors import NearestNeighbors
 
+def readMatrixFile(pathData):
+    returnData = []
+    with open(pathData,'r') as pd:
+        for p in pd:
+            returnData.append(list(map(float,p.strip().split(' '))))
+
+    return returnData
+
 def outputScores(data,pathFile):
     with open(pathFile,'w') as pf:
         for d in data:

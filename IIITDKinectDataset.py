@@ -84,13 +84,14 @@ class IIITDKinectDataset(DatabaseProcessingUtility):
 
     def feedTemplates(self):
         for subject in self.getDirecotiresInPath(self.databasePath):
-            directories = self.getFilesFromDirectory(os.path.join(self.databasePath,subject,'Depth'))
+            if self.imageType == 'Depth':
+                directories = self.getFilesFromDirectory(os.path.join(self.databasePath,subject,'Depth','depthnocolor'))
+            else:
+                directories = self.getFilesFromDirectory(os.path.join(self.databasePath,subject,'Depth'))
             for d in directories:
                 statinfo = os.stat(os.path.join(self.databasePath,subject,d))
-                if statinfo.st_size > 15 and 'rotate' not in d and 'matlab' not in d:
+                if statinfo.st_size > 15 and 'rotate' not in d and 'matlab' not in d and 'symfilled' not in d:
                     euTemp = IIITDTemplate(os.path.join(self.databasePath,subject,d),subject)
-                    if self.imageType == 'Depth':
-                        euTemp.loadMarks()
                     self.templates.append(euTemp)
 
     def getDatabaseRepresentation(self):

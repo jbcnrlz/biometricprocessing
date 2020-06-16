@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/mainProgram.py" />
-    <option name="PARAMETERS" value="-p=$USER_HOME$/local_mount/EURECOM_Kinect_Face_Dataset -t=3DObj -op=pp -f=$PROJECT_DIR$/../svm_torch_files/3dlbp_eurecom.txt --faceVariation=LightOn_OcclusionEyes_OcclusionMouth_OpenMouth_Smile_Neutral_OcclusionPaper --pathImages=generated_images_kinect -s=SegmentFace_TranslateFix:nosetip=2_FixPaperOcclusion_SymmetricFilling_RotateFace_GenerateNewDepthMaps -ap=16 -r=1" />
+    <option name="PARAMETERS" value="-p=&quot;D:\EURECOM_Kinect_Face_Dataset\EURECOM_Kinect_Face_Dataset&quot; -t=3DObj -op=pp -f=$PROJECT_DIR$/../svm_torch_files/3dlbp_eurecom.txt --faceVariation=LightOn_OcclusionEyes_OcclusionMouth_OpenMouth_Smile_Neutral_OcclusionPaper --pathImages=generated_images_kinect -s=RotateFace_GenerateNewDepthMaps -ap=16 -r=1 --force=True --loadSymmImages=True" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

@@ -52,7 +52,7 @@ class EurecomKinect(DatabaseProcessingUtility):
         explodedFile = explodedFile[0].split('_')
         return explodedFile.pop()
 
-    def feedTemplates(self,lazy=False):
+    def feedTemplates(self,lazy=True):
         for subject in self.getDirecotiresInPath(self.databasePath):
             if (os.path.exists(os.path.join(self.databasePath,subject,self.folderTemplate))):
                 directories = []

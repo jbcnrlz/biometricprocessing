@@ -88,9 +88,10 @@ if __name__ == '__main__':
         sizeC = sum([len(i) for i in featuresSame[list(featuresSame.keys())[0]]])
         newFeatures = np.zeros((len(featuresSame),sizeC))
         for idx, f in enumerate(featuresSame):
-            if len(featuresSame[f]) < len(filesLoad):
+            featConc = np.concatenate(featuresSame[f])
+            if len(featConc) != sizeC:
                 continue
-            newFeatures[idx] = np.concatenate(featuresSame[f])
+            newFeatures[idx] = featConc
 
         outputFile(newFeatures,featuresSame,args.modelOutput)
 

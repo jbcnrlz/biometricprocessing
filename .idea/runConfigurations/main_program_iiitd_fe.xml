@@ -6,14 +6,14 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="/usr/bin/python3.6" />
+    <option name="SDK_HOME" value="C:\Users\João Cardia\AppData\Local\Programs\Python\Python37\python.exe" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main_program_iiitd.py" />
-    <option name="PARAMETERS" value="-p=&quot;$USER_HOME$/Dropbox/Mestrado CC/iiitd_kinect_rgbd_database/fold1/training&quot; -t=Range -op=fe --pathImages=generated_images_iiitd_3dlbp -ap=16 -r=1 --loadNewDepth=True --angles=-30_-20_-10_10_20_30 --parcal=True --quantityProcesses=5 --typeMeasure=simoid" />
+    <option name="PARAMETERS" value="-p=&quot;D:\Downloads\fold1\fold1\testing&quot; -t=Depth -op=fe --pathImages=generated_images_iiitd_3dlbp -ap=16 -r=1 --loadNewDepth=True --angles=-30_-20_-10_10_20_30" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

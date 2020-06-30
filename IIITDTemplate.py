@@ -3,7 +3,6 @@ import os, numpy as np, random, cv2
 from helper.functions import outputObj, loadOBJ, scaleValues
 from PIL import Image as im
 
-
 class IIITDTemplate(Template):
     folderTemplate = None
     faceMarks = []
@@ -43,7 +42,7 @@ class IIITDTemplate(Template):
             self.image = imageFace
 
     def saveNewDepth(self,fileExtension=''):
-        sImage = im.fromarray(self.image).convert('L')
+        sImage = im.fromarray(self.image).convert('L').rotate(-180)
         sImage.save(self.rawRepr[0:-4]+fileExtension+'_newdepth.bmp')
 
 

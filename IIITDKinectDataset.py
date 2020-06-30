@@ -19,8 +19,8 @@ class IIITDKinectDataset(DatabaseProcessingUtility):
                 for a in angles:
                     print("Angulo = "+ str(a))
                     nobj = copy.deepcopy(t)
-                    if os.path.exists(nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+ax+'_newdepth.jpeg'):
-                        pathImages = nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+ax+'_newdepth.jpeg'
+                    if os.path.exists(nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'):
+                        pathImages = nobj.rawRepr[0:-4] +'_rotate_'+str(a)+'_'+ax+'_newdepth.bmp'
                         with im.open(pathImages) as currImg:
                             nobj.image = np.asarray(currImg)
                             nobj.rawRepr = pathImages

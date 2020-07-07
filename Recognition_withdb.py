@@ -94,7 +94,14 @@ if __name__ == '__main__':
                 gallery = np.concatenate((pca.transform(gallery[:,:-1]),gallery[:,-1].reshape((-1,1))),axis=1)
                 probe = np.concatenate((pca.transform(probe[:,:-1]),probe[:,-1].reshape((-1,1))),axis=1)
                 print('Final feature size = %d' % (len(gallery[0])))
-        print('Doing fold %d with %d fold subjects, gallery size %d' % (fnum,len(e[1]),len(gallery)))
+
+        sims = cosine_similarity(probe[:,:-1],gallery[:,:-1])
+        rs = gallery[sims.argmax(axis=1), -1] == probe[:, -1]
+        acertou = np.count_nonzero(rs) / probe.shape[0]
+        errou = 1 - acertou
+        print("Right %.2f Wrong %.2f" % (acertou*100,errou*100))
+        '''
+        print('Doing fold %d with %d fold subjects, gallery size %d' % (fnum, len(e[1]), len(gallery)))
         resultado = np.zeros(2)
         scoresCurrFold = np.zeros((len(probe), len(gallery)))
         labelsWhatever = np.zeros((len(probe), 1)).flatten()
@@ -143,6 +150,7 @@ if __name__ == '__main__':
         resultado = resultado / len(e[1])
         print("\nRight %.2f Wrong %.2f" % (resultado[1] * 100, resultado[0] * 100))
         finalResults.append(resultado[1] * 100)
+        '''
 
-    print('Final result:')
-    print(finalResults)
+    #print('Final result:')
+    #print(finalResults)

@@ -4,6 +4,8 @@ from sklearn.decomposition import PCA
 def outputFile(data,original,pathName):
     with open(pathName,'w') as fW:
         for x, i in enumerate(original):
+            if np.sum(data[x]) == 0:
+                continue
             classNumber = i.split('_')[0]
             featureLine = ' '.join(list(map(str,data[x]))) + ' ' + classNumber + ' ' + i + '.png\n'
             fW.write(featureLine)
@@ -48,7 +50,7 @@ if __name__ == '__main__':
             elif idx == 0:
                 featuresSame[fileNoExt] = [fe[:-2]]
             else:
-                print('opa')
+                print('Missing %s from %s' % (fileNoExt,filesLoad[0]))
 
     if args.typeJoin == 'sum':
 
@@ -89,7 +91,7 @@ if __name__ == '__main__':
         newFeatures = np.zeros((len(featuresSame),sizeC))
         for idx, f in enumerate(featuresSame):
             featConc = np.concatenate(featuresSame[f])
-            if len(featConc) != sizeC:
+            if len(featConc) != sizeC or len(featuresSame[f]) != len(filesLoad) or np.sum(featConc) == 0:
                 continue
             newFeatures[idx] = featConc
 

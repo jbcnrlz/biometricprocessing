@@ -25,6 +25,9 @@ def getFilesFromFolder(pathFold,validationSize='auto'):
     sepData = separateOriginalData(files)
     if validationSize == 'auto':
         validationSize = int(len(files) / 10)
+
+    if type(validationSize) is str:
+        validationSize = int(validationSize)
     trainFiles = [[],[]]
     valFiles = [[],[],[]]
     for f in sepData[0]:

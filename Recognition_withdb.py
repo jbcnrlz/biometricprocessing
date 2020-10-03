@@ -73,8 +73,6 @@ if __name__ == '__main__':
     finalResults = []
 
     for fnum, e in enumerate(experiments):
-        scores = []
-        labels = []
         gallery = np.array(e[0])
         probe = np.array(e[1])
         if args.pca is not None:
@@ -96,10 +94,25 @@ if __name__ == '__main__':
                 print('Final feature size = %d' % (len(gallery[0])))
 
         sims = cosine_similarity(probe[:,:-1],gallery[:,:-1])
-        rs = gallery[sims.argmax(axis=1), -1] == probe[:, -1]
+
+        labels = probe[:, -1]
+
+        rs = gallery[sims.argmax(axis=1), -1] == labels
+        print(np.count_nonzero(rs))
         acertou = np.count_nonzero(rs) / probe.shape[0]
         errou = 1 - acertou
         print("Right %.2f Wrong %.2f" % (acertou*100,errou*100))
+        if args.saveScores is not None:
+            glabels = gallery[:,-1].flatten().astype(np.uint16)
+            if glabels.min() == 1:
+                glabels -= 1
+            if labels.min() == 1:
+                labels -= 1
+            if not os.path.exists(os.path.join(args.saveScores,str(fnum))):
+                os.makedirs(os.path.join(args.saveScores,str(fnum)))
+
+            outputScores(np.concatenate((sims,labels.reshape(-1,1)),axis=1),os.path.join(args.saveScores,str(fnum),'scores.txt'))
+            outputScores([glabels for i in range(sims.shape[0])],os.path.join(args.saveScores,str(fnum),'labels.txt'))
         '''
         print('Doing fold %d with %d fold subjects, gallery size %d' % (fnum, len(e[1]), len(gallery)))
         resultado = np.zeros(2)

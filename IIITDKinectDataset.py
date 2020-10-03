@@ -84,7 +84,7 @@ class IIITDKinectDataset(DatabaseProcessingUtility):
 
     def feedTemplates(self):
         for subject in self.getDirecotiresInPath(self.databasePath):
-            if self.imageType == 'Depth':
+            if self.imageType in ['Depth','Range']:
                 directories = self.getFilesFromDirectory(os.path.join(self.databasePath,subject,'Depth','depthnocolor'))
             else:
                 directories = self.getFilesFromDirectory(os.path.join(self.databasePath,subject,'Depth'))

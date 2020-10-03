@@ -718,9 +718,9 @@ def plotFeaturesCenterloss(features, labels, colors, dirname=None, epoch=None, c
     return fig
 
 
-def loadFileFeatures(pathFile, type='all'):
+def loadFileFeatures(pathFile, type_file='all'):
     returnFeatures = []
-    if type == 'all':
+    if type_file == 'all':
         with open(pathFile, 'r') as f:
             for rf in f:
                 rf = rf.strip().split()
@@ -733,7 +733,7 @@ def loadFileFeatures(pathFile, type='all'):
             d = None
             dataFile[idx] = None
         '''
-    elif type == 'onlyFileType':
+    elif type_file == 'onlyFileType':
         currPosition = 0
         curLineSize = 0
         fileSize = os.path.getsize(pathFile)

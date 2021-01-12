@@ -4,7 +4,7 @@ from datasetClass.structures import loadFoldsDatasets, loadDatasetFromFolder
 import networks.PyTorch.vgg_face_dag as vgg
 import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
 import torch.utils.data, shutil, os, time, torchvision.utils as vutils
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 import torch.nn as nn
 from PyTorchLayers.center_loss import CenterLoss
 
@@ -49,6 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('--scoreFolder', help='Fold where to save scores', required=False, default=None)
     parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
     parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
+    parser.add_argument('--freeze', help='Freeze weights', required=False, default=False)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -64,11 +65,15 @@ if __name__ == '__main__':
         ])
     else:
         dataTransform = transforms.Compose([
+            transforms.RandomCrop(100),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation((10,40)),
+            transforms.RandomVerticalFlip(),
             transforms.ToTensor()
         ])
 
     if args.fineTuneWeights is not None:
-        in_channels = checkpoint['state_dict']['features.0.weight'].shape[1]
+        in_channels = 4 if args.extension == 'png' else 3
     else:
         in_channels = 4 if args.extension == 'png' else 3
 
@@ -109,6 +114,9 @@ if __name__ == '__main__':
         elif args.arc.lower() == 'jolyne':
             muda = jojo.Jolyne(args.classNumber,in_channels=in_channels)
             if args.fineTuneWeights is not None:
+                if args.freeze:
+                    for paraNet in muda.parameters():
+                        paraNet.requires_grad = False
                 muda.load_state_dict(checkpoint['state_dict'])
                 nfeats = muda.softmax[-1].in_features
                 muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
@@ -116,6 +124,10 @@ if __name__ == '__main__':
         else:
             muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
             if args.fineTuneWeights is not None:
+                if args.freeze:
+                    print("Freezing weights")
+                    for paraNet in muda.parameters():
+                        paraNet.requires_grad = False
                 muda.load_state_dict(checkpoint['state_dict'])
                 nfeats = muda.softmax[-1].in_features
                 muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses,bias=False)
@@ -139,6 +151,7 @@ if __name__ == '__main__':
 
         fTrainignTime = []
         for ep in range(args.epochs):
+            acccaraio=[]
             ibl = ibr = ' '
             muda.train()
             lossAcc = []
@@ -197,7 +210,7 @@ if __name__ == '__main__':
                 ibr = 'X'
                 fName = '%s_best_rank.pth.tar' % ('GioGio')
                 fName = os.path.join(args.folderSnapshots, str(f),fName)
-                saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+                #saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
                 bestForFold = cResult
                 if args.scoreFolder is not None:
                     generateFeaturesFile(scores,labelsData[0],args.scoreFolder % (f))
@@ -206,10 +219,11 @@ if __name__ == '__main__':
                 ibl = 'X'
                 fName = '%s_best_loss.pth.tar' % ('GioGio')
                 fName = os.path.join(args.folderSnapshots, str(f),fName)
-                saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+                #saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
                 bestLossForFold = lossAvg
 
             if args.useTensorboard:
+                acccaraio.append(cResult)
                 cc.add_scalar(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/accuracy', cResult, ep)
 
             if bestResult < cResult:
@@ -226,3 +240,4 @@ if __name__ == '__main__':
             print('[EPOCH %03d] Accuracy of the network on the %d validating images: %03.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss, ibl, ibr))
         trainTimeFolds.append(sum(fTrainignTime))
         print('Best result %2.6f Epoch %d' % (bestResult*100,bestEpoch))
+        print(acccaraio)

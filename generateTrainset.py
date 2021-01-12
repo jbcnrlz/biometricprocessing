@@ -20,11 +20,14 @@ def separateOriginalData(files):
             separatedData[0].append(f)
     return separatedData
 
-def getFilesFromFolder(pathFold,validationSize='auto'):
+def getFilesFromFolder(pathFold,validationSize='auto',noAug=False):
     files = getFilesInPath(pathFold)
     sepData = separateOriginalData(files)
     if validationSize == 'auto':
         validationSize = int(len(files) / 10)
+
+    if type(validationSize) is str:
+        validationSize = int(validationSize)
     trainFiles = [[],[]]
     valFiles = [[],[],[]]
     for f in sepData[0]:
@@ -35,6 +38,8 @@ def getFilesFromFolder(pathFold,validationSize='auto'):
             splitedFileName = splitedFileName[0]
         elif len(splitedFileName) < 5 or ('_occluded_' in fileName):
             splitedFileName = '_'.join(splitedFileName[:2])
+        elif 'bs' in splitedFileName[1]:
+            splitedFileName = '_'.join(splitedFileName[:-1])
         else:
             splitedFileName = '_'.join(splitedFileName[:-4])
         if validationSize > 0 and valFiles[1].count(className) < trainFiles[1].count(className) and 'rotate' not in fileName:
@@ -44,7 +49,11 @@ def getFilesFromFolder(pathFold,validationSize='auto'):
             validationSize -= 1
         else:
             if len(sepData[1]) > 0:
+                if splitedFileName not in sepData[1].keys():
+                    continue
                 for fls in sepData[1][splitedFileName]:
+                    if noAug and 'rotate' in fls:
+                        continue
                     trainFiles[0].append(fls)
                     trainFiles[1].append(className)
 
@@ -87,11 +96,28 @@ def main():
     parser.add_argument('--validationSize', help='Size of the validation data', required=True)
     parser.add_argument('--classQuantity', help='Quantity of classes', required=True, type=int)
     parser.add_argument('--startingPoint', help='Number of first class', required=False, type=int, default=1)
+    parser.add_argument('--noAug', help='Uses augmentation', required=False, type=bool, default=False)
     args = parser.parse_args()
 
-    folds = getFilesFromFolder(args.pathBase,args.validationSize)
+    folds = getFilesFromFolder(args.pathBase,args.validationSize,args.noAug)
     print('Validating dataset')
-    if validateFolds(folds,args.classQuantity, args.startingPoint):
+
+    if os.path.exists(args.outputPath):
+        shutil.rmtree(args.outputPath)
+
+    os.makedirs(args.outputPath)
+    os.makedirs(os.path.join(args.outputPath,'1','gallery'))
+    os.makedirs(os.path.join(args.outputPath, '1', 'probe'))
+
+    foldersName = ['gallery','probe']
+
+    for i, fold in enumerate(folds):
+        for t in fold:
+            fileName = t.split(os.path.sep)[-1]
+            shutil.copy(t,os.path.join(args.outputPath,'1',foldersName[i],fileName))
+
+
+"""    if validateFolds(folds,args.classQuantity, args.startingPoint):
         print('Fold is valid')
         if os.path.exists(args.outputPath):
             shutil.rmtree(args.outputPath)
@@ -109,6 +135,6 @@ def main():
 
     else:
         print('Fold separation is not valid')
-
+"""
 if __name__ == '__main__':
     main()

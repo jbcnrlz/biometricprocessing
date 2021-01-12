@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateImageFoldsWithPattern.py" />
-    <option name="PARAMETERS" value="-p=generated_images_bosphorus_3dlbp --folder=folds_bosphorus_3dlbp --filePattern=folds_file_bosphorus.txt --extension=png" />
+    <option name="PARAMETERS" value="-p=eurecom_newdepth_dataset_renamed --folder=folds_eurecom_newdepth --filePattern=folds_file_nd.txt --extension=bmp" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

@@ -205,7 +205,6 @@ class SyameseJolyne(nn.Module):
         outFeatures = self.classifier(outFeatures)
         return  self.softmax(outFeatures), outFeatures
 
-
 class Jolyne(nn.Module):
 
     def __init__(self,classes,imageInput=(100,100),in_channels=4):

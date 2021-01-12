@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateCMCData.py" />
-    <option name="PARAMETERS" value="--scoreFiles=scores/3dlbp_bosphorus_giogio_0.txt__scores/3dlbp_bosphorus_giogio_1.txt__scores/3dlbp_bosphorus_giogio_2.txt" />
+    <option name="PARAMETERS" value="--scoreFiles=scores/fusion_bosphorus_3dlbp_sigmoid_newdepth_giogio_%d.txt --folds=3" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

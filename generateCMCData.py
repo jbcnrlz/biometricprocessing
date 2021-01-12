@@ -16,12 +16,14 @@ if __name__ == '__main__':
     parser.add_argument('--scoreFiles',help='Score file', required=True)
     parser.add_argument('--maxRankShow', help='Max score to show', required=False, default=15)
     parser.add_argument('--formating', help='How to present the data', required=False, default='matlab')
+    parser.add_argument('--folds', help='How to present the data', required=False, default='matlab')
     args = parser.parse_args()
 
     finalRankResults = []
 
-    for sf in args.scoreFiles.split('__'):
+    for rnk in range(int(args.folds)):
 
+        sf = args.scoreFiles % rnk
         scores, classes = loadScoreFile(sf)
         scores = np.array(scores)
 

@@ -1,7 +1,7 @@
 import networks.PyTorch.jojo as jojo, argparse, torch.optim as optim
 import torch.utils.data, shutil, os
 from helper.functions import saveStatePytorch
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from datasetClass.structures import loadDatasetFromFolder, loadFoldsDatasets
 from torchvision import transforms
 import torch.nn as nn
@@ -22,13 +22,17 @@ if __name__ == '__main__':
     parser.add_argument('--fineTuningClasses', default=0, help='Fine Tuning classes number', required=False, type=int)
     parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
     parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
+    parser.add_argument('--optimizer', help='Optimizer', required=False, default="sgd")
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     dataTransform = transforms.Compose([
+        transforms.RandomCrop(100),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation((10, 40)),
+        transforms.RandomVerticalFlip(),
         transforms.ToTensor()
     ])
-
     print('Carregando dados')
     if os.path.exists(os.path.join(args.pathBase,'1')):
         folds = loadFoldsDatasets(args.pathBase, dataTransform)[0]
@@ -56,7 +60,10 @@ if __name__ == '__main__':
 
 
     print('Criando otimizadores')
-    optimizer = optim.SGD(muda.parameters(),lr=args.learningRate)
+    if args.optimizer == 'sgd':
+        optimizer = optim.SGD(muda.parameters(),lr=args.learningRate)
+    else:
+        optimizer = optim.Adam(muda.parameters(), lr=args.learningRate)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.8)
     criterion = nn.CrossEntropyLoss().to(device)
 
@@ -126,20 +133,20 @@ if __name__ == '__main__':
         opt_dict = optimizer.state_dict()
         fName = '%s_current.pth.tar' % (args.network)
         fName = os.path.join(args.output, fName)
-        saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+        #saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
 
         if bestForFoldTLoss > tLoss:
             ibtl = 'X'
             fName = '%s_best_val_loss.pth.tar' % (args.network)
             fName = os.path.join(args.output, fName)
-            saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+            #saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
             bestForFoldTLoss = tLoss
 
         if bestRankForFold < cResult:
             ibr = 'X'
             fName = '%s_best_rank.pth.tar' % (args.network)
             fName = os.path.join(args.output, fName)
-            saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+            #saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
             bestRankForFold = cResult
 
         if bestForFold > lossAvg:

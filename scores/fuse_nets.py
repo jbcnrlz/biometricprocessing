@@ -23,7 +23,7 @@ def main():
         fileA = loadFile('bosphorus/3dlbp_bosphorus_giogio_%d.txt' % (i))
         fileB = loadFile('bosphorus/sigmoid_bosphorus_giogio_%d.txt' % (i))
         fileC = loadFile('bosphorus/newdepth_bosphorus_giogio_%d.txt' % (i))
-        jointFeats = (fileA[:,:-1] * 0.6) + (fileB[:,:-1] * 0.3) + (fileC[:,:-1] * 0.3)
+        jointFeats = (fileA[:,:-1] * 0.6) + (fileB[:,:-1] * 0.2) + (fileC[:,:-1] * 0.2)
         outputFeatureFiles(jointFeats,fileA[:,-1],'fusion_bosphorus_3dlbp_sigmoid_newdepth_giogio_%d.txt' % (i))
 
 

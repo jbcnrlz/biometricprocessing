@@ -1,11 +1,13 @@
 from torchvision import transforms
 from helper.functions import plot_confusion_matrix, saveStatePytorch, generateFeaturesFile
 from datasetClass.structures import loadFoldsDatasets, loadDatasetFromFolder
+from networks.PyTorch.ArcFace import Arcface
 import networks.PyTorch.vgg_face_dag as vgg
 import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
 import torch.utils.data, shutil, os, time, torchvision.utils as vutils
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn as nn
+from finetuneRESNET import initialize_model
 from PyTorchLayers.center_loss import CenterLoss
 
 imagesForTensorboard = []
@@ -50,6 +52,8 @@ if __name__ == '__main__':
     parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
     parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
     parser.add_argument('--freeze', help='Freeze weights', required=False, default=False)
+    parser.add_argument('--optimizer', help='Optimizer', required=False, default="sgd")
+    parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.01, type=float)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -67,9 +71,9 @@ if __name__ == '__main__':
         dataTransform = transforms.Compose([
             transforms.RandomCrop(100),
             transforms.RandomHorizontalFlip(),
-            transforms.RandomRotation((10,40)),
-            transforms.RandomVerticalFlip(),
-            transforms.ToTensor()
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.7480380159512608, 0.4296281369158474, 0.47537796754456024,0.3815522899811688],
+                                 std=[0.3389922561039528, 0.43293648195263507, 0.37572992845338415,0.33357417170101733])
         ])
 
     if args.fineTuneWeights is not None:
@@ -120,7 +124,32 @@ if __name__ == '__main__':
                 muda.load_state_dict(checkpoint['state_dict'])
                 nfeats = muda.softmax[-1].in_features
                 muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
-
+        elif args.arc.lower() == 'giogiokernel':
+            muda = jojo.GioGioModulateKernel(args.classNumber,in_channels=in_channels)
+            if args.fineTuneWeights is not None:
+                if args.freeze:
+                    for paraNet in muda.parameters():
+                        paraNet.requires_grad = False
+                muda.load_state_dict(checkpoint['state_dict'])
+                nfeats = muda.softmax[-1].in_features
+                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+        elif args.arc.lower() == 'giogioinputkernel':
+            if args.fineTuneWeights is not None:
+                muda = jojo.GioGioModulateKernelInput(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
+                if args.freeze:
+                    print("Freezing weights")
+                    for paraNet in muda.parameters():
+                        paraNet.requires_grad = False
+                muda.load_state_dict(checkpoint['state_dict'])
+                nfeats = muda.softmax[-1].in_features
+                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+            else:
+                muda = jojo.GioGioModulateKernelInput(args.classNumber)
+        elif args.arc.lower() == 'resnet':
+            muda,_ = initialize_model(args.classNumber,in_channels)
+            muda.load_state_dict(checkpoint['state_dict'])
+            num_ftrs = muda.fc.in_features
+            muda.fc = nn.Linear(num_ftrs, args.fineTuningClasses,bias=False)
         else:
             muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
             if args.fineTuneWeights is not None:
@@ -138,8 +167,19 @@ if __name__ == '__main__':
         foldResults.append([])
         train_loader = torch.utils.data.DataLoader(datas[0], batch_size=args.batch, shuffle=True)
         test_loader = torch.utils.data.DataLoader(datas[1], batch_size=args.batch, shuffle=False)
+        head = Arcface(embedding_size=4096, classnum=args.classNumber).to(device)
+        print('Creating optimizer %s' % (args.optimizer))
+        if args.optimizer == 'sgd':
+            optimizer = optim.SGD(muda.parameters(), lr=args.learningRate)
+        elif args.optimizer == 'adam':
+            filterout = ['softmax.2.weight','softmax.2.bias']
+            params = [pd[1] for pd in list(filter(lambda kv: kv[0] in filterout, muda.named_parameters()))]
+            base_params = [pd[1] for pd in list(filter(lambda kv: kv[0] not in filterout, muda.named_parameters()))]
+            optimizer = optim.Adam([
+                {'params': base_params, 'lr': args.learningRate * 1e-02},
+                {'params': params, 'lr' : args.learningRate}
+            ])
 
-        optimizer = optim.SGD(muda.parameters(), lr=0.01, momentum=0.5)
         criterion = nn.CrossEntropyLoss().to(device)
         alpha = 0.003
 
@@ -159,7 +199,10 @@ if __name__ == '__main__':
             for bIdx, (currBatch,currTargetBatch) in enumerate(train_loader):
                 currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
 
-                output, features = muda(currBatch)
+                if args.arc.lower() == 'resnet':
+                    output = muda(currBatch)
+                else:
+                    output, features = muda(currBatch)
 
                 loss = criterion(output, currTargetBatch)
 
@@ -173,7 +216,7 @@ if __name__ == '__main__':
             fTrainignTime.append(finishTime)
 
             if args.useTensorboard:
-                cc.add_scalar(args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/loss', sum(lossAcc) / len(lossAcc), ep)
+                cc.add_scalar(args.loadFromFolder + '/' + args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/loss', sum(lossAcc) / len(lossAcc), ep)
 
             muda.eval()
             total = 0
@@ -184,7 +227,11 @@ if __name__ == '__main__':
             with torch.no_grad():
                 for data in test_loader:
                     images, labels = data
-                    outputs, fs = muda(images.to(device))
+                    if args.arc.lower() == 'resnet':
+                        outputs = muda(images.to(device))
+                    else:
+                        outputs, fs = muda(images.to(device))
+
                     scores = scores + [d.tolist() for d in outputs.data]
                     _, predicted = torch.max(outputs.data, 1)
 
@@ -201,7 +248,7 @@ if __name__ == '__main__':
             tLoss = sum(loss_val) / len(loss_val)
 
             if args.useTensorboard:
-                cc.add_scalar(args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/Validation_loss', tLoss, ep)
+                cc.add_scalar(args.loadFromFolder + '/' + args.tensorBoardName+'/fold_'+str(args.startingFold+f+1)+'/Validation_loss', tLoss, ep)
 
             state_dict = muda.state_dict()
             opt_dict = optimizer.state_dict()
@@ -224,7 +271,7 @@ if __name__ == '__main__':
 
             if args.useTensorboard:
                 acccaraio.append(cResult)
-                cc.add_scalar(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/accuracy', cResult, ep)
+                cc.add_scalar(args.loadFromFolder + '/' + args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/accuracy', cResult, ep)
 
             if bestResult < cResult:
                 bestResult = cResult
@@ -234,7 +281,7 @@ if __name__ == '__main__':
                 foldResults[-1].append(correct / total)
                 a = [i for i in range(max(labelsData[0])+1)]
                 confMat = plot_confusion_matrix(labelsData[0],labelsData[1],['Subject '+str(lnm) for lnm in a])
-                cc.add_figure(args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/confMatrix', confMat,ep)
+                cc.add_figure(args.loadFromFolder + '/' + args.tensorBoardName+'/fold_' + str(args.startingFold+f+1) + '/confMatrix', confMat,ep)
 
 
             print('[EPOCH %03d] Accuracy of the network on the %d validating images: %03.2f %% Training Loss %.5f Validation Loss %.5f [%c] [%c]' % (ep, total, 100 * cResult, lossAvg, tLoss, ibl, ibr))

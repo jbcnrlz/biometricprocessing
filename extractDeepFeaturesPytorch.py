@@ -4,7 +4,8 @@ from helper.functions import getFilesInPath
 import argparse, networks.PyTorch.jojo as jojo
 import torch.utils.data, os, numpy as np, shutil
 from joblib import load
-
+from finetuneRESNET import initialize_model
+from torch import nn
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Extract Deep Features utilizing GioGio Network')
@@ -29,12 +30,27 @@ if __name__ == '__main__':
 
     checkpoint = torch.load(args.fineTuneWeights)
     if args.network == 'giogio':
-        muda = jojo.GioGio(checkpoint['state_dict']['softmax.2.weight'].shape[0],in_channels=checkpoint['state_dict']['features.0.weight'].shape[1]).to(device)
+        muda = jojo.GioGio(checkpoint['state_dict']['softmax.1.weight'].shape[0],in_channels=checkpoint['state_dict']['features.0.weight'].shape[1]).to(device)
     elif args.network == 'jolyne':
         channelsIn = 4 if args.modeLoadFile == 'RGBA' else 3
         muda = jojo.Jolyne(checkpoint['state_dict']['softmax.2.weight'].shape[0],
                            in_channels=channelsIn).to(device)
+    elif args.network == 'resnet':
+        muda, _ = initialize_model(checkpoint['state_dict']['fc.weight'].shape[0])
+    elif args.network.lower() == 'giogioinputkernel':
+        muda = jojo.GioGioModulateKernelInput(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
+    elif args.network.lower() == 'maestro':
+        muda = jojo.MaestroNetwork(checkpoint['state_dict']['softmax.1.weight'].shape[0]).to(device)
+
     muda.load_state_dict(checkpoint['state_dict'])
+
+    if args.network == 'resnet':
+        modules=list(muda.children())[:-1]
+        muda=nn.Sequential(*modules)
+        for p in muda.parameters():
+            p.requires_grad = False
+
+        muda = muda.to(device)
 
     muda.eval()
     galleryFeatures = []
@@ -44,8 +60,12 @@ if __name__ == '__main__':
         with torch.no_grad():
             for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
                 print("Extracting features from batch %d"%(bIdx))
-                output, whatever = muda(currBatch.to(device))
-                galleryFeatures = whatever.tolist()
+                if args.network == 'resnet':
+                    output = muda(currBatch.to(device))
+                    output = output.reshape((-1,2048))
+                else:
+                    _, output = muda(currBatch.to(device))
+                galleryFeatures = output.tolist()
                 galleryClasses = currTargetBatch.tolist()
 
                 for i, data in enumerate(galleryFeatures):

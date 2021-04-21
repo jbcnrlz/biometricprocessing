@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateImageFolds.py" />
-    <option name="PARAMETERS" value="-p=generated_images_bosphorus_withoutocc_cr --folder=generated_images_bosphorus_folds_withoutcc_cr" />
+    <option name="PARAMETERS" value="-p=generated_sigmoid_frgc_bosphorus --folder=training_bosphorus_frgc_sigmoid --folds=1" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

@@ -1,6 +1,7 @@
 import networks.PyTorch.jojo as jojo, argparse, torch.optim as optim
+from networks.PyTorch.ArcFace import Arcface, ArcMarginProduct
 import torch.utils.data, shutil, os
-from helper.functions import saveStatePytorch
+from helper.functions import saveStatePytorch, separate_bn_paras
 from torch.utils.tensorboard import SummaryWriter
 from datasetClass.structures import loadDatasetFromFolder, loadFoldsDatasets
 from torchvision import transforms
@@ -27,11 +28,9 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     dataTransform = transforms.Compose([
-        transforms.RandomCrop(100),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation((10, 40)),
-        transforms.RandomVerticalFlip(),
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.7480380159512608, 0.4296281369158474, 0.47537796754456024,0.3815522899811688],
+                             std=[0.3389922561039528, 0.43293648195263507, 0.37572992845338415,0.33357417170101733])
     ])
     print('Carregando dados')
     if os.path.exists(os.path.join(args.pathBase,'1')):
@@ -53,16 +52,22 @@ if __name__ == '__main__':
     os.makedirs(args.output)
     if args.network == 'giogio':
         muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
+    elif args.network == 'giogiokernel':
+        muda = jojo.GioGioModulateKernel(args.classNumber, in_channels=in_channels)
+    elif args.network == 'giogioinputkernel':
+        muda = jojo.GioGioModulateKernelInput(args.classNumber)
     elif args.network == 'jolyne':
         muda = jojo.Jolyne(args.classNumber, in_channels=in_channels)
     elif args.network == 'octjolyne':
         muda = jojo.OctJolyne(args.classNumber, in_channels=in_channels)
+    elif args.network == 'maestro':
+        muda = jojo.MaestroNetwork(args.classNumber)
 
-
-    print('Criando otimizadores')
+    print('Criando otimizadores %s' % (args.optimizer))
+    #head = Arcface(embedding_size=4096, classnum=args.classNumber).to(device)
     if args.optimizer == 'sgd':
         optimizer = optim.SGD(muda.parameters(),lr=args.learningRate)
-    else:
+    elif args.optimizer == 'adam':
         optimizer = optim.Adam(muda.parameters(), lr=args.learningRate)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.8)
     criterion = nn.CrossEntropyLoss().to(device)
@@ -79,7 +84,6 @@ if __name__ == '__main__':
 
         checkpoint = None
 
-    print(muda)
     muda.to(device)
     cc = SummaryWriter()
     bestForFold = bestForFoldTLoss = 500000
@@ -95,9 +99,12 @@ if __name__ == '__main__':
             currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
 
             output, features = muda(currBatch)
+            #features = muda(currBatch)
 
+            #theta = head(features,currTargetBatch)
+            #loss = criterion(theta, currTargetBatch)
             loss = criterion(output, currTargetBatch)
-            loss = loss
+            #loss = loss
 
             optimizer.zero_grad()
             loss.backward()
@@ -106,7 +113,7 @@ if __name__ == '__main__':
             lossAcc.append(loss.item())
 
         lossAvg = sum(lossAcc) / len(lossAcc)
-        cc.add_scalar(args.tensorboardname+'/fullData/loss', lossAvg, ep)
+        cc.add_scalar(args.pathBase + '/' + args.tensorboardname+'/fullData/loss', lossAvg, ep)
         scheduler.step()
         muda.eval()
         total = 0
@@ -116,18 +123,20 @@ if __name__ == '__main__':
             for data in pro_loader:
                 images, labels = data
                 outputs, fs = muda(images.to(device))
+                #fs = muda(images.to(device))
                 _, predicted = torch.max(outputs.data, 1)
 
+                #theta = head(fs, labels.to(device))
+                #loss = criterion(theta, labels.to(device))
                 loss = criterion(outputs, labels.to(device))
                 loss_val.append(loss)
-
                 total += labels.size(0)
                 correct += (predicted == labels.to(device)).sum().item()
 
         cResult = correct / total
         tLoss = sum(loss_val) / len(loss_val)
-        cc.add_scalar(args.tensorboardname+'/fullData/accuracy', cResult, ep)
-        cc.add_scalar(args.tensorboardname+'/fullData/Validation_loss', tLoss, ep)
+        cc.add_scalar(args.pathBase + '/' + args.tensorboardname+'/fullData/accuracy', cResult, ep)
+        cc.add_scalar(args.pathBase + '/' + args.tensorboardname+'/fullData/Validation_loss', tLoss, ep)
 
         state_dict = muda.state_dict()
         opt_dict = optimizer.state_dict()
@@ -139,7 +148,7 @@ if __name__ == '__main__':
             ibtl = 'X'
             fName = '%s_best_val_loss.pth.tar' % (args.network)
             fName = os.path.join(args.output, fName)
-            #saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
+            saveStatePytorch(fName, state_dict, opt_dict, ep + 1)
             bestForFoldTLoss = tLoss
 
         if bestRankForFold < cResult:

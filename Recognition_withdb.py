@@ -5,13 +5,14 @@ from helper.functions import loadPatternFromFiles, loadFileFeatures
 from sklearn.decomposition import PCA
 from helper.functions import plot_confusion_matrix, outputScores
 
+
 def generateDatabase(pathFile):
     dataFile = None
-    with open(pathFile,'r') as f:
+    with open(pathFile, 'r') as f:
         dataFile = f.readlines()
 
-    sizeProbe = int(len(dataFile)/10)
-    dataFile = np.array([list(map(float,x.strip().split(' '))) for x in dataFile])
+    sizeProbe = int(len(dataFile) / 10)
+    dataFile = np.array([list(map(float, x.strip().split(' '))) for x in dataFile])
 
     foldChoices = random.sample([i for i in range(len(dataFile))], sizeProbe)
     probe = dataFile[foldChoices]
@@ -22,6 +23,7 @@ def generateDatabase(pathFile):
 
     return probe, np.array(gallery)
 
+
 def gerarEspacoFace(faces):
     espaco = []
     faceMedia = np.zeros(faces.shape[1])
@@ -29,13 +31,14 @@ def gerarEspacoFace(faces):
         imgraw = fa
         espaco.append(imgraw)
         faceMedia = faceMedia + imgraw
-    
+
     espaco = np.array(espaco)
     faceMedia = np.array(faceMedia) / float(espaco.shape[0])
     espaco = espaco - faceMedia
     return espaco, faceMedia
 
-def generateFolds(data,pattern):
+
+def generateFolds(data, pattern):
     experiment = []
     for f in pattern:
         probe = []
@@ -46,16 +49,17 @@ def generateFolds(data,pattern):
             features = d[:-1]
             fileName = d[-1]
             for p in probePattern:
-                if re.match(p,fileName):
+                if re.match(p, fileName):
                     probe.append(features)
 
             for g in galleryPattern:
-                if re.match(g,fileName):
+                if re.match(g, fileName):
                     gallery.append(features)
 
-        experiment.append((gallery,probe))
+        experiment.append((gallery, probe))
 
     return experiment
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run recognition with db')
@@ -68,7 +72,7 @@ if __name__ == '__main__':
     features = loadFileFeatures(args.path)
     patterns = loadPatternFromFiles(args.folds)
 
-    experiments = generateFolds(features,patterns)
+    experiments = generateFolds(features, patterns)
 
     finalResults = []
 
@@ -80,20 +84,21 @@ if __name__ == '__main__':
                 componentesSize = float(args.pca)
                 print('Generating PCA model -- initial feature size = %d' % (len(gallery[0])))
                 pca = PCA(n_components=componentesSize, svd_solver='full')
-                pca.fit(gallery[:,:-1])
+                pca.fit(gallery[:, :-1])
                 print('Applying PCA model')
-                gallery = np.concatenate((pca.transform(gallery[:,:-1]),gallery[:,-1].reshape((-1,1))),axis=1)
-                probe = np.concatenate((pca.transform(probe[:,:-1]),probe[:,-1].reshape((-1,1))),axis=1)
+                gallery = np.concatenate((pca.transform(gallery[:, :-1]), gallery[:, -1].reshape((-1, 1))), axis=1)
+                probe = np.concatenate((pca.transform(probe[:, :-1]), probe[:, -1].reshape((-1, 1))), axis=1)
                 print('Final feature size = %d' % (len(gallery[0])))
             except:
                 from joblib import load
+
                 pca = load(args.pca)
                 print('Applying PCA model')
-                gallery = np.concatenate((pca.transform(gallery[:,:-1]),gallery[:,-1].reshape((-1,1))),axis=1)
-                probe = np.concatenate((pca.transform(probe[:,:-1]),probe[:,-1].reshape((-1,1))),axis=1)
+                gallery = np.concatenate((pca.transform(gallery[:, :-1]), gallery[:, -1].reshape((-1, 1))), axis=1)
+                probe = np.concatenate((pca.transform(probe[:, :-1]), probe[:, -1].reshape((-1, 1))), axis=1)
                 print('Final feature size = %d' % (len(gallery[0])))
 
-        sims = cosine_similarity(probe[:,:-1],gallery[:,:-1])
+        sims = cosine_similarity(probe[:, :-1], gallery[:, :-1])
 
         labels = probe[:, -1]
 
@@ -101,18 +106,20 @@ if __name__ == '__main__':
         print(np.count_nonzero(rs))
         acertou = np.count_nonzero(rs) / probe.shape[0]
         errou = 1 - acertou
-        print("Right %.2f Wrong %.2f" % (acertou*100,errou*100))
+        print("Right %.2f Wrong %.2f" % (acertou * 100, errou * 100))
         if args.saveScores is not None:
-            glabels = gallery[:,-1].flatten().astype(np.uint16)
+            glabels = gallery[:, -1].flatten().astype(np.uint16)
             if glabels.min() == 1:
                 glabels -= 1
             if labels.min() == 1:
                 labels -= 1
-            if not os.path.exists(os.path.join(args.saveScores,str(fnum))):
-                os.makedirs(os.path.join(args.saveScores,str(fnum)))
+            if not os.path.exists(os.path.join(args.saveScores, str(fnum))):
+                os.makedirs(os.path.join(args.saveScores, str(fnum)))
 
-            outputScores(np.concatenate((sims,labels.reshape(-1,1)),axis=1),os.path.join(args.saveScores,str(fnum),'scores.txt'))
-            outputScores([glabels for i in range(sims.shape[0])],os.path.join(args.saveScores,str(fnum),'labels.txt'))
+            outputScores(np.concatenate((sims, labels.reshape(-1, 1)), axis=1),
+                         os.path.join(args.saveScores, str(fnum), 'scores.txt'))
+            outputScores([glabels for i in range(sims.shape[0])],
+                         os.path.join(args.saveScores, str(fnum), 'labels.txt'))
         '''
         print('Doing fold %d with %d fold subjects, gallery size %d' % (fnum, len(e[1]), len(gallery)))
         resultado = np.zeros(2)
@@ -165,5 +172,5 @@ if __name__ == '__main__':
         finalResults.append(resultado[1] * 100)
         '''
 
-    #print('Final result:')
-    #print(finalResults)
+    # print('Final result:')
+    # print(finalResults)

@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainTestPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -e=100 --runOnTest=True -b=50 --loadFromFolder=folds_eurecom_3dlbp --tensorBoardName=GioGioIIITD --arc=giogio --scoreFolder=scores/3dlbp_eurecom_giogio_freeze_%d.txt --extension=png --fineTuneWeights=frgc_noaug_random/giogio_best_loss.pth.tar --fineTuningClasses=52" />
+    <option name="PARAMETERS" value="-c=458 -e=400 --runOnTest=True -b=50 --loadFromFolder=folds_eurecom_sigmoid --tensorBoardName=GioGioIIITD --arc=giogioinputkernel --scoreFolder=scores/sigmoid_eurecom_giogiokernelinput_adam_%d.txt --extension=png --fineTuneWeights=frgc_giogio_sigmoid_kernel_input_1fc/giogioinputkernel_best_loss.pth.tar --fineTuningClasses=52 --optimizer=adam --learningRate=0.0005" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

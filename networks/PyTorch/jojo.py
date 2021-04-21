@@ -1,3 +1,5 @@
+import torch
+
 from PyTorchLayers.maxout_dynamic import *
 from PyTorchLayers.octoconv import *
 from PyTorchLayers.CorrelationImages import *
@@ -352,28 +354,26 @@ class GioGio(nn.Module):
             nn.Conv2d(in_channels, 64, kernel_size=8, stride=4, padding=2),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 192, kernel_size=5, padding=2),
-            nn.BatchNorm2d(192),
+            nn.Conv2d(64, 128, kernel_size=5, padding=2),
+            nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(192, 384, kernel_size=3, padding=1),
-            nn.BatchNorm2d(384),
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(9600, 4096),
+            nn.Linear(6400, 4096),
             nn.ReLU(inplace=True),
-            MaxoutDynamic(int(4096 / 2), 4096),
             nn.Dropout(),
-            nn.Linear(4096, 4096),
+            #nn.Linear(4096, 4096),
         )
 
         self.softmax = nn.Sequential(
             nn.ReLU(inplace=True),
-            MaxoutDynamic(int(4096 / 2), 4096),
             nn.Linear(4096, classes,bias=False)
         )
 
@@ -383,8 +383,22 @@ class GioGio(nn.Module):
         x = self.classifier(x)
         return  self.softmax(x), x
 
-'''
-class GioGio(nn.Module):
+def getBlock(in_channels,ks1,ks2,ks3):
+    return nn.Sequential(
+        nn.Conv2d(in_channels, 64, kernel_size=ks1, stride=int(ks1 / 2), padding=int(int(ks1 / 2)/2)),
+        nn.BatchNorm2d(64),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(64, 128, kernel_size=ks2, padding=int(ks2 / 2)),
+        nn.BatchNorm2d(128),
+        nn.ReLU(inplace=True),
+        nn.MaxPool2d(kernel_size=3, stride=2),
+        nn.Conv2d(128, 256, kernel_size=ks3, padding=int(ks3 / 2)),
+        nn.BatchNorm2d(256),
+        nn.ReLU(inplace=True),
+        nn.MaxPool2d(kernel_size=3, stride=2)
+    )
+
+class GioGioModulateKernel(nn.Module):
 
     def calculateSize(self,dim,layer,inputSize):
         padding = layer.padding if (type(layer.padding) is not list) else layer.padding[dim]
@@ -395,31 +409,235 @@ class GioGio(nn.Module):
 
     def __init__(self,classes,imageInput=(100,100),in_channels=4):
         self.imageInput = imageInput
-        super(GioGio,self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(in_channels, 64, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 192, kernel_size=5, padding=2),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(192, 384, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2)
-        )
+        super(GioGioModulateKernel,self).__init__()
+        self.features1 = getBlock(1, 8, 5, 3)
+        self.features2 = getBlock(1, 6, 3, 2)
+        self.features3 = getBlock(1, 6, 3, 2)
+        self.features4 = getBlock(1, 3, 2, 1)
 
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(384*5*5, 4096),
+            nn.Linear(25600, 4096),
             nn.ReLU(inplace=True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
+        )
+
+        self.softmax = nn.Sequential(
             nn.ReLU(inplace=True),
-            nn.Linear(4096, classes),
+            nn.Dropout(),
+            nn.Linear(4096, classes,bias=False)
         )
 
     def forward(self, x):
-        x = self.features(x)
-        x = x.view(x.size(0), 384*5*5)
+        x1 = x[:,0,:,:].reshape((-1,1,100,100))
+        x1 = self.features1(x1)
+        x2 = x[:,1,:,:].reshape((-1,1,100,100))
+        x2 = self.features1(x2)
+        x3 = x[:,2,:,:].reshape((-1,1,100,100))
+        x3 = self.features1(x3)
+        x4 = x[:,3,:,:].reshape((-1,1,100,100))
+        x4 = self.features1(x4)
+        x = torch.cat((x1,x2,x3,x4),axis=1)
+        x = x.view(x.size(0), -1)
         x = self.classifier(x)
-        return x
-'''
+        return  self.softmax(x), x
+
+class GioGioModulateKernelInput(nn.Module):
+
+    def calculateSize(self,dim,layer,inputSize):
+        padding = layer.padding if (type(layer.padding) is not list) else layer.padding[dim]
+        dilation = layer.dilation if (type(layer.dilation) is not list) else layer.dilation[dim]
+        kernel_size = layer.kernel_size if (type(layer.kernel_size) is not list) else layer.kernel_size[dim]
+        stride = layer.stride if (type(layer.stride) is not list) else layer.stride[dim]
+        return int(((inputSize+(padding*2)-dilation*(kernel_size-1)-1) / stride) + 1)
+
+    def __init__(self,classes,imageInput=(100,100)):
+        self.imageInput = imageInput
+        super(GioGioModulateKernelInput,self).__init__()
+
+        self.input1 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=5, stride=2,padding=2),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input2 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=4, stride=2,padding=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input3 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=3, stride=2,padding=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input4 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=2, stride=2),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.normInput = nn.Sequential(
+            nn.LayerNorm((256,50,50)),
+            nn.Conv2d(256,64,kernel_size=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.features = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=5, stride=2),
+            nn.InstanceNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 256, kernel_size=3, stride=2),
+            nn.InstanceNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, stride=2),
+            nn.InstanceNorm2d(256),
+            nn.ReLU(inplace=True)
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1,1))
+        )
+        '''
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(6400, 2048),
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            #nn.Linear(4096, 4096),
+        )
+        '''
+        self.softmax = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(256, classes,bias=False)
+        )
+
+    def forward(self, x):
+        x1 = x[:,0,:,:].reshape((-1,1,100,100))
+        x1 = self.input1(x1)
+        x2 = x[:,1,:,:].reshape((-1,1,100,100))
+        x2 = self.input2(x2)
+        x3 = x[:,2,:,:].reshape((-1,1,100,100))
+        x3 = self.input3(x3)
+        x4 = x[:,3,:,:].reshape((-1,1,100,100))
+        x4 = self.input4(x4)
+        x = torch.cat((x1,x2,x3,x4),axis=1)
+        x = self.normInput(x)
+        x = self.features(x)
+        #x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        x = x.view(x.size(0), -1)
+        return  self.softmax(x), x
+
+
+class Bottleneck(nn.Module):
+    # Bottleneck in torchvision places the stride for downsampling at 3x3 convolution(self.conv2)
+    # while original implementation places the stride at the first 1x1 convolution(self.conv1)
+    # according to "Deep residual learning for image recognition"https://arxiv.org/abs/1512.03385.
+    # This variant is also known as ResNet V1.5 and improves accuracy according to
+    # https://ngc.nvidia.com/catalog/model-scripts/nvidia:resnet_50_v1_5_for_pytorch.
+
+    def __init__(self,inplanes,planes,stride=1,downsample=None,groups=1,norm_layer=None):
+        super(Bottleneck, self).__init__()
+        if norm_layer is None:
+            norm_layer = nn.BatchNorm2d
+        width = int(planes / 2)
+        # Both self.conv2 and self.downsample layers downsample the input when stride != 1
+        self.conv1 = nn.Conv2d(inplanes, width, kernel_size=1, stride=1, bias=False)
+        self.bn1 = norm_layer(width)
+        self.conv2 = nn.Conv2d(width,width,kernel_size=3,stride=stride,groups=groups)
+        self.bn2 = norm_layer(width)
+        self.conv3 = nn.Conv2d(width, planes, kernel_size=1, stride=1, bias=False)
+        self.bn3 = norm_layer(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.downsample =  nn.Sequential(
+            nn.Conv2d(inplanes, planes, kernel_size=3,stride=stride),
+            norm_layer(planes),
+        )
+
+    def forward(self, x):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        out += identity
+        out = self.relu(out)
+
+        return out
+
+class MaestroNetwork(nn.Module):
+    def __init__(self,classes,imageInput=(100,100)):
+        self.imageInput = imageInput
+        super(MaestroNetwork,self).__init__()
+
+        self.input1 = nn.Sequential(
+            Bottleneck(1,64,2),
+            Bottleneck(64, 128, 2),
+            Bottleneck(128, 256, 2)
+        )
+        self.input2 = nn.Sequential(
+            Bottleneck(1,64,2),
+            Bottleneck(64, 128, 2),
+            Bottleneck(128, 256, 2)
+        )
+
+        self.input3 = nn.Sequential(
+            Bottleneck(1,64,2),
+            Bottleneck(64, 128, 2),
+            Bottleneck(128, 256, 2)
+        )
+
+        self.input4 = nn.Sequential(
+            Bottleneck(1,64,2),
+            Bottleneck(64, 128, 2),
+            Bottleneck(128, 256, 2)
+        )
+
+        self.normLayer = nn.Sequential(
+            nn.LayerNorm((1024,11,11)),
+            nn.Conv2d(1024,512,stride=2,kernel_size=3),
+            nn.ReLU(inplace=True),
+        )
+
+        self.feature = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(12800,1024),
+            nn.ReLU(inplace=True)
+        )
+
+        self.softmax = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(1024, classes,bias=False)
+        )
+
+    def forward(self, x):
+
+        x1 = x[:,0,:,:].reshape((-1,1,100,100))
+        x1 = self.input1(x1)
+        x2 = x[:,1,:,:].reshape((-1,1,100,100))
+        x2 = self.input2(x2)
+        x3 = x[:,2,:,:].reshape((-1,1,100,100))
+        x3 = self.input3(x3)
+        x4 = x[:,3,:,:].reshape((-1,1,100,100))
+        x4 = self.input4(x4)
+        x = torch.cat((x1,x2,x3,x4),axis=1)
+        x = self.normLayer(x)
+        x = x.view(x.size(0),-1)
+        x = self.feature(x)
+        return self.softmax(x), x

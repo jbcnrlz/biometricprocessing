@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainWithFullDataPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -p=training_3dlbp_frgc_noaug -e=200 -b=50 --output=frgc_noaug_random --extension=png --network=giogio --tensorboardname=frgc_noaug_random" />
+    <option name="PARAMETERS" value="-c=458 -p=training_sigmoid_frgc -e=200 -b=50 --output=frgc_giogio_sigmoid_kernel_input_nofc --extension=png --network=maestro --tensorboardname=frgc_giogio_sigmoid_kernel_input --optimizer=adam --learningRate=0.000005" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

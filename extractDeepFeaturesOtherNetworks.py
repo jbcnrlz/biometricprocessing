@@ -31,7 +31,8 @@ if __name__ == '__main__':
     muda, input_size = initialize_model(checkpoint['state_dict'][list(checkpoint['state_dict'].keys())[-2]].shape[0],True,False,args.model)
     muda.load_state_dict(checkpoint['state_dict'])
     muda.to(device)
-    muda.fc = muda.fc[0:2]
+    if 'resnet' in args.model:
+        muda.fc = muda.fc[0:2]
     muda.eval()
     print(muda)
     galleryFeatures = []
@@ -41,8 +42,12 @@ if __name__ == '__main__':
         with torch.no_grad():
             for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
                 print("Extracting features from batch %d"%(bIdx))
-                output = muda(currBatch.to(device))
-                galleryFeatures = output.reshape((-1,2048)).tolist()
+                if 'efficientnet' in args.model:
+                    output = muda.extract_features(currBatch.to(device))
+                    galleryFeatures = output.view(output.shape[0],-1).tolist()
+                else:
+                    output = muda(currBatch.to(device))
+                    galleryFeatures = output.reshape((-1,2048)).tolist()
                 galleryClasses = currTargetBatch.tolist()
 
                 for i, data in enumerate(galleryFeatures):

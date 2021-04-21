@@ -1,4 +1,4 @@
-import argparse, numpy as np, pyperclip
+import argparse, numpy as np
 
 def loadScoreFile(path):
     scores = []

@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/extractDeepFeaturesPytorch.py" />
-    <option name="PARAMETERS" value="--loadFromFolder=generated_images_eurecom_sigmoid --fineTuneWeights=frgc_giogio_sigmoid_kernel_input_nofc/maestro_best_loss.pth.tar --output=features/maestronetwork_sigmoid_nofc.txt --network=maestro --modeLoadFile=RGBA" />
+    <option name="PARAMETERS" value="--loadFromFolder=generated_images_eurecom_sigmoid --fineTuneWeights=frgc_bosphorus_giogio_sigmoid_depth_kernel_input_att/giogioinputkerneldepthdi_best_loss.pth.tar --output=features/giogioinputkernel_att_di_depth_frgcbosphorus_noaug_eurecom.txt --network=giogioinputkerneldepthdi --modeLoadFile=RGBA --meanImage 0.7480380159512608 0.4296281369158474 0.47537796754456024 0.3815522899811688 --stdImage 0.3389922561039528 0.43293648195263507 0.37572992845338415 0.33357417170101733 --depthFolder eurecom_newdepth_dataset_renamed" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

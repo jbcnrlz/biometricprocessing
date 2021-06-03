@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/trainWithFullDataPytorch.py" />
-    <option name="PARAMETERS" value="-c=458 -p=training_sigmoid_frgc -e=200 -b=50 --output=frgc_giogio_sigmoid_kernel_input_nofc --extension=png --network=maestro --tensorboardname=frgc_giogio_sigmoid_kernel_input --optimizer=adam --learningRate=0.000005" />
+    <option name="PARAMETERS" value="-c=458 -p=training_sigmoid_frgc -e=26 -b=30 --output=frgc_giogio_sigmoid_kernel_input_att_30ep --extension=png --network=giogioinputkernel --tensorboardname=frgc_giogio_sigmoid_kernel_input --optimizer=adam --learningRate=0.000005 --fineTuneWeights=frgc_giogio_sigmoid_kernel_input_att/giogioinputkernel_best_loss.pth.tar --meanImage 0.7480380159512608 0.4296281369158474 0.47537796754456024 0.3815522899811688 --stdImage 0.3389922561039528 0.43293648195263507 0.37572992845338415 0.33357417170101733" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

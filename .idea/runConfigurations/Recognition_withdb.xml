@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Recognition_withdb.py" />
-    <option name="PARAMETERS" value="--path=features/maestronetwork_sigmoid_nofc.txt --folds=folds_file.txt --saveScores=scores/giogioinputkernel_sigmoid_1fc" />
+    <option name="PARAMETERS" value="--path=features/giogioinputkernel_att_di_depth_frgcbosphorus_noaug_eurecom.txt --folds=folds_file.txt --saveScores=scores/giogioinputkernelattdi_sigmoid_1fc" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

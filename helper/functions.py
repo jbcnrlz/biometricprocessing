@@ -1,4 +1,4 @@
-import operator, math, numpy as np, os, re, itertools, matplotlib.pyplot as plt, smtplib
+import operator, math, numpy as np, os, re, itertools, matplotlib.pyplot as plt, smtplib, cv2
 import torch, random, scipy
 from scipy.spatial.distance import euclidean
 from PIL import Image as im
@@ -898,8 +898,9 @@ def separate_bn_paras(modules):
         if 'container' in str(layer.__class__):
             continue
         else:
-            if 'batchnorm' in str(layer.__class__):
+            if ('batchnorm' in str(layer.__class__)) or ('layernorm' in str(layer.__class__)) or ('instancenorm' in str(layer.__class__)):
                 paras_only_bn.extend([*layer.parameters()])
             else:
                 paras_wo_bn.extend([*layer.parameters()])
     return paras_only_bn, paras_wo_bn
+

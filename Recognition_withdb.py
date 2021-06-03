@@ -1,10 +1,7 @@
 import random, numpy as np, argparse, re, os
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.metrics import confusion_matrix
-from helper.functions import loadPatternFromFiles, loadFileFeatures
+from helper.functions import loadPatternFromFiles, loadFileFeatures, plot_confusion_matrix, outputScores
 from sklearn.decomposition import PCA
-from helper.functions import plot_confusion_matrix, outputScores
-
 
 def generateDatabase(pathFile):
     dataFile = None
@@ -43,23 +40,35 @@ def generateFolds(data, pattern):
     for f in pattern:
         probe = []
         gallery = []
+        fileNameProbe = []
+        fileNameGallery = []
         probePattern = f[1].split('__')
         galleryPattern = f[0].split('__')
+        log_output = []
         for d in data:
+            didProbe = False
             features = d[:-1]
             fileName = d[-1]
             for p in probePattern:
                 if re.match(p, fileName):
+                    didProbe = True
+                    log_output.append((str(features[-1]),fileName))
                     probe.append(features)
+                    fileNameProbe.append(fileName)
 
-            for g in galleryPattern:
-                if re.match(g, fileName):
-                    gallery.append(features)
+            if not didProbe:
+                for g in galleryPattern:
+                    if re.match(g, fileName):
+                        gallery.append(features)
+                        fileNameGallery.append(fileName)
 
-        experiment.append((gallery, probe))
-
+        experiment.append((gallery, probe,fileNameGallery,fileNameProbe))
     return experiment
 
+def writeLogClass(dataOutput,file):
+    with open(file,'w') as flog:
+        for d in dataOutput:
+            flog.write(str(d) + '\n')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run recognition with db')
@@ -80,29 +89,27 @@ if __name__ == '__main__':
         gallery = np.array(e[0])
         probe = np.array(e[1])
         if args.pca is not None:
-            try:
-                componentesSize = float(args.pca)
-                print('Generating PCA model -- initial feature size = %d' % (len(gallery[0])))
-                pca = PCA(n_components=componentesSize, svd_solver='full')
-                pca.fit(gallery[:, :-1])
-                print('Applying PCA model')
-                gallery = np.concatenate((pca.transform(gallery[:, :-1]), gallery[:, -1].reshape((-1, 1))), axis=1)
-                probe = np.concatenate((pca.transform(probe[:, :-1]), probe[:, -1].reshape((-1, 1))), axis=1)
-                print('Final feature size = %d' % (len(gallery[0])))
-            except:
-                from joblib import load
-
-                pca = load(args.pca)
-                print('Applying PCA model')
-                gallery = np.concatenate((pca.transform(gallery[:, :-1]), gallery[:, -1].reshape((-1, 1))), axis=1)
-                probe = np.concatenate((pca.transform(probe[:, :-1]), probe[:, -1].reshape((-1, 1))), axis=1)
-                print('Final feature size = %d' % (len(gallery[0])))
+            componentesSize = float(args.pca)
+            print('Generating PCA model -- initial feature size = %d' % (len(gallery[0])))
+            pca = PCA(n_components=componentesSize, svd_solver='full')
+            pca.fit(gallery[:, :-1])
+            print('Applying PCA model')
+            gallery = np.concatenate((pca.transform(gallery[:, :-1]), gallery[:, -1].reshape((-1, 1))), axis=1)
+            probe = np.concatenate((pca.transform(probe[:, :-1]), probe[:, -1].reshape((-1, 1))), axis=1)
+            print('Final feature size = %d' % (len(gallery[0])))
 
         sims = cosine_similarity(probe[:, :-1], gallery[:, :-1])
-
         labels = probe[:, -1]
+        preds = gallery[sims.argmax(axis=1), -1]
+        rs = preds == labels
+        print('errou_fold_%d.txt' % (fnum))
+        writeLogClass([fName + ' ' + str(preds[idxP]) for idxP, fName in enumerate(e[3]) if not rs[idxP]], 'errou_fold_%d.txt' % (fnum))
 
-        rs = gallery[sims.argmax(axis=1), -1] == labels
+        a = [i for i in range(int(max(labels)) + 1)]
+        cmt = plot_confusion_matrix(labels,preds,['Subject '+str(lnm) for lnm in a])
+        cmt.savefig('conf_matrix_exp_%d.jpg' % (fnum))
+
+
         print(np.count_nonzero(rs))
         acertou = np.count_nonzero(rs) / probe.shape[0]
         errou = 1 - acertou

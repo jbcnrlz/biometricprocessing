@@ -3,7 +3,7 @@ from networks.PyTorch.ArcFace import Arcface, ArcMarginProduct
 import torch.utils.data, shutil, os
 from helper.functions import saveStatePytorch, separate_bn_paras
 from torch.utils.tensorboard import SummaryWriter
-from datasetClass.structures import loadDatasetFromFolder, loadFoldsDatasets
+from datasetClass.structures import loadDatasetFromFolder, loadFoldsDatasets, loadFoldsDatasetsDepthDI
 from torchvision import transforms
 import torch.nn as nn
 
@@ -24,24 +24,31 @@ if __name__ == '__main__':
     parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
     parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
     parser.add_argument('--optimizer', help='Optimizer', required=False, default="sgd")
+    parser.add_argument('--depthFolder', help='Folder with the depth', required=False)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     dataTransform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.7480380159512608, 0.4296281369158474, 0.47537796754456024,0.3815522899811688],
-                             std=[0.3389922561039528, 0.43293648195263507, 0.37572992845338415,0.33357417170101733])
+        transforms.Normalize(mean=args.meanImage,
+                             std=args.stdImage)
     ])
     print('Carregando dados')
-    if os.path.exists(os.path.join(args.pathBase,'1')):
-        folds = loadFoldsDatasets(args.pathBase, dataTransform)[0]
+    if args.network != 'giogioinputkerneldepthdi':
+        if os.path.exists(os.path.join(args.pathBase,'1')):
+            folds = loadFoldsDatasets(args.pathBase, dataTransform)[0]
+        else:
+            folds = loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)
+        gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=True)
+        pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
     else:
-        folds = loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)
-    gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=True)
-    pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
-
-    if os.path.exists(args.output):
-        shutil.rmtree(args.output)
+        depthTransform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.6928382911600398],std=[0.18346924017986496])
+        ])
+        folds = loadFoldsDatasetsDepthDI(args.pathBase, dataTransform, args.depthFolder,depthTransform)[0]
+        gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=True)
+        pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
 
     print('Criando diretorio')
     if args.layers is None:
@@ -49,7 +56,14 @@ if __name__ == '__main__':
     else:
         in_channels = int(args.layers)
 
-    os.makedirs(args.output)
+    if  not args.fineTuneWeights:
+        if os.path.exists(args.output):
+            shutil.rmtree(args.output)
+        os.makedirs(args.output)
+    else:
+        if not os.path.exists(args.output):
+            os.makedirs(args.output)
+
     if args.network == 'giogio':
         muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
     elif args.network == 'giogiokernel':
@@ -62,14 +76,23 @@ if __name__ == '__main__':
         muda = jojo.OctJolyne(args.classNumber, in_channels=in_channels)
     elif args.network == 'maestro':
         muda = jojo.MaestroNetwork(args.classNumber)
+    elif args.network == 'giogioinputkerneldepth':
+        muda = jojo.GioGioModulateKernelInputDepth(args.classNumber)
+    elif args.network == 'giogioinputkerneldepthdi':
+        muda = jojo.GioGioModulateKernelInputDepthDI(args.classNumber)
 
     print('Criando otimizadores %s' % (args.optimizer))
-    #head = Arcface(embedding_size=4096, classnum=args.classNumber).to(device)
+    #head = Arcface(embedding_size=2048, classnum=args.classNumber).to(device)
+    head = ArcMarginProduct(in_features=2048, out_features=args.classNumber, s=30, m=0.5).to(device)
     if args.optimizer == 'sgd':
-        optimizer = optim.SGD(muda.parameters(),lr=args.learningRate)
+        paras_only_bn, paras_wo_bn = separate_bn_paras(muda)
+        optimizer = optim.SGD([
+            {'params': paras_wo_bn + [head.kernel], 'weight_decay': 5e-4},
+            {'params': paras_only_bn}
+        ], lr = args.learningRate, momentum = 0.9)
     elif args.optimizer == 'adam':
-        optimizer = optim.Adam(muda.parameters(), lr=args.learningRate)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.8)
+        optimizer = optim.Adam([{'params' : muda.parameters()},{'params': head.parameters()}], lr=args.learningRate)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.1)
     criterion = nn.CrossEntropyLoss().to(device)
 
     print('Iniciando treino')
@@ -95,22 +118,40 @@ if __name__ == '__main__':
         lossAcc = []
         totalImages = 0
         for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
-            totalImages += currBatch.shape[0]
-            currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
+            if args.network != 'giogioinputkerneldepthdi':
+                totalImages += currBatch.shape[0]
+                currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
 
-            output, features = muda(currBatch)
-            #features = muda(currBatch)
+                output, features = muda(currBatch)
+                #features = muda(currBatch)
 
-            #theta = head(features,currTargetBatch)
-            #loss = criterion(theta, currTargetBatch)
-            loss = criterion(output, currTargetBatch)
-            #loss = loss
+                #theta = head(features,currTargetBatch)
+                #loss = criterion(theta, currTargetBatch)
+                loss = criterion(output, currTargetBatch)
+                #loss = loss
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            lossAcc.append(loss.item())
+                lossAcc.append(loss.item())
+            else:
+                currBatch, depthBatch = currBatch
+                totalImages += currBatch.shape[0]
+                currTargetBatch, currBatch, depthBatch = currTargetBatch.to(device), currBatch.to(device), depthBatch.to(device)
+
+                output, features = muda(currBatch,depthBatch)
+
+                theta = head(features,currTargetBatch)
+                loss = criterion(theta, currTargetBatch)
+
+                #loss = criterion(output, currTargetBatch)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                lossAcc.append(loss.item())
 
         lossAvg = sum(lossAcc) / len(lossAcc)
         cc.add_scalar(args.pathBase + '/' + args.tensorboardname+'/fullData/loss', lossAvg, ep)
@@ -121,17 +162,32 @@ if __name__ == '__main__':
         loss_val = []
         with torch.no_grad():
             for data in pro_loader:
-                images, labels = data
-                outputs, fs = muda(images.to(device))
-                #fs = muda(images.to(device))
-                _, predicted = torch.max(outputs.data, 1)
+                if args.network != 'giogioinputkerneldepthdi':
+                    images, labels = data
+                    outputs, fs = muda(images.to(device))
+                    #fs = muda(images.to(device))
+                    _, predicted = torch.max(outputs.data, 1)
 
-                #theta = head(fs, labels.to(device))
-                #loss = criterion(theta, labels.to(device))
-                loss = criterion(outputs, labels.to(device))
-                loss_val.append(loss)
-                total += labels.size(0)
-                correct += (predicted == labels.to(device)).sum().item()
+                    #theta = head(fs, labels.to(device))
+                    #loss = criterion(theta, labels.to(device))
+                    loss = criterion(outputs, labels.to(device))
+                    loss_val.append(loss)
+                    total += labels.size(0)
+                    correct += (predicted == labels.to(device)).sum().item()
+                else:
+                    images, labels = data
+                    images, depthImages = images
+                    outputs, fs = muda(images.to(device),depthImages.to(device))
+                    # fs = muda(images.to(device))
+                    _, predicted = torch.max(outputs.data, 1)
+
+                    theta = head(fs, labels.to(device))
+                    loss = criterion(theta, labels.to(device))
+
+                    #loss = criterion(outputs, labels.to(device))
+                    loss_val.append(loss)
+                    total += labels.size(0)
+                    correct += (predicted == labels.to(device)).sum().item()
 
         cResult = correct / total
         tLoss = sum(loss_val) / len(loss_val)

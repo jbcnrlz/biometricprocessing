@@ -12,7 +12,7 @@ def main():
         if 'rotate' in f:
             continue
         imOpen = cv2.imread(f,cv2.IMREAD_UNCHANGED) / 255
-        for i in range(4):
+        for i in range(imOpen.shape[2]):
             chans[i].append(imOpen[:,:,i])
 
     for imC in chans:

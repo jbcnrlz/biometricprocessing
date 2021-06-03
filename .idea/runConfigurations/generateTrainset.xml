@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/generateTrainset.py" />
-    <option name="PARAMETERS" value="--pathBase=generated_sigmoid_frgc_bosphorus --outputPath=training_bosphorus_frgc_sigmoid --classQuantity=563 --validationSize=400" />
+    <option name="PARAMETERS" value="--pathBase=generated_sigmoid_frgc_bosphorus --outputPath=training_bosphorus_frgc_sigmoid_noaug --classQuantity=563 --validationSize=400 --noAug True" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

@@ -49,8 +49,8 @@ if __name__ == '__main__':
     parser.add_argument('--extension', help='Extension from files', required=False, default='png')
     parser.add_argument('--arc', help='Network', required=False, default='giogio')
     parser.add_argument('--scoreFolder', help='Fold where to save scores', required=False, default=None)
-    parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
-    parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
+    parser.add_argument('--meanImage', help='Mean image', nargs='+', required=True, type=float)
+    parser.add_argument('--stdImage', help='Std image', nargs='+', required=True, type=float)
     parser.add_argument('--freeze', help='Freeze weights', required=False, default=False)
     parser.add_argument('--optimizer', help='Optimizer', required=False, default="sgd")
     parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.01, type=float)
@@ -69,11 +69,9 @@ if __name__ == '__main__':
         ])
     else:
         dataTransform = transforms.Compose([
-            transforms.RandomCrop(100),
-            transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.7480380159512608, 0.4296281369158474, 0.47537796754456024,0.3815522899811688],
-                                 std=[0.3389922561039528, 0.43293648195263507, 0.37572992845338415,0.33357417170101733])
+            transforms.Normalize(mean=args.meanImage,
+                                 std=args.stdImage)
         ])
 
     if args.fineTuneWeights is not None:

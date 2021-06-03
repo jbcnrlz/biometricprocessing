@@ -70,6 +70,20 @@ def loadFoldsDatasets(pathFolds,transforms=None):
         returnDataFolds.append((galDataLoader,proDataLoader))
     return returnDataFolds
 
+def loadFoldsDatasetsDepthDI(pathFolds,transforms=None,depthFolder=None,depthTransform=None):
+    folds = loadFoldFromFolders(pathFolds)
+    returnDataFolds = []
+    for f in folds:
+        if int(min(f[1])) == 1:
+            f[1] = [int(t) - 1 for t in f[1]]
+            f[3] = [int(t) - 1 for t in f[3]]
+
+        galDataLoader = FoldsWithDepth(f[0],f[1],transforms,depthFolder=depthFolder,depthTransform=depthTransform)
+        proDataLoader = FoldsWithDepth(f[2],f[3],transforms,depthFolder=depthFolder,depthTransform=depthTransform)
+        returnDataFolds.append((galDataLoader,proDataLoader))
+    return returnDataFolds
+
+
 def getSameFileFromFolders(fileName,folders):
     fileName = fileName[fileName.index('_')+1:fileName.index('.')]
     returnPaths = []
@@ -130,7 +144,6 @@ def loadFullSet(pathFiles,transforms=None):
         trainFiles[1].append(className)
     return Folds(trainFiles[0],trainFiles[1],transforms)
 
-
 def loadDatasetFromFolder(pathFold,validationSize=0,transforms=None,size=(100,100)):
     files = getFilesInPath(pathFold)
     if validationSize == 'auto':
@@ -175,6 +188,24 @@ def loadFolder(pathFold,mode,transforms=None):
         filesFold[1] = [int(t) - 1 for t in filesFold[1]]
 
     return Folds(filesFold[0],filesFold[1],transform=transforms,modeFile=mode)
+
+def loadFolderDepthDI(pathFold,mode,transforms=None,depthFolder=None,depthTransform=None,filePaths=None):
+    if filePaths is None:
+        files = getFilesInPath(pathFold)
+    else:
+        files = filePaths
+    filesFold = [[],[]]
+    for f in files:
+        fileName = f.split(os.path.sep)[-1]
+        className = fileName.split('_')[0]
+        filesFold[0].append(f)
+        filesFold[1].append(className)
+
+    if min(filesFold[1]) == 1:
+        filesFold[1] = [int(t) - 1 for t in filesFold[1]]
+
+    return FoldsWithDepth(filesFold[0],filesFold[1],transform=transforms,modeFile=mode,depthFolder=depthFolder,depthTransform=depthTransform)
+
 
 def pil_loader(path,mode='RGB'):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
@@ -329,3 +360,76 @@ class Folds(Dataset):
             target = self.target_transform(self.classes[index])
 
         return sample.float() / 255, target
+
+class FoldsWithDepth(Dataset):
+
+    def __init__(self, files, classes, transform=None, target_transform=None, modeFile='auto',depthFolder=None,depthTransform=None):
+        self.classes = list(map(int,classes))
+        self.samples = files
+        self.depthFolder = depthFolder
+        self.depthTransform = depthTransform
+        if files[0][-3:] == 'mat':
+            self.loader = mat_loader
+        elif files[0][-3:] == 'npy':
+            self.loader = npy_loader
+        else:
+            self.loader = pil_loader
+
+        self.transform = transform
+        self.target_transform = target_transform
+        self.modeFile = modeFile
+
+    def getDepthFileName(self,fileNameDI):
+        if 'frgc' in fileNameDI:
+            fileName = fileNameDI.split(os.path.sep)[-1].split('.')[0] + '.jpeg'
+        elif 'eurecom' in fileNameDI:
+            if 'newdepth' in fileNameDI:
+                fileName = fileNameDI.split(os.path.sep)[-1].split('.')[0] + '.bmp'
+            else:
+                fileName = fileNameDI.split(os.path.sep)[-1].split('.')[0] + '_newdepth.bmp'
+        elif 'iiitd' in fileNameDI:
+            fileName = fileNameDI.replace('_depthnocolor','').split(os.path.sep)[-1]
+            if 'newdepth' not in fileName:
+                fileName = fileName[:-4] + '_newdepth.bmp'
+            else:
+                fileName = fileName[:-4] + '.bmp'
+        elif 'bosphorus' in fileNameDI:
+            fileName = fileNameDI.split(os.path.sep)[-1].split('.')[0] + '.bmp'
+            fileName = fileName.split('_')
+            fileName[0] = '%03d' % int(fileName[0])
+            fileName = '_'.join(fileName)
+        else:
+            fileName = fileNameDI.split(os.path.sep)[-1].split('.')[0] + '.jpeg'
+
+        return fileName
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __repr__(self):
+        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
+        tmp = '    Transforms (if any): '
+        fmt_str += '{0}{1}\n'.format(tmp, self.transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+        tmp = '    Target Transforms (if any): '
+        fmt_str += '{0}{1}'.format(tmp, self.target_transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+        return fmt_str
+
+    def __getitem__(self, index):
+        if self.modeFile == 'auto':
+            mode = 'RGBA' if self.samples[index][-3:].lower() == 'png' else 'RGB'
+        else:
+            mode = self.modeFile
+        sample = self.loader(self.samples[index],mode)
+        fileName = self.getDepthFileName(self.samples[index])
+        sampleDepth = self.loader(os.path.join(self.depthFolder,fileName),'RGB')
+        if self.depthTransform is not None:
+            sampleDepth = self.depthTransform(sampleDepth)
+
+        target = self.classes[index]
+        if self.transform is not None:
+            sample = self.transform(sample)
+        if self.target_transform is not None:
+            target = self.target_transform(self.classes[index])
+
+        return (sample.float() / 255, sampleDepth.float() / 255), target

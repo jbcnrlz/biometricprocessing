@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/joining_features.py" />
-    <option name="PARAMETERS" value="--files=features/giogio_eurecom_3dlbp.txt__features/giogio_eurecom_sigmoid.txt__features/giogio_eurecom_newdepth.txt --modelOutput=features/giogioeurecom_3dlbp_sigmoid_newdepth_concatenation.txt --typeJoin=conc" />
+    <option name="PARAMETERS" value="--files=features/giogioinputkernel_att_sigmoid_eurecom.txt__features/giogioinputkernel_att_3dlbp_eurecom.txt --modelOutput=features/giogioinputkerneleurecom_3dlbp_sigmoid.txt --typeJoin=conc" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

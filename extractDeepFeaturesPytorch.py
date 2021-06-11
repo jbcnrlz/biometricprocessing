@@ -2,7 +2,7 @@ from torchvision.transforms import transforms
 from datasetClass.structures import loadFolder, loadFolderDepthDI
 from helper.functions import getFilesInPath
 import argparse, networks.PyTorch.jojo as jojo
-import torch.utils.data, os, numpy as np, shutil
+import torch.utils.data, os, numpy as np, shutil, matplotlib.pyplot as plt
 from joblib import load
 from finetuneRESNET import initialize_model
 from torch import nn
@@ -84,7 +84,18 @@ if __name__ == '__main__':
             p.requires_grad = False
 
         muda = muda.to(device)
+    '''
+    activation = {}
+    def get_activation(name):
+        def hook(model, input, output):
+            activation[name] = [o.detach() for o in output]
 
+        return hook
+
+    muda.enFeat.register_forward_hook(get_activation('enFeat'))
+    if not os.path.exists('attention_maps'):
+        os.makedirs('attention_maps')
+    '''
     muda.eval()
     galleryFeatures = []
     galleryClasses = []
@@ -113,9 +124,23 @@ if __name__ == '__main__':
                     galleryFeatures = output.tolist()
                     galleryClasses = currTargetBatch.tolist()
 
+                    #act = activation['enFeat']
+
                     for i, data in enumerate(galleryFeatures):
                         filesName = paths[filePathNameIdx].split(os.path.sep)[-1]
                         filePathNameIdx += 1
+                        '''
+                        if not os.path.exists(os.path.join('attention_maps', filesName)):
+                            os.makedirs(os.path.join('attention_maps', filesName))
+
+                        for imsFes in range(5):
+                            if not os.path.exists(os.path.join('attention_maps', filesName,str(imsFes))):
+                                os.makedirs(os.path.join('attention_maps', filesName,str(imsFes)))
+
+                            for imF in range(act[imsFes].shape[1]):
+                                #plt.imshow(act[imsFes][i, imF, :].cpu())
+                                plt.imsave(os.path.join('attention_maps',filesName, str(imsFes),str(imF) + '.png'),act[imsFes][i, imF, :].cpu())
+                        '''
                         dk.write(' '.join(list(map(str, data))) + ' ' + str(galleryClasses[i]) + ' ' + filesName + '\n')
 
     if args.pca:

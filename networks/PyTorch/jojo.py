@@ -3,6 +3,7 @@ from PyTorchLayers.octoconv import *
 from PyTorchLayers.CorrelationImages import *
 from networks.PyTorch.attentionModule import *
 from networks.PyTorch.normActive import *
+from scipy import stats
 import math
 
 def calculateMaxPoolingSize(inputsize,padding,dilatation,kernel,stride):
@@ -728,26 +729,26 @@ class GioGioModulateKernelInputDepthDI(nn.Module):
         )
 
         self.enFeat = FeatureEnhanceDepthDI(in_channels=64,out_channels=64)
-
+        '''
         self.normInput = nn.Sequential(
             nn.LayerNorm((320,50,50)),
             nn.Conv2d(320,64,kernel_size=1),
             nn.InstanceNorm2d(64),
             nn.ReLU(inplace=True)
         )
-
+        '''
         self.features = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=5, stride=2),
-            #nn.InstanceNorm2d(128),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(320, 128, kernel_size=5, stride=2),
+            nn.InstanceNorm2d(128),
+            #nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
             nn.Conv2d(128, 256, kernel_size=3, stride=2),
-            #nn.InstanceNorm2d(256),
-            nn.BatchNorm2d(256),
+            nn.InstanceNorm2d(256),
+            #nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.Conv2d(256, 256, kernel_size=3, stride=2),
-            #nn.InstanceNorm2d(256),
-            nn.BatchNorm2d(256),
+            nn.InstanceNorm2d(256),
+            #nn.BatchNorm2d(256),
             nn.ReLU(inplace=True)
         )
 
@@ -766,18 +767,31 @@ class GioGioModulateKernelInputDepthDI(nn.Module):
         )
 
     def forward(self, x, xDepth):
+        #ccalc = x.clone().cpu()
         x1 = x[:,0,:,:].reshape((-1,1,100,100))
-        x1 = self.input1(x1)
         x2 = x[:,1,:,:].reshape((-1,1,100,100))
-        x2 = self.input2(x2)
         x3 = x[:,2,:,:].reshape((-1,1,100,100))
-        x3 = self.input3(x3)
         x4 = x[:,3,:,:].reshape((-1,1,100,100))
+        #print('Inicial')
+        #print(stats.pearsonr(ccalc[0,0,:,:].flatten(),ccalc[0,1,:,:].flatten()))
+        #print(stats.pearsonr(ccalc[0,0,:,:].flatten(),ccalc[0,2,:,:].flatten()))
+        #print(stats.pearsonr(ccalc[0,0,:,:].flatten(),ccalc[0,3,:,:].flatten()))
+        x1 = self.input1(x1)
+        x2 = self.input2(x2)
+        x3 = self.input3(x3)
         x4 = self.input4(x4)
         x5 = self.input5(xDepth[:,0,:,:].reshape((-1,1,100,100)))
         x1, x2, x3, x4,x5 = self.enFeat(x1,x2,x3,x4,x5)
+        #print('Att Maps')
+        #print(stats.pearsonr(x1[0,:,:,:].clone().cpu().flatten(),x2[0,:,:,:].clone().cpu().flatten()))
+        #print(stats.pearsonr(x1[0,:,:,:].clone().cpu().flatten(), x3[0,:,:,:].clone().cpu().flatten()))
+        #print(stats.pearsonr(x1[0,:,:,:].clone().cpu().flatten(), x4[0,:,:,:].clone().cpu().flatten()))
         x = torch.cat((x1,x2,x3,x4,x5),axis=1)
-        x = self.normInput(x)
+        #x = self.normInput(x)
+        #print('After Norm')
+        #xNormed = x.clone().cpu()
+        #for idxChan in range(1,xNormed.shape[1]):
+        #    print(stats.pearsonr(xNormed[0,0,:,:].flatten(),xNormed[0,idxChan,:,:].flatten()))
         x = self.features(x)
 
         x = x.view(x.size(0), -1)

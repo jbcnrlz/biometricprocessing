@@ -1,6 +1,6 @@
 import networks.PyTorch.jojo as jojo, argparse, torch.optim as optim
 from networks.PyTorch.ArcFace import Arcface, ArcMarginProduct
-import torch.utils.data, shutil, os
+import torch.utils.data, shutil, os, matplotlib.pyplot as plt
 from helper.functions import saveStatePytorch, separate_bn_paras
 from torch.utils.tensorboard import SummaryWriter
 from datasetClass.structures import loadDatasetFromFolder, loadFoldsDatasets, loadFoldsDatasetsDepthDI
@@ -64,6 +64,8 @@ if __name__ == '__main__':
         if not os.path.exists(args.output):
             os.makedirs(args.output)
 
+
+
     if args.network == 'giogio':
         muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
     elif args.network == 'giogiokernel':
@@ -83,7 +85,7 @@ if __name__ == '__main__':
 
     print('Criando otimizadores %s' % (args.optimizer))
     #head = Arcface(embedding_size=2048, classnum=args.classNumber).to(device)
-    head = ArcMarginProduct(in_features=2048, out_features=args.classNumber, s=30, m=0.5).to(device)
+    #head = ArcMarginProduct(in_features=2048, out_features=args.classNumber, s=30, m=0.5).to(device)
     if args.optimizer == 'sgd':
         paras_only_bn, paras_wo_bn = separate_bn_paras(muda)
         optimizer = optim.SGD([
@@ -91,7 +93,7 @@ if __name__ == '__main__':
             {'params': paras_only_bn}
         ], lr = args.learningRate, momentum = 0.9)
     elif args.optimizer == 'adam':
-        optimizer = optim.Adam([{'params' : muda.parameters()},{'params': head.parameters()}], lr=args.learningRate)
+        optimizer = optim.Adam(muda.parameters(), lr=args.learningRate)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.1)
     criterion = nn.CrossEntropyLoss().to(device)
 
@@ -142,10 +144,10 @@ if __name__ == '__main__':
 
                 output, features = muda(currBatch,depthBatch)
 
-                theta = head(features,currTargetBatch)
-                loss = criterion(theta, currTargetBatch)
+                #theta = head(features,currTargetBatch)
+                #loss = criterion(theta, currTargetBatch)
 
-                #loss = criterion(output, currTargetBatch)
+                loss = criterion(output, currTargetBatch)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -181,10 +183,10 @@ if __name__ == '__main__':
                     # fs = muda(images.to(device))
                     _, predicted = torch.max(outputs.data, 1)
 
-                    theta = head(fs, labels.to(device))
-                    loss = criterion(theta, labels.to(device))
+                    #theta = head(fs, labels.to(device))
+                    #loss = criterion(theta, labels.to(device))
 
-                    #loss = criterion(outputs, labels.to(device))
+                    loss = criterion(outputs, labels.to(device))
                     loss_val.append(loss)
                     total += labels.size(0)
                     correct += (predicted == labels.to(device)).sum().item()

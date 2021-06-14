@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: MICC Preprocess dataset",
+            "type": "python",
+            "request": "launch",
+            "program": "mainProgramMICC.py",
+            "console": "integratedTerminal",
+            "args": [
+                "-p=D:\\MICC Dataset",
+                "-t=ply",
+                "-op=pp",
+                "--faceVariation=N_LFAU_UFAU_E_CAU",
+                "--quantityProcesses=4",
+                "--pathImages=generated_images_bosphorus",
+                "-s=InitialFilter_TranslateFix:nosetip=0_RotateMICCDataset_GenerateNewDepthMapsLFW"
+            ]
+        },
+    ]
+}

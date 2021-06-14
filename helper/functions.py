@@ -599,7 +599,7 @@ def loadFoldFromFolders(pathFolders):
 def standartParametrization(parser):
     parser.add_argument('-p', '--pathdatabase', help='Path for the database', required=True)
     parser.add_argument('-t', '--typeoffile',
-                        choices=['Depth', 'NewDepth', 'Range', '3DObj', 'Matlab', 'VRML', 'NewDepthBMP'],
+                        choices=['Depth', 'NewDepth', 'Range', '3DObj', 'Matlab', 'VRML', 'NewDepthBMP','ply'],
                         help='Type of files (Depth, NewDepth, Range, 3DObj, Matlab)', required=True)
     parser.add_argument('-op', '--operation', choices=['pp', 'fe', 'both'], default='both',
                         help='Type of operation (pp - PreProcess, fe - Feature Extraction, both)', required=False)

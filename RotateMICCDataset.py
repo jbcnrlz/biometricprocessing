@@ -1,6 +1,5 @@
 from baseClasses.PreProcessingStep import *
-from GenerateNewDepthMapsLFW import *
-from GenerateNewDepthMapsRFRGC import *
+from GenerateNewDepthMapsMICC import *
 from FRGCTemplate import *
 from PIL import Image as im
 import math, numpy as np, copy
@@ -61,7 +60,7 @@ class RotateMICCDataset(PreProcessingStep):
     def doPreProcessing(self,template):
         genFaces = None
         extentionFiles = 'bmp'
-        genFaces = GenerateNewDepthMapsLFW()
+        genFaces = GenerateNewDepthMapsMICC()
         faceCloud = None
         if (type(template.image) is not list):
             faceCloud = template.image
@@ -78,8 +77,8 @@ class RotateMICCDataset(PreProcessingStep):
                         nObj = copy.deepcopy(template)
                         rty = self.getRotationMatrix(i, ax)
                         nObj.image = self.multiplyMatrices(faceCloud.tolist(), rty)
-                        visparts = estimateVis_vertex(nObj.image,rty[:3,:3],300,4)
-                        nObj.image = nObj.image[visparts]
+                        #visparts = estimateVis_vertex(nObj.image,rty[:3,:3],300,4)
+                        #nObj.image = nObj.image[visparts]
                         #newCloud = pcl.PointCloud(nObj.image.astype(np.float32))
                         #fullPathPCD = nObj.rawRepr[0:-4] + '_rotate_' + str(i) + '_' + ax + '.pcd'
                         #newCloud.to_file(fullPathPCD.encode('utf-8'))

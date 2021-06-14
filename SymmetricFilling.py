@@ -61,6 +61,9 @@ class SymmetricFilling(PreProcessingStep):
         for i, x in enumerate(indices):
             if (distances[i] > self.symmThreshold):
                     symmetricFilledFace.append(mirroredFace[x])
+
+        if len(symmetricFilledFace) == 0:
+            return face
         symfacecon = np.array(symmetricFilledFace,dtype=np.float32)
         coordnates = np.ones((symfacecon.shape[0], 1))
         sface = np.concatenate((symfacecon, coordnates), axis=1)

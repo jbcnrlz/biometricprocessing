@@ -62,6 +62,8 @@ class MICCTemplate(Template):
 
             outputObj(self.image, os.path.join('temporaryTemplate', fileName[:-4] + '.obj'))
             self.outputMarks()
+        elif 'PIL' in str(type(self.image)):
+            self.image.save(self.rawRepr[0:-4] + '_newdepth.bmp')
         else:
             nImage = im.fromarray(self.image).convert('RGB')
             nImage.save(self.rawRepr[0:-4] + '_newdepth.bmp')

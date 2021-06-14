@@ -17,7 +17,7 @@
                 "--faceVariation=N_LFAU_UFAU_E_CAU",
                 "--quantityProcesses=4",
                 "--pathImages=generated_images_bosphorus",
-                "-s=InitialFilter_TranslateFix:nosetip=0_RotateMICCDataset_GenerateNewDepthMapsLFW"
+                "-s=InitialFilter_TranslateFix:nosetip=0_GenerateNewDepthMapsMICC"
             ]
         },
     ]

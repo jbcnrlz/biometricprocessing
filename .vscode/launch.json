@@ -5,6 +5,94 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Fix Numbering MICC dataset",
+            "type": "python",
+            "request": "launch",
+            "program": "fixOrder.py",
+            "console": "integratedTerminal",
+            "args" : [
+                "--DIFolder","generated_images_micc_sigmoid",
+                "--rightDIFolder","generated_images_micc_sigmoid_renamed"
+            ]
+        },
+        {
+            "name": "Python: Generate trainset",
+            "type": "python",
+            "request": "launch",
+            "program": "generateTrainset.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--pathBase=generated_images_lbp_frgc_sigmoid",
+                "--outputPath=training_frgc_sigmoid",
+                "--classQuantity=458",
+                "--validationSize=400"
+            ]
+        },
+        {
+            "name": "Python: Train network with full data",
+            "type": "python",
+            "request": "launch",
+            "program": "trainWithFullDataPytorch.py",
+            "console": "integratedTerminal",
+            "args": [
+                "-c=458",
+                "-p=training_frgc_sigmoid",
+                "-e=90",
+                "-b=5",
+                "--output=frgc_kerneldi",
+                "--extension=png",
+                "--network=giogioinputkerneldepthdi",
+                "--tensorboardname=frgc_giogio_sigmoid_kernel_input",
+                "--optimizer=adam",
+                "--learningRate=0.00005",
+                "--meanImage",
+                "0.7480380159512608",
+                "0.4296281369158474",
+                "0.47537796754456024",
+                "0.3815522899811688",
+                "--stdImage",
+                "0.3389922561039528",
+                "0.43293648195263507",
+                "0.37572992845338415",
+                "0.33357417170101733",
+                "--depthFolder=newdepth_frgc"
+            ]
+        },
+        {
+            "name": "Python: Generate newdepth folders",
+            "type": "python",
+            "request": "launch",
+            "program": "generateNewDepthFolderMICC.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--pathBase=D:\\MICC Dataset",
+                "--DIFolder=D:\\PycharmProjects\\biometricprocessing\\generated_images_micc_sigmoid",
+                "--depthFolder=D:\\PycharmProjects\\biometricprocessing\\micc_newdepth",
+                "--extension=bmp"
+            ]
+        },
+        {
+            "name": "Python: MICC Feature extraction (sigmoid) dataset",
+            "type": "python",
+            "request": "launch",
+            "program": "mainProgramMICC.py",
+            "console": "integratedTerminal",
+            "args": [
+                "-p=D:\\MICC Dataset",
+                "-t=ply",
+                "-op=fe",
+                "--loadNewDepth=True",
+                "--faceVariation=N_LFAU_UFAU_E_CAU",
+                "--quantityProcesses=4",
+                "-ap=16",
+                "-r=1",
+                "--angles=-30_-20_-10_10_20_30",
+                "--pathImages=D:\\backup_server\\PycharmProjects\\biometricprocessing\\generated_images_micc_sigmoid",
+                "--typeMeasure=sigmoid",
+                "--parcal=True"
+            ]
+        },
+        {
             "name": "Python: MICC Preprocess dataset",
             "type": "python",
             "request": "launch",
@@ -17,7 +105,7 @@
                 "--faceVariation=N_LFAU_UFAU_E_CAU",
                 "--quantityProcesses=4",
                 "--pathImages=generated_images_bosphorus",
-                "-s=InitialFilter_TranslateFix:nosetip=0_GenerateNewDepthMapsMICC"
+                "-s=InitialFilter_TranslateFix:nosetip=0_RotateMICCDataset_GenerateNewDepthMapsMICC"
             ]
         },
     ]

@@ -87,11 +87,7 @@ if __name__ == '__main__':
     #head = Arcface(embedding_size=2048, classnum=args.classNumber).to(device)
     #head = ArcMarginProduct(in_features=2048, out_features=args.classNumber, s=30, m=0.5).to(device)
     if args.optimizer == 'sgd':
-        paras_only_bn, paras_wo_bn = separate_bn_paras(muda)
-        optimizer = optim.SGD([
-            {'params': paras_wo_bn + [head.kernel], 'weight_decay': 5e-4},
-            {'params': paras_only_bn}
-        ], lr = args.learningRate, momentum = 0.9)
+        optimizer = optim.SGD(muda.parameters(), lr = args.learningRate, momentum = 0.9)
     elif args.optimizer == 'adam':
         optimizer = optim.Adam(muda.parameters(), lr=args.learningRate)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.1)

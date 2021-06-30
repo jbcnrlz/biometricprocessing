@@ -52,21 +52,25 @@ def calculateQuiver(points):
 
 
 def sendEmailMessage(subject, message):
-    config = None
-    with open("emailConfig.yaml", 'r') as stream:
-        config = load(stream)
+    if os.path.exists('emailConfig.yaml'):
+        config = None
+        with open("emailConfig.yaml", 'r') as stream:
+            config = load(stream)
 
-    # Create the container email message.
-    msg = EmailMessage()
-    msg['Subject'] = subject
-    msg['From'] = config['from']
-    msg['To'] = config['to']
-    msg.set_content(message)
+        # Create the container email message.
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = config['from']
+        msg['To'] = config['to']
+        msg.set_content(message)
 
-    server = smtplib.SMTP(config['server'], int(config['port']))
-    server.login(config['login'], config['password'])
-    server.send_message(msg)
-    server.quit()
+        server = smtplib.SMTP(config['server'], int(config['port']))
+        server.login(config['login'], config['password'])
+        server.send_message(msg)
+        server.quit()
+    else:
+        print("Execution finished!")
+        return None
 
 
 def zFunc(t, A, logValue=None):

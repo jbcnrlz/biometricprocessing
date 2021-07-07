@@ -1,8 +1,9 @@
 from baseClasses.PreProcessingStep import *
 from helper.functions import scaleValues
-import math, numpy as np,matlab.engine, os
+import math, numpy as np,matlab.engine, os, cv2
 from scipy.signal import savgol_filter
 from helper.functions import outputObj
+from scipy.ndimage import gaussian_filter
 
 class GenerateNewDepthMapsMICC(PreProcessingStep):
 
@@ -28,8 +29,9 @@ class GenerateNewDepthMapsMICC(PreProcessingStep):
     def doPreProcessing(self,template):
         txtFilePath = template.rawRepr[0:-4] + '_processing_matlab.obj'
         self.saveTXTMatlab(txtFilePath,template.image)
-        #template.image = savgol_filter(np.array(self.generateImage(txtFilePath,100,100)),51,3).tolist()
         template.image = np.array(self.generateImage(txtFilePath,100,100))
+        if template.resolution == 'low':
+            template.image = gaussian_filter(template.image,2)
         template.image = scaleValues(0, 255, template.image)
         template.saveNewDepth()
         os.remove(txtFilePath)

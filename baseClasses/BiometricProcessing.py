@@ -50,7 +50,7 @@ class BiometricProcessing:
 
     preProcessingSteps = property(getPreProcessingSteps,setPreProcessingSteps)
 
-    def applyPreProcessing(self,template,verbose=True,forceImage=False):
+    def applyPreProcessing(self,template,verbose=True,forceImage=True):
         template = self.setupTemplate(template)
         if forceImage or not template.existsPreProcessingFile():
             if verbose:

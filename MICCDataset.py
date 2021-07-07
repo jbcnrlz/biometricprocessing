@@ -75,6 +75,7 @@ class MICCDataset(DatabaseProcessingUtility):
                             euTemp = MICCTemplate(os.path.join(self.databasePath,scanType,'processed',subject,file),subject,imageNumber)
                             self.templates.append(euTemp)
                 else:
+                    break
                     files = self.getFilesFromDirectory(os.path.join(self.databasePath,scanType,'processed',subject))
                     files.sort(reverse=True)
                     imageNumber = 1

@@ -39,7 +39,5 @@ def main():
                     originalFileName = brokenFile[0]+ '_%s_%s_%s_rotate_%d_%s_newdepth_%s' % (brokenFile[1],brokenFile[2],brokenFile[3],dg,axis,brokenFile[-1])
                     shutil.copyfile(os.path.join(args.DIFolder,originalFileName),os.path.join(args.rightDIFolder, fileNameRotate))
 
-
-
 if __name__ == '__main__':
     main()

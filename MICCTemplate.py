@@ -11,11 +11,16 @@ class MICCTemplate(Template):
     overFlow = None
     underFlow = None
     imageNumber = None
+    resolution = None
 
     def __init__(self,pathFile,subject,imagenumber,dataset=None):
         self.itemClass = subject
         self.faceMarks = []
         self.imageNumber = imagenumber
+        if 'kinect' in pathFile:
+            self.resolution = 'low'
+        else:
+            self.resolution = 'high'
         super().__init__(pathFile,None,True,dataset)
 
     def __loadNosetip(self):

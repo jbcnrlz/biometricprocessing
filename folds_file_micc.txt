@@ -1,0 +1,9 @@
+fold
+([0-9]*_0001_[0-9]*_cropped_hd.png|[0-9]*_0001_[0-9]*_cropped_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth_hd.png)
+[0-9]*_0001_cropped_refl_ld.png
+fold
+([0-9]*_0001_[0-9]*_cropped_hd.png|[0-9]*_0001_[0-9]*_cropped_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth_hd.png)
+[0-9]*_00(0[2-9]{1}|1[0-9]{1})_cropped_refl_ld.png
+fold
+([0-9]*_0001_[0-9]*_cropped_hd.png|[0-9]*_0001_[0-9]*_cropped_rotate_(-[0-9]*|[0-9]*)_(x|y)_newdepth_hd.png)
+[0-9]*_[0-9]{4}_cropped_refl_ld.png

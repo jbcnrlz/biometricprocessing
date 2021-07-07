@@ -402,3 +402,132 @@ class FeatureEnhanceDepthDI(nn.Module):
             d_f = self.deform_convs[idx](d_f)
 
         return r_f, g_f, b_f, a_f, d_f
+
+
+class FeatureEnhanceDINoCross(nn.Module):
+
+    depthLayers = 1
+
+    def __init__(self,
+                 in_channels=256,
+                 out_channels=256):
+        super(FeatureEnhanceDINoCross, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.pams = nn.ModuleList()
+        self.cam_cals = nn.ModuleList()
+        self.cam_uses = nn.ModuleList()
+        self.deform_convs = nn.ModuleList()
+        for i in range(self.depthLayers):
+            self.pams.append(PAM_Module(self.in_channels))
+            self.cam_cals.append(CAM_Calculate(self.in_channels))
+            self.cam_uses.append(CAM_Use(self.in_channels))
+            self.deform_convs.append(nn.Conv2d(self.in_channels, self.out_channels, kernel_size=3, padding=1))
+            #self.deform_convs.append(DeformableConv2d(in_channels=self.in_channels,
+            #                                        out_channels=self.out_channels,
+            #                                        kernel_size=3,
+            #                                        padding=1))
+
+    def forward(self, r_f, g_f, b_f, a_f):
+
+        for idx in range(self.depthLayers):
+
+            r_sp_feat = self.pams[idx](r_f)
+            g_sp_feat = self.pams[idx](g_f)
+            b_sp_feat = self.pams[idx](b_f)
+            a_sp_feat = self.pams[idx](a_f)
+
+            r_attention = self.cam_cals[idx](r_f)
+            g_attention = self.cam_cals[idx](g_f)
+            b_attention = self.cam_cals[idx](b_f)
+            a_attention = self.cam_cals[idx](a_f)
+
+            rr_sc_feat = self.cam_uses[idx](r_f, r_attention)
+            gg_sc_feat = self.cam_uses[idx](g_f, g_attention)
+            bb_sc_feat = self.cam_uses[idx](b_f, b_attention)
+            aa_sc_feat = self.cam_uses[idx](a_f, a_attention)
+
+            r_f = r_sp_feat + rr_sc_feat
+            g_f = g_sp_feat + gg_sc_feat
+            b_f = b_sp_feat + bb_sc_feat
+            a_f = a_sp_feat + aa_sc_feat
+
+            r_f = self.deform_convs[idx](r_f)
+            g_f = self.deform_convs[idx](g_f)
+            b_f = self.deform_convs[idx](b_f)
+            a_f = self.deform_convs[idx](a_f)
+
+        return r_f, g_f, b_f, a_f
+
+class FeatureEnhanceDI(nn.Module):
+
+    depthLayers = 1
+
+    def __init__(self,
+                 in_channels=256,
+                 out_channels=256):
+        super(FeatureEnhanceDI, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.pams = nn.ModuleList()
+        self.cam_cals = nn.ModuleList()
+        self.cam_uses = nn.ModuleList()
+        self.deform_convs = nn.ModuleList()
+        for i in range(self.depthLayers):
+            self.pams.append(PAM_Module(self.in_channels))
+            self.cam_cals.append(CAM_Calculate(self.in_channels))
+            self.cam_uses.append(CAM_Use(self.in_channels))
+            self.deform_convs.append(nn.Conv2d(self.in_channels, self.out_channels, kernel_size=3, padding=1))
+            #self.deform_convs.append(DeformableConv2d(in_channels=self.in_channels,
+            #                                        out_channels=self.out_channels,
+            #                                        kernel_size=3,
+            #                                        padding=1))
+
+    def forward(self, r_f, g_f, b_f, a_f):
+
+        for idx in range(self.depthLayers):
+
+            r_sp_feat = self.pams[idx](r_f)
+            g_sp_feat = self.pams[idx](g_f)
+            b_sp_feat = self.pams[idx](b_f)
+            a_sp_feat = self.pams[idx](a_f)
+
+            r_attention = self.cam_cals[idx](r_f)
+            g_attention = self.cam_cals[idx](g_f)
+            b_attention = self.cam_cals[idx](b_f)
+            a_attention = self.cam_cals[idx](a_f)
+
+            rr_sc_feat = self.cam_uses[idx](r_f, r_attention)
+            gg_sc_feat = self.cam_uses[idx](g_f, g_attention)
+            bb_sc_feat = self.cam_uses[idx](b_f, b_attention)
+            aa_sc_feat = self.cam_uses[idx](a_f, a_attention)
+
+            rg_sc_feat = self.cam_uses[idx](r_f, g_attention)
+            rb_sc_feat = self.cam_uses[idx](r_f, b_attention)
+            ra_sc_feat = self.cam_uses[idx](r_f, a_attention)
+
+            gr_sc_feat = self.cam_uses[idx](g_f, r_attention)
+            gb_sc_feat = self.cam_uses[idx](g_f, b_attention)
+            ga_sc_feat = self.cam_uses[idx](g_f, a_attention)
+
+            bg_sc_feat = self.cam_uses[idx](b_f, g_attention)
+            br_sc_feat = self.cam_uses[idx](b_f, r_attention)
+            ba_sc_feat = self.cam_uses[idx](b_f, a_attention)
+
+            ag_sc_feat = self.cam_uses[idx](a_f, g_attention)
+            ab_sc_feat = self.cam_uses[idx](a_f, b_attention)
+            ar_sc_feat = self.cam_uses[idx](a_f, r_attention)
+
+            r_f = r_sp_feat + rr_sc_feat + rg_sc_feat + rb_sc_feat + ra_sc_feat
+            g_f = g_sp_feat + gg_sc_feat + gr_sc_feat + gb_sc_feat + ga_sc_feat
+            b_f = b_sp_feat + bb_sc_feat + br_sc_feat + bg_sc_feat + ba_sc_feat
+            a_f = a_sp_feat + aa_sc_feat + ag_sc_feat + ab_sc_feat + ar_sc_feat
+
+            r_f = self.deform_convs[idx](r_f)
+            g_f = self.deform_convs[idx](g_f)
+            b_f = self.deform_convs[idx](b_f)
+            a_f = self.deform_convs[idx](a_f)
+
+        return r_f, g_f, b_f, a_f

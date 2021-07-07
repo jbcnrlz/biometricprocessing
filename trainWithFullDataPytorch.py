@@ -82,6 +82,12 @@ if __name__ == '__main__':
         muda = jojo.GioGioModulateKernelInputDepth(args.classNumber)
     elif args.network == 'giogioinputkerneldepthdi':
         muda = jojo.GioGioModulateKernelInputDepthDI(args.classNumber)
+    elif args.network == 'vanillapaper':
+        muda = jojo.VanillaNetworkPaper(args.classNumber)
+    elif args.network == 'attentionIN':
+        muda = jojo.AttentionDINet(args.classNumber)
+    elif args.network == 'attentionINCN':
+        muda = jojo.AttentionDICrossNet(args.classNumber)
 
     print('Criando otimizadores %s' % (args.optimizer))
     #head = Arcface(embedding_size=2048, classnum=args.classNumber).to(device)
@@ -89,7 +95,7 @@ if __name__ == '__main__':
     if args.optimizer == 'sgd':
         paras_only_bn, paras_wo_bn = separate_bn_paras(muda)
         optimizer = optim.SGD([
-            {'params': paras_wo_bn + [head.kernel], 'weight_decay': 5e-4},
+            {'params': paras_wo_bn, 'weight_decay': 5e-4},
             {'params': paras_only_bn}
         ], lr = args.learningRate, momentum = 0.9)
     elif args.optimizer == 'adam':
@@ -101,7 +107,7 @@ if __name__ == '__main__':
     if args.fineTuneWeights is not None:
         print('Loading Pre-trained')
         checkpoint = torch.load(args.fineTuneWeights,map_location=torch.device('cpu'))
-        #optimizer.load_state_dict(checkpoint['optimizer'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
         muda.load_state_dict(checkpoint['state_dict'])
         if args.fineTuningClasses > 0:
             nfeats = muda.softmax[-1].in_features

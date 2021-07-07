@@ -398,6 +398,10 @@ class FoldsWithDepth(Dataset):
             fileName = fileName.split('_')
             fileName[0] = '%03d' % int(fileName[0])
             fileName = '_'.join(fileName)
+        elif 'micc' in fileNameDI:
+            fileName = fileNameDI.split(os.path.sep)[-1].split('.')[0] + '.bmp'
+            if 'ld' in fileName and 'newdepth' not in fileName:
+                fileName = fileName[:-6] + 'newdepth_ld.bmp'
         else:
             fileName = fileNameDI.split(os.path.sep)[-1].split('.')[0] + '.jpeg'
 

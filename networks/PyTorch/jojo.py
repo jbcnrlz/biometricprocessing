@@ -798,3 +798,253 @@ class GioGioModulateKernelInputDepthDI(nn.Module):
         x = self.classifier(x)
 
         return  self.softmax(x), x
+
+class VanillaNetworkPaper(nn.Module):
+
+    def __init__(self,classes,imageInput=(100,100)):
+        self.imageInput = imageInput
+        super(VanillaNetworkPaper,self).__init__()
+
+        self.input1 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=5, stride=2,padding=2),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input2 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=4, stride=2,padding=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input3 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=3, stride=2,padding=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input4 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=2, stride=2),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        #self.enFeat = FeatureEnhanceDepthDI(in_channels=64,out_channels=64)
+        '''
+        self.normInput = nn.Sequential(
+            nn.LayerNorm((256,50,50)),
+            nn.Conv2d(256,64,kernel_size=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+        '''
+        self.features = nn.Sequential(
+            nn.Conv2d(256, 128, kernel_size=5, stride=2),
+            nn.InstanceNorm2d(128),
+            #nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 256, kernel_size=3, stride=2),
+            nn.InstanceNorm2d(256),
+            #nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, stride=2),
+            nn.InstanceNorm2d(256),
+            #nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(6400, 2048),
+            nn.ReLU(inplace=True),
+            nn.Dropout()
+            #nn.Linear(4096, 4096),
+        )
+
+        self.softmax = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(2048, classes,bias=False)
+        )
+
+    def forward(self, x):
+        x1 = x[:,0,:,:].reshape((-1,1,100,100))
+        x2 = x[:,1,:,:].reshape((-1,1,100,100))
+        x3 = x[:,2,:,:].reshape((-1,1,100,100))
+        x4 = x[:,3,:,:].reshape((-1,1,100,100))
+
+        x1 = self.input1(x1)
+        x2 = self.input2(x2)
+        x3 = self.input3(x3)
+        x4 = self.input4(x4)
+
+        x = torch.cat((x1,x2,x3,x4),axis=1)
+        #x = self.normInput(x)
+        x = self.features(x)
+
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+
+        return  self.softmax(x), x
+
+class AttentionDINet(nn.Module):
+
+    def __init__(self,classes,imageInput=(100,100)):
+        self.imageInput = imageInput
+        super(AttentionDINet,self).__init__()
+
+        self.input1 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=5, stride=2,padding=2),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input2 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=4, stride=2,padding=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input3 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=3, stride=2,padding=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input4 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=2, stride=2),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.enFeat = FeatureEnhanceDINoCross(in_channels=64,out_channels=64)
+        
+        self.features = nn.Sequential(
+            nn.Conv2d(256, 128, kernel_size=5, stride=2),
+            nn.InstanceNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 256, kernel_size=3, stride=2),
+            nn.InstanceNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, stride=2),
+            nn.InstanceNorm2d(256),
+            nn.ReLU(inplace=True)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(6400, 2048),
+            nn.ReLU(inplace=True),
+            nn.Dropout()
+        )
+
+        self.softmax = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(2048, classes,bias=False)
+        )
+
+    def forward(self, x):
+        x1 = x[:,0,:,:].reshape((-1,1,100,100))
+        x2 = x[:,1,:,:].reshape((-1,1,100,100))
+        x3 = x[:,2,:,:].reshape((-1,1,100,100))
+        x4 = x[:,3,:,:].reshape((-1,1,100,100))
+
+        x1 = self.input1(x1)
+        x2 = self.input2(x2)
+        x3 = self.input3(x3)
+        x4 = self.input4(x4)
+
+        x1, x2, x3, x4 = self.enFeat(x1,x2,x3,x4)
+        x = torch.cat((x1,x2,x3,x4),axis=1)
+        x = self.features(x)
+
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+
+        return  self.softmax(x), x        
+
+class AttentionDICrossNet(nn.Module):
+
+    def __init__(self,classes,imageInput=(100,100)):
+        self.imageInput = imageInput
+        super(AttentionDICrossNet,self).__init__()
+
+        self.input1 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=5, stride=2,padding=2),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input2 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=4, stride=2,padding=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input3 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=3, stride=2,padding=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.input4 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=2, stride=2),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.enFeat = FeatureEnhanceDI(in_channels=64,out_channels=64)
+
+        self.normInput = nn.Sequential(
+            nn.LayerNorm((256,50,50)),
+            nn.Conv2d(256,64,kernel_size=1),
+            nn.InstanceNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+        
+        self.features = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=5, stride=2),
+            nn.InstanceNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 256, kernel_size=3, stride=2),
+            nn.InstanceNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, stride=2),
+            nn.InstanceNorm2d(256),
+            nn.ReLU(inplace=True)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(6400, 2048),
+            nn.ReLU(inplace=True),
+            nn.Dropout()
+        )
+
+        self.softmax = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(2048, classes,bias=False)
+        )
+
+    def forward(self, x):
+        x1 = x[:,0,:,:].reshape((-1,1,100,100))
+        x2 = x[:,1,:,:].reshape((-1,1,100,100))
+        x3 = x[:,2,:,:].reshape((-1,1,100,100))
+        x4 = x[:,3,:,:].reshape((-1,1,100,100))
+
+        x1 = self.input1(x1)
+        x2 = self.input2(x2)
+        x3 = self.input3(x3)
+        x4 = self.input4(x4)
+
+        x1, x2, x3, x4 = self.enFeat(x1,x2,x3,x4)
+        x = torch.cat((x1,x2,x3,x4),axis=1)
+        x = self.normInput(x)
+        x = self.features(x)
+
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+
+        return  self.softmax(x), x        

@@ -5,14 +5,112 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Generate CAMs",
+            "type": "python",
+            "request": "launch",
+            "program": "getCAM.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--loadFromFolder",
+                "generated_images_eurecom_sigmoid",
+                "--fineTuneWeights",
+                "frgc_bosphorus_giogio_3dlbp_depth_kernel_input_att_nonorm/giogioinputkerneldepthdi_best_val_loss.pth.tar",
+                "--batch",
+                "15",
+                "--output",
+                "cams_eurecom_sigmoid",
+                "--network",
+                "giogioinputkerneldepthdi",
+                "--modeLoadFile",
+                "RGBA",
+                "--meanImage",
+                "0.7480380159512608",
+                "0.4296281369158474",
+                "0.47537796754456024",
+                "0.3815522899811688",
+                "--stdImage",
+                "0.3389922561039528",
+                "0.43293648195263507",
+                "0.37572992845338415",
+                "0.33357417170101733",
+                "--depthFolder",
+                "eurecom_newdepth_dataset_renamed"
+            ]
+        },
+        {
+            "name": "Python: Generate CMC for Recognition",
+            "type": "python",
+            "request": "launch",
+            "program": "cmcCurveScores.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--folderWithResults",
+                "scores/iiitd_stable_arch_paper",
+                "--scoresFile",
+                "scores.txt",
+                "--labelsFile",
+                "labels.txt"
+            ]
+        },
+        {
+            "name": "Python: Recognition With Database",
+            "type": "python",
+            "request": "launch",
+            "program": "Recognition_withdb.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--path",
+                "features/giogio_stable_iiitd_sigmoid.txt",
+                "--folds",
+                "folds_files_iitd_di.txt",
+                "--saveScores",
+                "scores/iiitd_stable_arch_paper"
+            ]
+        },
+        {
+            "name": "Python: Extract Deep Features",
+            "type": "python",
+            "request": "launch",
+            "program": "extractDeepFeaturesPytorch.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--loadFromFolder",
+                "generated_images_iiitd_sigmoid",
+                "--fineTuneWeights",
+                "frgc_bosphorus_giogio_3dlbp_depth_kernel_input_att_nonorm/giogioinputkerneldepthdi_best_val_loss.pth.tar",
+                "--batch",
+                "15",
+                "--output",
+                "features/giogio_stable_iiitd_sigmoid.txt",
+                "--network",
+                "giogioinputkerneldepthdi",
+                "--modeLoadFile",
+                "RGBA",
+                "--meanImage",
+                "0.7480380159512608",
+                "0.4296281369158474",
+                "0.47537796754456024",
+                "0.3815522899811688",
+                "--stdImage",
+                "0.3389922561039528",
+                "0.43293648195263507",
+                "0.37572992845338415",
+                "0.33357417170101733",
+                "--depthFolder",
+                "iiitd_nd_database"
+            ]
+        },
+        {
             "name": "Python: Fix Numbering MICC dataset",
             "type": "python",
             "request": "launch",
             "program": "fixOrder.py",
             "console": "integratedTerminal",
-            "args" : [
-                "--DIFolder","generated_images_micc_sigmoid",
-                "--rightDIFolder","generated_images_micc_sigmoid_renamed"
+            "args": [
+                "--DIFolder",
+                "generated_images_micc_sigmoid",
+                "--rightDIFolder",
+                "generated_images_micc_sigmoid_renamed"
             ]
         },
         {
@@ -105,7 +203,8 @@
                 "--faceVariation=N_LFAU_UFAU_E_CAU",
                 "--quantityProcesses=4",
                 "--pathImages=generated_images_bosphorus",
-                "-s=InitialFilter_TranslateFix:nosetip=0_RotateMICCDataset_GenerateNewDepthMapsMICC"
+                "-s=InitialFilter_TranslateFix:nosetip=0_RotateMICCDataset_GenerateNewDepthMapsMICC",
+                "--parcal=True"
             ]
         },
     ]

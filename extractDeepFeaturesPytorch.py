@@ -74,6 +74,12 @@ if __name__ == '__main__':
         muda = jojo.GioGioModulateKernelInputDepth(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
     elif args.network.lower() == 'giogioinputkerneldepthdi':
         muda = jojo.GioGioModulateKernelInputDepthDI(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
+    elif args.network == 'vanillapaper':
+        muda = jojo.VanillaNetworkPaper(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
+    elif args.network == 'attentionIN':
+        muda = jojo.AttentionDINet(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
+    elif args.network == 'attentionINCN':
+        muda = jojo.AttentionDICrossNet(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
 
     muda.load_state_dict(checkpoint['state_dict'])
 

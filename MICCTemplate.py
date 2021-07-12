@@ -10,10 +10,17 @@ class MICCTemplate(Template):
     layersChar = None
     overFlow = None
     underFlow = None
+    imageNumber = None
+    resolution = None
 
-    def __init__(self,pathFile,subject,dataset=None):
+    def __init__(self,pathFile,subject,imagenumber,dataset=None):
         self.itemClass = subject
         self.faceMarks = []
+        self.imageNumber = imagenumber
+        if 'kinect' in pathFile:
+            self.resolution = 'low'
+        else:
+            self.resolution = 'high'
         super().__init__(pathFile,None,True,dataset)
 
     def __loadNosetip(self):
@@ -98,7 +105,10 @@ class MICCTemplate(Template):
         fullPath = fullPath[-1].split('.')
         fullPath = fullPath[0]
         imageSaveDLP = im.fromarray(np.uint8(self.layersChar))
-        pathNImage = pathImage + '/' + str(self.itemClass) +  '_' + fullPath + '.png'
+        if 'kinect' in self.rawRepr:
+            pathNImage = pathImage + '/' + str(self.itemClass) +  '_' + fullPath + '_ld.png'
+        else:
+            pathNImage = pathImage + '/' + str(self.itemClass) +  '_%04d_' % (self.imageNumber) + fullPath + '_hd.png'
         imageSaveDLP.save(pathNImage)
 
     def saveHistogramImage(self, imageSave=None, folder='generated_images_wld'):

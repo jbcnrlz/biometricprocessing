@@ -71,15 +71,19 @@ class MICCDataset(DatabaseProcessingUtility):
                 if 'kinect' in scanType:
                     for file in self.getFilesFromDirectory(os.path.join(self.databasePath,scanType,'processed',subject)):
                         if 'refl' in file:
-                            euTemp = MICCTemplate(os.path.join(self.databasePath,scanType,'processed',subject,file),subject)
+                            imageNumber = int(file.split(os.path.sep)[-1].split('_')[0])
+                            euTemp = MICCTemplate(os.path.join(self.databasePath,scanType,'processed',subject,file),subject,imageNumber)
                             self.templates.append(euTemp)
                 else:
+                    break
                     files = self.getFilesFromDirectory(os.path.join(self.databasePath,scanType,'processed',subject))
                     files.sort(reverse=True)
+                    imageNumber = 1
                     for file in files:
                         if 'cropped' in file:
-                            euTemp = MICCTemplate(os.path.join(self.databasePath,scanType,'processed',subject,file),subject)
+                            euTemp = MICCTemplate(os.path.join(self.databasePath,scanType,'processed',subject,file),subject,imageNumber)
                             self.templates.append(euTemp)
+                            imageNumber += 1
 
 
     def getDatabaseRepresentation(self):

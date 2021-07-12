@@ -113,3 +113,5 @@ dmypy.json
 generated_images_lbp_frgc
 pretrained_models/
 attention_maps/
+.vscode/launch.json
+.vscode/settings.json

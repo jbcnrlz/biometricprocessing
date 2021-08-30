@@ -1,6 +1,6 @@
 from torchvision import transforms
 from helper.functions import plot_confusion_matrix, saveStatePytorch, generateFeaturesFile
-from datasetClass.structures import loadFoldsDatasets, loadDatasetFromFolder
+from datasetClass.structures import loadFoldsDatasets, loadDatasetFromFolder, loadFoldsDatasetsDepthDI
 from networks.PyTorch.ArcFace import Arcface
 import networks.PyTorch.vgg_face_dag as vgg
 import networks.PyTorch.jojo as jojo, argparse, numpy as np, torch, torch.optim as optim, torch.nn.functional as F
@@ -54,6 +54,7 @@ if __name__ == '__main__':
     parser.add_argument('--freeze', help='Freeze weights', required=False, default=False)
     parser.add_argument('--optimizer', help='Optimizer', required=False, default="sgd")
     parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.01, type=float)
+    parser.add_argument('--depthFolder', help='Folder with the depth', required=False)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -79,14 +80,23 @@ if __name__ == '__main__':
     else:
         in_channels = 4 if args.extension == 'png' else 3
 
-    if args.loadFromFolder is None:
-        folds = [loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)]
-        #imageData, classesData = generateData(args.pathBase,extension=args.extension)
-        #folds = generateFoldsOfData(args.folds,imageData,classesData)
+    if args.arc.lower() != 'giogioinputkerneldepthdi':
+        if args.loadFromFolder is None:
+            folds = [loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)]
+            #imageData, classesData = generateData(args.pathBase,extension=args.extension)
+            #folds = generateFoldsOfData(args.folds,imageData,classesData)
 
+        else:
+            folds = loadFoldsDatasets(args.loadFromFolder,dataTransform)
+            #folds = loadFoldFromFolders(args.loadFromFolder)
     else:
-        folds = loadFoldsDatasets(args.loadFromFolder,dataTransform)
-        #folds = loadFoldFromFolders(args.loadFromFolder)
+        depthTransform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.6928382911600398],std=[0.18346924017986496])
+        ])
+        folds = loadFoldsDatasetsDepthDI(args.loadFromFolder, dataTransform, args.depthFolder,depthTransform)
+        #gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=True)
+        #pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
 
     if os.path.exists(args.folderSnapshots):
         shutil.rmtree(args.folderSnapshots)
@@ -148,6 +158,19 @@ if __name__ == '__main__':
             muda.load_state_dict(checkpoint['state_dict'])
             num_ftrs = muda.fc.in_features
             muda.fc = nn.Linear(num_ftrs, args.fineTuningClasses,bias=False)
+        elif args.arc.lower() == 'giogioinputkerneldepthdi':
+            if args.fineTuneWeights is not None:
+                muda = jojo.GioGioModulateKernelInputDepthDI(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
+                muda.load_state_dict(checkpoint['state_dict'])
+                if args.freeze:
+                    print("Freezing weights")
+                    for paraNet in muda.parameters():
+                        paraNet.requires_grad = False                
+                nfeats = muda.softmax[-1].in_features
+                muda.softmax[-1] = nn.Linear(nfeats, args.fineTuningClasses)
+                muda.softmax.add_module('softmax_output',nn.Softmax(dim=1))
+            else:
+                muda = jojo.GioGioModulateKernelInputDepthDI(args.classNumber)
         else:
             muda = jojo.GioGio(args.classNumber,in_channels=in_channels)
             if args.fineTuneWeights is not None:
@@ -170,7 +193,7 @@ if __name__ == '__main__':
         if args.optimizer == 'sgd':
             optimizer = optim.SGD(muda.parameters(), lr=args.learningRate)
         elif args.optimizer == 'adam':
-            filterout = ['softmax.2.weight','softmax.2.bias']
+            filterout = ['softmax.2.weight','softmax.2.bias','softmax.softmax_output.weight','softmax.softmax_output.bias']
             params = [pd[1] for pd in list(filter(lambda kv: kv[0] in filterout, muda.named_parameters()))]
             base_params = [pd[1] for pd in list(filter(lambda kv: kv[0] not in filterout, muda.named_parameters()))]
             optimizer = optim.Adam([
@@ -195,11 +218,17 @@ if __name__ == '__main__':
             lossAcc = []
             start_time = time.time()
             for bIdx, (currBatch,currTargetBatch) in enumerate(train_loader):
-                currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
 
                 if args.arc.lower() == 'resnet':
                     output = muda(currBatch)
+
+                elif args.arc.lower() == 'giogioinputkerneldepthdi':
+                    currBatch, depthBatch = currBatch
+                    currTargetBatch, currBatch, depthBatch = currTargetBatch.to(device), currBatch.to(device), depthBatch.to(device)
+
+                    output, features = muda(currBatch,depthBatch)
                 else:
+                    currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
                     output, features = muda(currBatch)
 
                 loss = criterion(output, currTargetBatch)
@@ -224,10 +253,17 @@ if __name__ == '__main__':
             loss_val = []
             with torch.no_grad():
                 for data in test_loader:
-                    images, labels = data
+                    
                     if args.arc.lower() == 'resnet':
+                        images, labels = data
                         outputs = muda(images.to(device))
+                    elif args.arc.lower() == 'giogioinputkerneldepthdi':
+                        (currBatch,depthBatch), labels = data
+                        labels, currBatch, depthBatch = labels.to(device), currBatch.to(device), depthBatch.to(device)
+
+                        outputs, fs = muda(currBatch,depthBatch)
                     else:
+                        images, labels = data
                         outputs, fs = muda(images.to(device))
 
                     scores = scores + [d.tolist() for d in outputs.data]

@@ -227,7 +227,7 @@ class FeatureEnhance(nn.Module):
             #                                        kernel_size=3,
             #                                        padding=1))
 
-    def forward(self, r_f, g_f, b_f, a_f):
+    def forward(self, r_f, g_f, b_f, a_f):        
 
         for idx in range(self.depthLayers):
 
@@ -342,7 +342,7 @@ class FeatureEnhanceDepthDI(nn.Module):
             #                                        kernel_size=3,
             #                                        padding=1))
 
-    def forward(self, r_f, g_f, b_f, a_f,d_f):
+    def forward(self, r_f, g_f, b_f, a_f,d_f):        
 
         for idx in range(self.depthLayers):
 
@@ -531,3 +531,35 @@ class FeatureEnhanceDI(nn.Module):
             a_f = self.deform_convs[idx](a_f)
 
         return r_f, g_f, b_f, a_f
+
+class FeatureEnhanceDepth(nn.Module):
+
+    depthLayers = 1
+
+    def __init__(self,
+                 in_channels=256,
+                 out_channels=256):
+        super(FeatureEnhanceDepth, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.cam_uses = nn.ModuleList()
+        self.pams = nn.ModuleList()
+        self.deform_convs = nn.ModuleList()
+        for i in range(self.depthLayers):
+            self.pams.append(PAM_Module(self.in_channels))
+            self.cam_uses.append(CAM_Use(self.in_channels))
+            self.deform_convs.append(nn.Conv2d(self.in_channels, self.out_channels, kernel_size=3, padding=1))
+            #self.deform_convs.append(DeformableConv2d(in_channels=self.in_channels,
+            #                                        out_channels=self.out_channels,
+            #                                        kernel_size=3,
+            #                                        padding=1))
+
+    def forward(self, d_f):
+
+        for idx in range(self.depthLayers):
+
+            d_sp_feat = self.pams[idx](d_f)
+
+            d_f = self.deform_convs[idx](d_sp_feat)
+
+        return d_f

@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--modeLoadFile', help='Mode to load', required=False, default='auto')
     parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
     parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
-    parser.add_argument('--depthFolder', help='Folder with the depth', required=False)
+    parser.add_argument('--depthFolder', help='Folder with the depth', required=False, default=None)
     parser.add_argument('--batch', type=int, default=50, help='Size of the batch', required=False)
     args = parser.parse_args()
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
                              std=args.stdImage)
     ])
 
-    if args.network != 'giogioinputkerneldepthdi':
+    if args.network != 'giogioinputkerneldepthdi' and args.depthFolder is None:
         paths = getFilesInPath(args.loadFromFolder)
         foldFile = loadFolder(args.loadFromFolder, args.modeLoadFile, dataTransform)
         gal_loader = torch.utils.data.DataLoader(foldFile, batch_size=args.batch, shuffle=False)
@@ -65,7 +65,11 @@ if __name__ == '__main__':
         muda = jojo.Jolyne(checkpoint['state_dict']['softmax.2.weight'].shape[0],
                            in_channels=channelsIn).to(device)
     elif args.network == 'resnet':
-        muda, _ = initialize_model(checkpoint['state_dict']['fc.weight'].shape[0])
+        if args.depthFolder is not None:
+            channelsIn = 5
+        else:
+            channelsIn = 4 if args.modeLoadFile == 'RGBA' else 3
+        muda, _ = initialize_model(checkpoint['state_dict']['fc.weight'].shape[0],channelsIn)
     elif args.network.lower() == 'giogioinputkernel':
         muda = jojo.GioGioModulateKernelInput(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
     elif args.network.lower() == 'maestro':
@@ -80,7 +84,14 @@ if __name__ == '__main__':
         muda = jojo.AttentionDINet(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
     elif args.network == 'attentionINCN':
         muda = jojo.AttentionDICrossNet(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
-
+    elif args.network == 'depthPaper':
+            muda = jojo.DepthAM(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
+    elif args.network == 'mobilenet':
+        if args.depthFolder is not None:
+            channelsIn = 5
+        else:
+            channelsIn = 4 if args.modeLoadFile == 'RGBA' else 3
+        muda, _ = initialize_model(checkpoint['state_dict']['classifier.3.weight'].shape[0],channelsIn,modelName=args.network)
     muda.load_state_dict(checkpoint['state_dict'])
 
     if args.network == 'resnet':
@@ -89,6 +100,9 @@ if __name__ == '__main__':
         for p in muda.parameters():
             p.requires_grad = False
 
+        muda = muda.to(device)
+    elif args.network == 'mobilenet':
+        muda.classifier = muda.classifier[:-1]
         muda = muda.to(device)
     '''
     activation = {}
@@ -111,9 +125,15 @@ if __name__ == '__main__':
             for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
                 if args.network != 'giogioinputkerneldepthdi':
                     print("Extracting features from batch %d"%(bIdx))
-                    if args.network == 'resnet':
-                        output = muda(currBatch.to(device))
-                        output = output.reshape((-1,2048))
+                    if args.network in ['resnet','mobilenet']:
+                        if args.depthFolder is not None:
+                            cbt, cdb = currBatch
+                            cbt, cdb = cbt.to(device), cdb.to(device)
+                            output = muda(torch.cat((cbt,cdb[:,:1,:,:]),1))
+                        else:
+                            output = muda(currBatch.to(device))
+                        if args.network == 'resnet':
+                            output = output.reshape((-1,2048))
                     else:
                         _, output = muda(currBatch.to(device))
                     galleryFeatures = output.tolist()

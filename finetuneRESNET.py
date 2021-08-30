@@ -2,18 +2,31 @@ import networks.PyTorch.jojo as jojo, argparse, torch.optim as optim
 import torch.utils.data, shutil, os
 from helper.functions import saveStatePytorch
 from torch.utils.tensorboard import SummaryWriter
-from datasetClass.structures import loadDatasetFromFolder, loadFoldsDatasets
+from datasetClass.structures import loadDatasetFromFolder, loadFoldsDatasets, loadFoldsDatasetsDepthDI
 from torchvision import transforms, models
 import torch.nn as nn
 
-def initialize_model(num_classes,channels=3):
+def initialize_model(num_classes,channels=3,modelName='resnet'):
     # Initialize these variables which will be set in this if statement. Each of these
     #   variables is model specific.
-    model_ft = models.resnet50(pretrained=False)
-    if channels > 3:
-            model_ft.conv1 = nn.Conv2d(4,64,kernel_size=7,stride=2,padding=3,bias=True)
-    num_ftrs = model_ft.fc.in_features
-    model_ft.fc = nn.Linear(num_ftrs, num_classes)
+    if modelName == 'resnet':
+        model_ft = models.resnet50(pretrained=False)
+        if channels > 3:
+                model_ft.conv1 = nn.Conv2d(channels,64,kernel_size=7,stride=2,padding=3,bias=True)
+        num_ftrs = model_ft.fc.in_features
+        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+    elif modelName == 'inception':
+        model_ft = models.inception_v3(pretrained=False)
+        if channels > 3:
+                model_ft.Conv2d_1a_3x3.conv = nn.Conv2d(channels,32,kernel_size=3,stride=2,bias=False)
+        num_ftrs = model_ft.fc.in_features
+        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+    elif modelName == 'mobilenet':
+        model_ft = models.mobilenet_v3_large(pretrained=False)
+        if channels > 3:
+                model_ft.features[0][0] = nn.Conv2d(channels,16,kernel_size=3,stride=2,bias=False)
+        num_ftrs = model_ft.classifier[-1].in_features
+        model_ft.classifier[-1] = nn.Linear(num_ftrs, num_classes)
     input_size = 100
 
     return model_ft, input_size
@@ -29,18 +42,32 @@ if __name__ == '__main__':
     parser.add_argument('--learningRate', help='Learning Rate', required=False, default=0.01, type=float)
     parser.add_argument('--tensorboardname', help='Learning Rate', required=False, default='GioGioFullTraining')
     parser.add_argument('--optimizer', help='Optimizer', required=False, default="sgd")
+    parser.add_argument('--depthFolder', help='Folder with the depth', required=False, default=None)
+    parser.add_argument('--meanImage', help='Mean image', nargs='+', required=False, type=float)
+    parser.add_argument('--stdImage', help='Std image', nargs='+', required=False, type=float)
+    parser.add_argument('--model', help='Model to finetune', required=False, default='resnet')
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     dataTransform = transforms.Compose([
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize(mean=args.meanImage,
+                             std=args.stdImage)
     ])
 
     print('Carregando dados')
-    if os.path.exists(os.path.join(args.pathBase,'1')):
-        folds = loadFoldsDatasets(args.pathBase, dataTransform)[0]
+    if args.depthFolder is None:
+        if os.path.exists(os.path.join(args.pathBase,'1')):
+            folds = loadFoldsDatasets(args.pathBase, dataTransform)[0]
+        else:
+            folds = loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)
     else:
-        folds = loadDatasetFromFolder(args.pathBase, validationSize='auto', transforms=dataTransform)
+        depthTransform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.6928382911600398],std=[0.18346924017986496])
+        ])
+        folds = loadFoldsDatasetsDepthDI(args.pathBase, dataTransform, args.depthFolder,depthTransform)[0]
+
     gal_loader = torch.utils.data.DataLoader(folds[0], batch_size=args.batch, shuffle=True)
     pro_loader = torch.utils.data.DataLoader(folds[1], batch_size=args.batch, shuffle=False)
 
@@ -49,8 +76,12 @@ if __name__ == '__main__':
 
     print('Criando diretorio')
     os.makedirs(args.output)
-    channelsForImage = 3 if args.extension != 'png' else 4
-    muda, sizeim = initialize_model(args.classNumber,channelsForImage)
+    if args.depthFolder is None:
+        channelsForImage = 3 if args.extension != 'png' else 4
+    else:
+        channelsForImage = 5
+
+    muda, sizeim = initialize_model(args.classNumber,channelsForImage,modelName=args.model)
 
     print('Criando otimizadores')
     if args.optimizer == 'sgd':
@@ -75,19 +106,36 @@ if __name__ == '__main__':
         lossAcc = []
         totalImages = 0
         for bIdx, (currBatch, currTargetBatch) in enumerate(gal_loader):
-            totalImages += currBatch.shape[0]
-            currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
+            if args.optimizer is None:
+                totalImages += currBatch.shape[0]
+                currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
 
-            output = muda(currBatch)
+                output = muda(currBatch)
 
-            loss = criterion(output, currTargetBatch)
-            loss = loss
+                loss = criterion(output, currTargetBatch)
+                loss = loss
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            lossAcc.append(loss.item())
+                lossAcc.append(loss.item())
+            else:
+                currBatch, depthBatch = currBatch
+                totalImages += currBatch.shape[0]
+                currTargetBatch, currBatch, depthBatch = currTargetBatch.to(device), currBatch.to(device), depthBatch.to(device)
+
+                output = muda(torch.cat((currBatch,depthBatch[:,:1,:,:]),1))
+
+                loss = criterion(output, currTargetBatch)
+                loss = loss
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                lossAcc.append(loss.item())
+
 
         lossAvg = sum(lossAcc) / len(lossAcc)
         cc.add_scalar(args.tensorboardname+'/fullData/loss', lossAvg, ep)
@@ -98,15 +146,28 @@ if __name__ == '__main__':
         loss_val = []
         with torch.no_grad():
             for data in pro_loader:
-                images, labels = data
-                outputs = muda(images.to(device))
-                _, predicted = torch.max(outputs.data, 1)
+                if args.optimizer is None:
+                    images, labels = data
+                    outputs = muda(images.to(device))
+                    _, predicted = torch.max(outputs.data, 1)
 
-                loss = criterion(outputs, labels.to(device))
-                loss_val.append(loss)
+                    loss = criterion(outputs, labels.to(device))
+                    loss_val.append(loss)
 
-                total += labels.size(0)
-                correct += (predicted == labels.to(device)).sum().item()
+                    total += labels.size(0)
+                    correct += (predicted == labels.to(device)).sum().item()
+                else:
+                    images, labels = data
+                    cbt, cdb = images
+                    cbt, cdb = cbt.to(device), cdb.to(device)
+                    outputs = muda(torch.cat((cbt,cdb[:,:1,:,:]),1))
+                    _, predicted = torch.max(outputs.data, 1)
+
+                    loss = criterion(outputs, labels.to(device))
+                    loss_val.append(loss)
+
+                    total += labels.size(0)
+                    correct += (predicted == labels.to(device)).sum().item()
 
         cResult = correct / total
         tLoss = sum(loss_val) / len(loss_val)

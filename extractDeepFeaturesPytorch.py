@@ -82,7 +82,7 @@ if __name__ == '__main__':
         muda = jojo.AttentionDICrossNet(checkpoint['state_dict']['softmax.2.weight'].shape[0]).to(device)
 
     muda.load_state_dict(checkpoint['state_dict'])
-
+    
     if args.network == 'resnet':
         modules=list(muda.children())[:-1]
         muda=nn.Sequential(*modules)

@@ -113,5 +113,12 @@ dmypy.json
 generated_images_lbp_frgc
 pretrained_models/
 attention_maps/
+.bosphorus_frgc_attentionIN_sigmoid/
+.cams_eurecom_sigmoid/
+.bosphorus_frgc_vanilla_sigmoid/
+bosphorus_frgc_attentionIN_sigmoid/attentionIN_best_loss.pth.tar
+bosphorus_frgc_attentionIN_sigmoid/attentionIN_best_val_loss.pth.tar
+bosphorus_frgc_vanilla_sigmoid/vanillapaper_best_loss.pth.tar
+bosphorus_frgc_vanilla_sigmoid/vanillapaper_best_val_loss.pth.tar
 .vscode/launch.json
 .vscode/settings.json

@@ -148,10 +148,14 @@ class MICCTemplate(Template):
         imageSaveDLP.convert('RGB').save(pathNImage)
 
     def isFileExists(self, pathImage, filetype='png'):
+
         fullPath = self.rawRepr.split(os.path.sep)
         fullPath = fullPath[-1].split('.')
         fullPath = fullPath[0]
-        pathNImage = pathImage + '/' + str(self.itemClass) + '_' + fullPath + '.' + filetype
+        if 'kinect' in self.rawRepr:
+            pathNImage = pathImage + '/' + str(self.itemClass) +  '_' + fullPath + '_ld.png'
+        else:
+            pathNImage = pathImage + '/' + str(self.itemClass) +  '_%04d_' % (self.imageNumber) + fullPath + '_hd.png'
         return os.path.exists(pathNImage)
 
     def existsPreProcessingFile(self):

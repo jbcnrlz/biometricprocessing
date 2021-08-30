@@ -89,9 +89,12 @@ if __name__ == '__main__':
         gallery = np.array(e[0])
         probe = np.array(e[1])
         if args.pca is not None:
-            componentesSize = float(args.pca)
+            if '.' in args.pca:
+                componentesSize = float(args.pca)
+            else:
+                componentesSize = int(args.pca)
             print('Generating PCA model -- initial feature size = %d' % (len(gallery[0])))
-            pca = PCA(n_components=componentesSize, svd_solver='full')
+            pca = PCA(n_components=componentesSize)
             pca.fit(gallery[:, :-1])
             print('Applying PCA model')
             gallery = np.concatenate((pca.transform(gallery[:, :-1]), gallery[:, -1].reshape((-1, 1))), axis=1)

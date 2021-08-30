@@ -1,7 +1,11 @@
-import random, numpy as np, argparse, re
+import random, numpy as np, argparse, re, pandas as pd
 from helper.functions import loadPatternFromFiles, loadFileFeatures
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.experimental import enable_halving_search_cv
+from sklearn.model_selection import HalvingGridSearchCV
+from sklearn.decomposition import PCA
 
 def generateDatabase(pathFile):
     dataFile = None
@@ -72,14 +76,32 @@ if __name__ == '__main__':
     experiments = generateFolds(features, patterns)
 
     finalResults = []
+    '''
+    paramgrid = {'max_depth': list(range(1,21)),'min_samples_split': list(range(2,21))}
 
+    
+    svcTst = RandomForestClassifier()
+    gt = np.array(experiments[0][0])
+    pt = np.array(experiments[0][1])
+    hgs = HalvingGridSearchCV(
+        svcTst,paramgrid, cv=5,factor=2, aggressive_elimination=False
+    ).fit(gt[:, :-1], gt[:, -1])
+    print(hgs.best_params_)
+    input()
+    '''
+
+    #pca = PCA(0.86)
+    #pca.fit(np.array(experiments[0][0])[:,:-1])
     for fnum, e in enumerate(experiments):
         gallery = np.array(e[0])
         probe = np.array(e[1])
-        neigh = KNeighborsClassifier(n_neighbors=3)
-        #neigh = SVC()
-        neigh.fit(gallery[:, :-1], gallery[:, -1])
-        preds = neigh.predict(probe[:,:-1])
+        gData = gallery[:,:-1]
+        pData = probe[:,:-1]
+        #neigh = KNeighborsClassifier(n_neighbors=3)
+        neigh = SVC(C=100000000.0,gamma=0.0001,kernel='rbf')
+        #neigh = RandomForestClassifier(max_depth=20,min_samples_split=2)
+        neigh.fit(gData, gallery[:, -1])
+        preds = neigh.predict(pData)
         labels = probe[:, -1]
         rs = preds == labels
         print(np.count_nonzero(rs))

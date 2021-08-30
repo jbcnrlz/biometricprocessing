@@ -93,7 +93,7 @@ if __name__ == '__main__':
             channelsIn = 4 if args.modeLoadFile == 'RGBA' else 3
         muda, _ = initialize_model(checkpoint['state_dict']['classifier.3.weight'].shape[0],channelsIn,modelName=args.network)
     muda.load_state_dict(checkpoint['state_dict'])
-
+    
     if args.network == 'resnet':
         modules=list(muda.children())[:-1]
         muda=nn.Sequential(*modules)

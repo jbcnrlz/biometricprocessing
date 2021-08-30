@@ -8,12 +8,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     files = getFilesInPath(args.pathFiles)
-    summedImages = [[],[],[]]
-    for f in files:
+    summedImages = [[],[],[],[]]
+    for idx, f in enumerate(files):
+        if 'rotate' in f:
+            continue
         currImage = np.array(im.open(f)) / 255
         summedImages[0].append(currImage[:,:,0])
         summedImages[1].append(currImage[:, :, 1])
         summedImages[2].append(currImage[:, :, 2])
+        summedImages[3].append(currImage[:, :, 3])
 
     summedImages = np.array(summedImages)
     averageValue = []

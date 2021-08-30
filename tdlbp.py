@@ -409,7 +409,7 @@ class ThreeDLBP(BiometricProcessing):
             template.save(True)
         return template
 
-    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=True,typeMeasurement='Normal',procs=10,masks=False,firstLayer='lbp',deformValue=0.222):
+    def featureExtraction(self, points=None, radius=None, paralelCalling=False,layersUtilize = [1,2,3,4],forceImage=False,typeMeasurement='Normal',procs=10,masks=False,firstLayer='lbp',deformValue=0.222):
         self.generateTableAndHistogram(deformValue)
         self.quantityItensProcessing = sum([len(d.templates) for d in self.databases])
         self.feitos = 0

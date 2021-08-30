@@ -131,12 +131,7 @@ if __name__ == '__main__':
                 currTargetBatch, currBatch = currTargetBatch.to(device), currBatch.to(device)
 
                 output, features = muda(currBatch)
-                #features = muda(currBatch)
-
-                #theta = head(features,currTargetBatch)
-                #loss = criterion(theta, currTargetBatch)
                 loss = criterion(output, currTargetBatch)
-                #loss = loss
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -149,10 +144,6 @@ if __name__ == '__main__':
                 currTargetBatch, currBatch, depthBatch = currTargetBatch.to(device), currBatch.to(device), depthBatch.to(device)
 
                 output, features = muda(currBatch,depthBatch)
-
-                #theta = head(features,currTargetBatch)
-                #loss = criterion(theta, currTargetBatch)
-
                 loss = criterion(output, currTargetBatch)
 
                 optimizer.zero_grad()
